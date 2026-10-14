@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mutuo variabile</title>
+  <link rel="stylesheet" href="stile.css">
+</head>
+<body>
+  <header class="testata">
+    <div class="marchio">
+      <span class="logo" aria-hidden="true">%</span>
+      <h1 id="titolo-mutuo">Mutuo variabile</h1>
+    </div>
+    <nav class="schede" role="tablist" aria-label="Sezioni" hidden>
+      <button role="tab" data-scheda="piano" aria-selected="true">Piano</button>
+      <button role="tab" data-scheda="tassi" aria-selected="false">Tassi</button>
+      <button role="tab" data-scheda="calendario" aria-selected="false">Calendario</button>
+      <button role="tab" data-scheda="festivita" aria-selected="false">Festività</button>
+      <button role="tab" data-scheda="pannello" aria-selected="false">Pannello di controllo</button>
+    </nav>
+    <button type="button" class="secondario" id="apri-configurazione" title="Rivedi o rifai la configurazione guidata del mutuo" hidden>Configurazione</button>
+  </header>
+  <div class="riepilogo" id="riepilogo"></div>
+
+  <!-- Configurazione guidata: compare al primo avvio, o quando la si riapre dal pannello -->
+  <section id="configurazione" class="configurazione" hidden>
+    <form class="carta guida" id="form-guida" novalidate>
+      <ol class="passi" id="passi-guida"></ol>
+      <p class="conta-passi" id="conta-passi"></p>
+      <h2 id="titolo-passo"></h2>
+      <p class="nota" id="testo-passo"></p>
+      <div id="campi-passo"></div>
+      <p class="nota evidenza" id="errore-passo" hidden></p>
+      <div class="azioni azioni-guida">
+        <button type="button" class="secondario" id="guida-indietro">Indietro</button>
+        <button type="submit" id="guida-avanti">Avanti</button>
+        <button type="button" class="secondario" id="guida-annulla" hidden>Annulla</button>
+        <label class="carica-file" id="guida-carica">Ho già un salvataggio<input type="file" accept=".json,.txt,.js,application/json,text/plain" hidden></label>
+      </div>
+    </form>
+    <p class="nota piede">I dati che inserisci restano in questo browser, sul tuo computer: non vengono inviati da nessuna parte.
+      È uno strumento di controllo, non una consulenza: i conti che fanno fede sono quelli della banca.</p>
+  </section>
+
+  <main id="principale" hidden>
+    <!-- Piano di ammortamento -->
+    <section id="scheda-piano" class="scheda scheda-piano" role="tabpanel">
+      <div class="statistiche-mutuo" id="statistiche-mutuo" aria-label="Statistiche del mutuo"></div>
+      <div class="barra">
+        <button type="button" id="vai-oggi" class="secondario">Vai al mese corrente</button>
+        <button type="button" id="mostra-statistiche" class="secondario" aria-controls="statistiche-mutuo">Nascondi statistiche</button>
+        <button type="button" id="compila-rate" class="secondario" hidden title="Se le rate che hai controllato tornano con il calcolo, segna come pagate anche le altre rate passate usando la cifra calcolata"></button>
+        <div class="colonne-extra" id="colonne-extra" role="group" aria-label="Colonne di approfondimento"></div>
+        <ul class="legenda" id="legenda-piano">
+          <li><button type="button" class="voce-stato" data-stato="pagata" title="Vai all'ultima"><span class="campione riga-pagata">✓</span>pagate senza problemi <b id="conta-pagata"></b></button></li>
+          <li><button type="button" class="voce-stato" data-stato="problema" title="Vai all'ultima"><span class="campione riga-problema">!</span>dati mancanti o errati <b id="conta-problema"></b></button></li>
+          <li><button type="button" class="voce-stato" data-stato="corso" title="Vai alla riga"><span class="campione riga-corso">●</span>in corso <b id="conta-corso"></b></button></li>
+          <li id="legenda-copiata" hidden><span class="campione copiata">=</span>rata presa dal calcolo</li>
+          <li><span class="campione manuale"></span>inserito a mano</li>
+          <li><span class="campione previsione">1,23</span>valore stimato</li>
+          <li><span class="freccia su">▲</span><span class="freccia giu">▼</span>costo al giorno in aumento / in calo sul mese prima</li>
+          <li id="legenda-target" hidden><span class="freccia giu grande">↓</span>entro il target<span class="freccia medio grande">→</span>fino al +10%<span class="freccia su grande">↑</span>oltre</li>
+        </ul>
+      </div>
+      <div class="contenitore-tabella" id="contenitore-piano">
+        <table id="tabella-piano">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tassi dell'indice -->
+    <section id="scheda-tassi" class="scheda scorrevole" role="tabpanel" hidden>
+      <div class="colonna">
+        <div class="filtri">
+          <div class="segmenti" id="periodi-tassi" role="group" aria-label="Periodo"></div>
+          <label>dal <input type="date" id="filtro-da"></label>
+          <label>al <input type="date" id="filtro-a"></label>
+          <span class="nota" id="conteggio-tassi"></span>
+        </div>
+        <div class="statistiche" id="statistiche-tassi"></div>
+
+        <div class="carta">
+          <div class="intestazione-carta">
+            <h2 id="titolo-grafico">Andamento dell'indice</h2>
+            <ul class="legenda">
+              <li><span class="chiave-linea serie"></span>indice</li>
+              <li><span class="chiave-linea tendenza"></span>tendenza lineare</li>
+              <li><span class="chiave-linea media"></span>media del periodo</li>
+              <li><span class="chiave-punto"></span>usato per una rata</li>
+            </ul>
+          </div>
+          <div class="grafico" id="grafico"></div>
+        </div>
+
+        <div class="due-carte">
+          <div class="pila">
+            <form class="carta" id="form-internet">
+              <h2>Scarica i valori da internet</h2>
+              <p class="nota" id="spiegazione-internet"></p>
+              <p class="nota evidenza" id="avviso-internet" hidden></p>
+              <div class="campi tre-colonne">
+                <label>Quale Euribor <select name="serie"></select></label>
+              </div>
+              <div class="azioni"><button type="submit" id="scarica-internet">Scarica gli ultimi valori</button></div>
+              <label class="spunta"><input type="checkbox" name="automatico"><span>A ogni apertura della pagina scarica da solo i valori che mancano, se c'è la connessione.</span></label>
+              <div class="blocco" id="esito-internet"></div>
+            </form>
+            <form class="carta form-tasso">
+              <h2>Aggiungi un tasso</h2>
+              <p class="nota">Il valore dell'indice in un certo giorno: viene usato dalla rata che ha quella data di rilevazione.</p>
+              <div class="campi tre-colonne">
+                <label>Data <input type="date" name="giorno" required></label>
+                <label>Valore dell'indice % <input type="text" inputmode="decimal" name="tasso" placeholder="es. 3,013" required></label>
+              </div>
+              <p class="nota evidenza tasso-esistente" hidden></p>
+              <div class="azioni"><button type="submit">Salva tasso</button></div>
+              <div class="blocco tassi-mancanti"></div>
+              <div class="blocco" id="tassi-disponibili"></div>
+            </form>
+            <form class="carta" id="form-incolla">
+              <h2>Incolla più tassi</h2>
+              <p class="nota">Una riga per tasso: data e valore in percentuale, separati da punto e virgola o tabulazione. Puoi copiare le righe da un foglio di calcolo o da un sito che pubblica lo storico dell'indice. Le date già presenti vengono aggiornate.</p>
+              <label class="solo-lettori" for="testo-incolla">Tassi da importare</label>
+              <textarea id="testo-incolla" name="testo" rows="5" placeholder="27/10/2026;3,125&#10;24/11/2026;3,140"></textarea>
+              <div class="azioni"><button type="submit">Importa</button></div>
+            </form>
+          </div>
+
+          <div class="carta">
+            <h2>Riepilogo per anno</h2>
+            <p class="nota">Calcolato sulle rilevazioni del periodo scelto. La media è pesata sui giorni.</p>
+            <div class="contenitore-tabella semplice">
+              <table id="tabella-anni">
+                <thead>
+                  <tr><th>Anno</th><th>Rilevazioni</th><th>Primo</th><th>Ultimo</th><th>Variazione</th><th>Minimo</th><th>Massimo</th><th>Media</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="carta">
+          <h2>Tassi inseriti</h2>
+          <p class="nota">Clic su un valore per modificarlo. L'elenco segue il periodo scelto in alto.</p>
+          <div class="contenitore-tabella tabella-alta">
+            <table id="tabella-tassi">
+              <thead>
+                <tr>
+                  <th>Giorno</th>
+                  <th class="testo">Giorno settimana</th>
+                  <th>Valore</th>
+                  <th>Variazione</th>
+                  <th class="testo">Usato per</th>
+                  <th><span class="solo-lettori">Azioni</span></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calendario -->
+    <section id="scheda-calendario" class="scheda scorrevole" role="tabpanel" hidden>
+      <div class="colonna larga">
+        <div class="filtri">
+          <div class="navigazione-anno">
+            <button type="button" class="secondario" id="anno-prima" aria-label="Anno precedente">◀</button>
+            <strong id="anno-calendario"></strong>
+            <button type="button" class="secondario" id="anno-dopo" aria-label="Anno successivo">▶</button>
+          </div>
+          <button type="button" class="secondario" id="anno-oggi">Oggi</button>
+          <ul class="legenda">
+            <li><span class="giorno riferimento presente campione-giorno">27</span>giorno in cui si legge l'indice</li>
+            <li><span class="giorno riferimento mancante campione-giorno">27</span>valore non ancora inserito</li>
+            <li><span class="giorno riferimento futuro campione-giorno">27</span>rilevazione futura</li>
+            <li><span class="giorno contato campione-giorno">28</span>giorno lavorativo contato</li>
+            <li><span class="giorno festa campione-giorno">25</span>festività TARGET</li>
+            <li><span class="giorno fine-settimana campione-giorno">31</span>fine settimana</li>
+            <li><span class="giorno oggi campione-giorno">5</span>oggi</li>
+          </ul>
+        </div>
+        <div class="calendario">
+          <div class="mesi" id="mesi-calendario"></div>
+          <aside class="lato-calendario">
+            <div class="carta" id="dettaglio-giorno"></div>
+            <div class="carta">
+              <h2 id="titolo-riferimenti"></h2>
+              <p class="nota">Il giorno in cui si legge l'indice e la rata che lo usa.</p>
+              <table class="elenco-calendario"><tbody id="riferimenti-anno"></tbody></table>
+            </div>
+            <div class="carta">
+              <h2 id="titolo-feste"></h2>
+              <p class="nota">Giorni saltati nel conteggio, oltre a sabati e domeniche.</p>
+              <table class="elenco-calendario"><tbody id="feste-anno"></tbody></table>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Festività -->
+    <section id="scheda-festivita" class="scheda scorrevole" role="tabpanel" hidden>
+      <div class="colonna">
+        <div class="carta">
+          <div class="intestazione-carta">
+            <div>
+              <h2>Festività TARGET (giorni senza rilevazione dell'Euribor)</h2>
+              <p class="nota">Questi giorni, insieme a sabati e domeniche, non contano come lavorativi nel calcolo della data di rilevazione. <span id="conteggio-festivita"></span></p>
+            </div>
+            <form id="form-festivita" class="campi in-linea">
+              <label>Nuova festività <input type="date" name="giorno" required></label>
+              <button type="submit">Aggiungi</button>
+            </form>
+          </div>
+          <div class="contenitore-tabella semplice">
+            <table id="tabella-festivita"><thead></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pannello di controllo -->
+    <section id="scheda-pannello" class="scheda scorrevole" role="tabpanel" hidden>
+      <div class="colonna griglia-pannello">
+        <div class="pila">
+          <div class="carta" id="taratura">
+            <h2>Taratura automatica</h2>
+            <p class="nota">Inserisci nel piano alcune rate vere (e, se le conosci, le quote capitale) e i valori dell'indice di quei mesi. Il programma prova le combinazioni di regole più comuni e ti dice quale riproduce le tue rate al centesimo.</p>
+            <div class="azioni"><button type="button" id="avvia-taratura">Trova le regole giuste</button></div>
+            <div class="blocco" id="esito-taratura"></div>
+          </div>
+
+          <div class="carta" id="allinea">
+            <h2>Rate già pagate: prendile dal calcolo</h2>
+            <p class="nota">Hai controllato alcune rate e nel piano sono verdi, cioè il calcolo dà la stessa cifra della banca? Allora non serve copiare a mano tutte le altre: il programma può segnare come pagate le rate passate usando la cifra che ha calcolato, così il piano e le statistiche sono subito completi.</p>
+            <p class="nota">Queste rate restano riconoscibili dal segno «=», perché non le hai controllate sull'estratto conto. Quando ne controlli una, fai clic sulla cifra: con Invio la confermi, oppure scrivi quella vera.</p>
+            <div class="blocco" id="stato-allinea"></div>
+            <div class="azioni">
+              <button type="button" id="compila-rate-pannello" hidden></button>
+              <button type="button" class="secondario" id="togli-copiate" hidden></button>
+            </div>
+          </div>
+
+          <form class="carta" id="form-obiettivo">
+            <h2>Rata ideale (target)</h2>
+            <p class="nota">La rata che vorresti pagare: nel piano compare una colonna con la distanza dal target mese per mese.</p>
+            <div class="campi in-linea">
+              <label>Rata ideale (€) <input type="text" inputmode="decimal" name="rata" placeholder="es. 900"></label>
+              <button type="submit">Salva target</button>
+              <button type="button" class="secondario" id="togli-obiettivo" hidden>Togli il target</button>
+            </div>
+            <div class="blocco" id="stato-obiettivo"></div>
+          </form>
+
+          <div class="carta">
+            <h2>I tuoi dati</h2>
+            <p class="nota">Tutto resta in questo browser. Salva una copia su file per sicurezza, o per portare i dati su un altro computer o browser.</p>
+            <div class="azioni">
+              <button type="button" id="salva-file">Salva su file</button>
+              <label class="carica-file secondario" id="carica-file">Carica da file<input type="file" accept=".json,.txt,.js,application/json,text/plain" hidden></label>
+              <button type="button" class="secondario" id="cancella-tutto">Cancella tutto</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pila">
+          <form class="carta" id="form-applicato">
+            <h2>Valori a mano per una rata</h2>
+            <p class="nota">Scegli una data qualsiasi: i valori valgono per la rata del periodo che la contiene. Un campo vuoto torna al valore automatico.</p>
+            <div class="campi">
+              <label>Data della rata <input type="date" name="giorno" required></label>
+            </div>
+            <div id="info-rata" class="info"></div>
+            <div class="campi">
+              <label>Data di rilevazione dell'indice
+                <input type="date" name="data_riferimento">
+                <small>Forza il giorno in cui viene letto l'indice per questa rata.</small>
+              </label>
+              <label>Valore dell'indice per questa rata %
+                <input type="text" inputmode="decimal" name="euribor">
+                <small>Sostituisce il valore inserito nei tassi e cambia la rata calcolata.</small>
+              </label>
+              <label>Tasso totale applicato dalla banca %
+                <input type="text" inputmode="decimal" name="tasso_applicato">
+                <small>Dato di confronto: non cambia la rata calcolata.</small>
+              </label>
+            </div>
+            <p class="nota evidenza" id="anteprima-rata" hidden></p>
+            <div class="azioni">
+              <button type="submit">Salva</button>
+              <button type="button" class="secondario" id="ripristina-rata">Torna ai valori automatici</button>
+            </div>
+          </form>
+        </div>
+
+        <form class="carta larga" id="form-regole">
+          <div class="intestazione-carta">
+            <div>
+              <h2>Regole del contratto</h2>
+              <p class="nota">Le stesse della configurazione iniziale. Se non sei sicuro di una regola, usa la taratura automatica.</p>
+            </div>
+            <button type="button" class="secondario" id="riapri-guida">Apri la configurazione guidata</button>
+          </div>
+          <div class="campi due-colonne" id="campi-regole"></div>
+          <div class="azioni"><button type="submit">Salva le regole</button></div>
+        </form>
+
+        <p class="nota piede">È uno strumento di controllo, non una consulenza: i conti che fanno fede sono quelli della banca.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="avviso" class="notifica" role="status" aria-live="polite" hidden></div>
+
+  <script src="calcolo.js"></script>
+  <script src="tassi-precaricati.js"></script>
+  <script src="tassi-internet.js"></script>
+  <script src="archivio.js"></script>
+  <script src="app.js"></script>
+  <script src="tassi.js"></script>
+  <script src="calendario.js"></script>
+  <script src="configura.js"></script>
+</body>
+</html>

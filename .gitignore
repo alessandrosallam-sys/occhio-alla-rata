@@ -1,0 +1,10 @@
+# Valori dell'Euribor: non si pubblicano con il codice (l'Euribor è un indice di EMMI, la ridistribuzione dello storico
+# può richiedere una licenza). Si scaricano in locale dalla Bundesbank con dati-euribor/scarica.js e si portano nella
+# pagina con crea-precaricati.js: vedi README, sezione «Dati dell'Euribor e licenza».
+dati-euribor/*.csv
+dati-euribor/LEGGIMI.txt
+tassi-precaricati.js
+
+# File di sistema
+Thumbs.db
+.DS_Store
