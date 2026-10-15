@@ -62,7 +62,9 @@
 
   function aggiorna(dati) {
     stato.dati = dati;
-    stato.piano = Calcolo.calcolaPiano(dati);
+    // L'indice delle rate future viene dal modello scelto nella scheda «Previsioni», se c'è (previsioni.js).
+    stato.piano = Calcolo.calcolaPiano(dati, { previsione: M.perPiano ? M.perPiano(dati) : null });
+    if (M.ORIGINI) M.ORIGINI.previsione = M.nomeModelloPiano && M.nomeModelloPiano(dati) ? `previsione (modello ${M.nomeModelloPiano(dati)})` : 'previsione';
     $('#titolo-mutuo').textContent = document.title = dati.parametri.nome || 'Mutuo variabile';
     disegnaRiepilogo();
     disegnaPiano();
@@ -280,7 +282,7 @@
       classe: previsione, manuale: r => r.origineEuribor === 'manuale',
       titolo: r => tassoMancante(r) ? `Manca il valore dell'indice del ${data(r.riferimento)}: quello mostrato è una stima`
         : r.alTetto ? 'Previsione ferma al tetto massimo impostato nel pannello di controllo' : '' },
-    { extra: true, g: 4, t: 'Aumento mensile', x: 'Variazione dell\'indice', aiuto: 'Differenza con la rilevazione precedente; per il futuro: media delle variazioni passate',
+    { extra: true, g: 4, t: 'Aumento mensile', x: 'Variazione dell\'indice', aiuto: 'Differenza con la rilevazione precedente; per il futuro: secondo la proiezione scelta nella pagina «Previsioni» (all\'inizio: media delle variazioni passate)',
       v: r => percT(r.variazione), classe: r => 'minore ' + previsione(r) },
     { extra: true, g: 4, t: 'Spread', campo: 'spread', percento: true, v: r => percT(r.spread, 3, 1), manuale: r => r.spreadManuale },
     { g: 4, t: 'Tasso totale', aiuto: 'Indice + spread', v: r => percT(r.tassoTotale, 3), classe: r => 'forte ' + previsione(r) },
@@ -554,7 +556,7 @@
   // Tasso applicato a mano
   const rataScelta = () => formApplicato.giorno.value ? Calcolo.rataPerData(stato.piano.righe, formApplicato.giorno.value) : null;
   const manualiRata = n => stato.dati.rate.find(x => x.n === n) || {};
-  const ORIGINI = { db: 'dai tassi inseriti', manuale: 'inserito a mano', previsione: 'previsione' };
+  const ORIGINI = M.ORIGINI = { db: 'dai tassi inseriti', manuale: 'inserito a mano', previsione: 'previsione' };
 
   function disegnaInfoRata() {
     const info = $('#info-rata'), r = rataScelta();

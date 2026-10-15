@@ -222,12 +222,15 @@
       } else {
         if (r.origineEuribor !== 'previsione') r.variazione = ultimoPunto ? r.euribor - ultimoPunto.euribor : primaDelPiano != null ? r.euribor - primaDelPiano : 0;
         else {
-          // Previsione: ultimo valore più l'ultima variazione; raggiunto il tetto impostato, non sale più.
-          r.euribor = ultimoPunto ? ultimoPunto.euribor + ultimoPunto.variazione : primaDelPiano != null ? primaDelPiano : 0;
+          // Previsione: con opzioni.previsione (una funzione giorno → indice, dalla scheda «Previsioni») si usa il valore
+          // del modello; altrimenti ultimo valore più l'ultima variazione. Raggiunto il tetto impostato, non sale più.
+          const stimata = opzioni.previsione ? opzioni.previsione(r.riferimento) : null;
+          r.euribor = stimata != null ? stimata : ultimoPunto ? ultimoPunto.euribor + ultimoPunto.variazione : primaDelPiano != null ? primaDelPiano : 0;
           if (p.floor_attivo > 0) r.euribor = Math.max(r.euribor, p.indice_minimo || 0);
           r.alTetto = tetto != null && r.euribor >= tetto;
           if (r.alTetto) r.euribor = tetto;
-          r.variazione = r.alTetto ? 0 : mediaVariazioni;
+          r.variazione = r.alTetto ? 0 : stimata != null ? (ultimoPunto ? r.euribor - ultimoPunto.euribor : 0) : mediaVariazioni;
+          r.daModello = stimata != null;
         }
         ultimoPunto = r;
       }

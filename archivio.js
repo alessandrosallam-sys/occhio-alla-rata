@@ -46,6 +46,9 @@
 
     euribor_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0.05, etichetta: 'Tetto alla previsione dell\'indice (%)', aiuto: 'Per i mesi futuri l\'indice stimato non supera questo valore. Lascia 0 per non mettere un tetto.' },
     rata_obiettivo: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, nascosto: true },
+    // Come il piano stima l'indice delle rate future: si sceglie nella scheda «Previsioni» (previsioni.js).
+    previsione_modello: { tipo: 'scelta', iniziale: 'media', nascosto: true, opzioni: ['media', 'arima', 'var', 'garch', 'vasicek'].map(valore => ({ valore })) },
+    previsione_opzioni: { tipo: 'testo', iniziale: '', nascosto: true },
     soglia_differenza: { tipo: 'euro', min: 0, max: 1e6, iniziale: 0.005, nascosto: true },
   };
   // "rata_copiata" è la rata presa dal calcolo con «Compila le rate dal calcolo»: vale come rata vera finché

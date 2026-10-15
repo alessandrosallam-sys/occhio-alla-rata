@@ -391,6 +391,18 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .grafico text.estremo { fill: var(--inchiostro-2); }
 .fumetto .in-evidenza { color: var(--accento-testo); font-weight: 600; }
 .grafico .mirino { stroke: var(--linea-forte); stroke-width: 1; }
+/* Previsioni: fasce di confidenza e linea della proiezione */
+.grafico .banda95 { fill: var(--serie); opacity: 0.1; }
+.grafico .banda80 { fill: var(--serie); opacity: 0.18; }
+.grafico .proiezione { fill: none; stroke: var(--accento); stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; }
+.grafico .separatore { stroke: var(--linea-forte); stroke-width: 1; stroke-dasharray: 2 3; }
+.chiave-linea.proiezione { border-top: 2px dashed var(--accento); }
+.chiave-banda { width: 18px; height: 10px; border-radius: 2px; background: var(--serie); opacity: 0.25; }
+#parametri-previsione:empty { display: none; }
+#parametri-previsione label.spunta { grid-column: 1 / -1; }
+.frasi { margin: 12px 0; padding-left: 20px; font-size: 13.5px; }
+.frasi li { margin: 4px 0; }
+.tabella-previsione td, .tabella-previsione th { font-variant-numeric: tabular-nums; }
 .fumetto {
   position: absolute; pointer-events: none; background: var(--superficie); border: 1px solid var(--bordo);
   border-radius: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); padding: 7px 10px; font-size: 12px; white-space: nowrap;

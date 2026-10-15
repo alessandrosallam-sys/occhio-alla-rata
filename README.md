@@ -12,7 +12,8 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 2. Alla prima apertura parte la **configurazione guidata**: nove passi, con le spiegazioni. Tieni a portata di mano il contratto di mutuo e qualche ricevuta delle rate. Alle domande tecniche puoi rispondere «Non lo so»: se inserisci tre o quattro rate già pagate, il programma prova le combinazioni di regole e sceglie quella che le riproduce.
 3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no.
 4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano.
-5. Dal **Pannello di controllo** puoi salvare tutto su un file, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
+5. Nella pagina **Previsioni** vedi la storia dell'Euribor dal 1999 e la proietti in avanti con diversi modelli statistici (media delle variazioni, ARIMA, VAR, GARCH, Vasicek), con le fasce di incertezza. Puoi scegliere quale proiezione usa il piano per stimare le rate future.
+6. Dal **Pannello di controllo** puoi salvare tutto su un file, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
 
 I dati stanno nel browser (`localStorage`): se cancelli i dati di navigazione li perdi. Per questo c'è «Salva su file».
 
@@ -30,6 +31,8 @@ Le regole del contratto si scelgono nella configurazione (o le trova la taratura
 | Quota capitale | piano francese ricalcolato a ogni rata; quote fissate all'inizio; quote costanti (piano italiano) |
 
 Le festività considerate sono quelle del calendario TARGET (quello su cui si pubblica l'Euribor), modificabili.
+
+**Le rate future** sono stime: l'indice dei mesi a venire non lo conosce nessuno. All'inizio il programma lo proietta con la variazione media del passato; nella pagina Previsioni si può scegliere un modello statistico al suo posto. Le fasce di incertezza dicono quanto l'indice è stato variabile finora, non cosa farà la BCE.
 
 **Non sono coperti**: preammortamento, estinzioni parziali, rate non mensili, spread che cambia nel tempo (si può solo scrivere a mano, rata per rata, il tasso applicato).
 
@@ -57,13 +60,15 @@ Questo è uno strumento di controllo fatto da privati, senza alcuna garanzia. No
 Tutto è HTML, CSS e JavaScript scritti a mano, senza librerie né passaggi di compilazione: si modifica un file e si ricarica la pagina. Node serve solo per i due script dei dati.
 
 ```
-index.html            pagina unica: guida iniziale + cinque schede (Piano, Tassi, Calendario, Festività, Pannello)
+index.html            pagina unica: guida iniziale + sei schede (Piano, Tassi, Calendario, Festività, Previsioni, Pannello)
 stile.css             stile, tema chiaro e scuro
 calcolo.js            motore di calcolo con le regole sceglibili, e taratura automatica
 archivio.js           dati nel browser: lettura, scrittura, controlli, salvataggio e caricamento su file
 app.js                nucleo della pagina: formati, piano, statistiche, pannello di controllo
 tassi.js              scheda Tassi, scarico da internet
 calendario.js         schede Calendario e Festività
+previsioni.js         scheda Previsioni: serie storica, proiezioni, scelta del modello per le rate future
+modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
 configura.js          configurazione guidata, regole nel pannello, taratura
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
@@ -71,11 +76,13 @@ crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `app.js`, `tassi.js`, `calendario.js`, `configura.js`.
+Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del salvataggio su file: `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni (`GET dati`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati.
 
-**Motore.** `Calcolo.calcolaPiano(dati)` restituisce le righe del piano con, per ogni rata, periodo, data di rilevazione, indice, tasso, interessi, quota capitale, rata calcolata e confronto con la rata vera. `Calcolo.tara(dati)` prova le combinazioni di regole sulle rate vere e restituisce le migliori. Le scelte possibili, con nome e spiegazione, sono in `Calcolo.REGOLE`.
+**Modelli.** `Modelli.stima(modello, serieMensile, opzioni)` (in `modelli.js`) restituisce la proiezione con le fasce; `Modelli.perGiorno` la trasforma nella funzione giorno → valore che il piano riceve come `opzioni.previsione`. Il file non tocca la pagina: `node -e "const M = require('./modelli.js'); …"` per provarlo.
+
+**Motore.** `Calcolo.calcolaPiano(dati, opzioni)` restituisce le righe del piano con, per ogni rata, periodo, data di rilevazione, indice, tasso, interessi, quota capitale, rata calcolata e confronto con la rata vera. `Calcolo.tara(dati)` prova le combinazioni di regole sulle rate vere e restituisce le migliori. Le scelte possibili, con nome e spiegazione, sono in `Calcolo.REGOLE`.
 
 **Prove.** Non ci sono strumenti di test nel repository. Le prove sono state fatte con Edge senza finestra (`msedge --headless=new --remote-debugging-port=…`) pilotato da uno script Node tramite il protocollo DevTools, che apre `index.html` da `file://`, simula clic e digitazione e legge il risultato dalla pagina. Dopo una modifica al motore va rifatta almeno la prova del contratto noto (le rate devono tornare tutte).
 
