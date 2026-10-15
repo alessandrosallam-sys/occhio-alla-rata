@@ -1240,6 +1240,21 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .file-trovato span { color: var(--inchiostro-2); }
 #apertura .azioni { margin-top: 16px; }
 
+/* File collegato (file-collegato.js): avviso in alto quando serve il permesso di scrivere nel file, o una scelta */
+.barra-file { max-width: var(--larghezza-pagina); margin: 0 auto; padding: var(--s4) var(--s5) 0; }
+.carta-file { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4); padding: var(--s4) var(--s5); border-left: 4px solid var(--avviso-testo); }
+.carta-file > .nota { flex: 1 1 360px; margin: 0; }
+.carta-file .confronto { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s3); }
+.carta-file .file-trovato { margin: 0; }
+@media (min-width: 1100px) {
+  body:has(.schede:not([hidden])) .barra-file { padding: var(--s5) var(--s6) 0; }
+}
+@media (max-width: 760px) {
+  .barra-file { padding: var(--s3) var(--s4) 0; }
+  .carta-file { padding: var(--s3) var(--s4); }
+  .carta-file .azioni, .carta-file .azioni button { width: 100%; }
+}
+
 /* ---------- 9. Struttura e temi: barra laterale, selettore dei temi, ritocchi per tema ---------- */
 
 /* Schermi larghi: la navigazione diventa una barra laterale fissa (solo con il mutuo configurato: durante la guida

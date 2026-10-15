@@ -4,7 +4,7 @@ Una pagina web che ricostruisce, rata per rata, un mutuo a tasso variabile e lo 
 
 È pensata per chi non sa niente di mutui: una configurazione guidata spiega ogni domanda, dove trovare la risposta nei documenti e cosa fare se non la si conosce. Dove può, il programma ricava le regole del contratto da solo, a partire dalle rate già pagate.
 
-Non serve installare niente: si scarica la cartella e si apre `index.html` con il browser. I dati restano nel browser di chi la usa (e si possono salvare su file). L'unica cosa che passa da internet è lo scarico dei valori dell'Euribor dal sito della Bundesbank.
+Non serve installare niente: si scarica la cartella e si apre `index.html` con il browser. I dati restano sul computer di chi la usa: nel browser e, con Edge o Chrome, in un file che si aggiorna da solo. L'unica cosa che passa da internet è lo scarico dei valori dell'Euribor dal sito della Bundesbank.
 
 ## Come si usa
 
@@ -12,13 +12,16 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 2. Alla prima apertura parte la **configurazione guidata**: nove passi, con le spiegazioni. Tieni a portata di mano il contratto di mutuo e qualche ricevuta delle rate. Alle domande tecniche puoi rispondere «Non lo so»: se inserisci tre o quattro rate già pagate, il programma prova le combinazioni di regole e sceglie quella che le riproduce.
 3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no.
 4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Il grafico mostra tutta la storia dell'Euribor dal 1999 (all'inizio solo il periodo del tuo mutuo) e, a destra, la proiezione in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
-5. Dal **Pannello di controllo** puoi salvare tutto su un file, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
+5. Dal **Pannello di controllo** puoi collegare un file in cui salvare tutto, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
 
 Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il grafico («Cambia» lo apre). Sul telefono le pagine si scelgono dalla barra in basso e la tabella del piano scorre in orizzontale tenendo ferma la colonna delle rate. Il tema chiaro o scuro segue quello del sistema.
 
 **Aspetto**: dal pulsante «Aspetto» (o dal pannello di controllo) si sceglie fra otto temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia e Contrasto alto. Cambia solo l'aspetto; la scelta resta nel browser.
 
-I dati stanno nel browser (`localStorage`): se cancelli i dati di navigazione li perdi. Per questo c'è «Salva su file».
+**Dove stanno i dati.** I dati stanno nel browser (`localStorage`): se cancelli i dati di navigazione li perdi. Per non perderli:
+
+- **con Edge o Chrome** premi **«Collega un file»** nel pannello di controllo e scegli dove tenerlo (ad esempio in Documenti, o in una cartella di OneDrive o Google Drive). Da quel momento ogni modifica viene scritta da sola nel file, un normale `.json` che puoi copiare o mettere in un backup. Il browser si ricorda il file, ma per sicurezza a ogni apertura chiede di nuovo il permesso di scriverci: basta premere «Riprendi il file» in alto (se il browser propone «Consenti sempre», dopo non lo chiede più). Se il file e il browser hanno dati diversi, perché hai usato il file su un altro computer o hai fatto modifiche senza riprenderlo, la pagina li mostra tutti e due e ti chiede quali tenere. Su un altro computer, o dopo aver cancellato i dati di navigazione, apri il file con «Carica da file»: torna collegato;
+- **con gli altri browser** usa «Salva su file» ogni tanto: scarica una copia da ricaricare con «Carica da file».
 
 ## Cosa sa calcolare
 
@@ -74,15 +77,16 @@ calendario.js         schede Calendario e Festività
 previsioni.js         proiezioni dell'indice nella pagina Tassi: modelli, scenari, confronto, scelta per le rate future
 modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
 configura.js          configurazione guidata, regole nel pannello, taratura
+file-collegato.js     il file collegato: i dati scritti da soli in un file scelto dall'utente (Edge e Chrome)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
 crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`.
+Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `file-collegato.js`.
 
-**Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del salvataggio su file: `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni (`GET dati`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati.
+**Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del salvataggio su file: `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni (`GET dati`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Dopo ogni modifica l'archivio chiama `Archivio.alCambio`: `file-collegato.js` lo usa per riscrivere il file collegato (File System Access API, `showSaveFilePicker`; la maniglia del file è ricordata in IndexedDB, database `mutuo-variabile`).
 
 **Modelli.** `Modelli.stima(modello, serieMensile, opzioni)` (in `modelli.js`) restituisce la proiezione con le fasce; `Modelli.perGiorno` la trasforma nella funzione giorno → valore che il piano riceve come `opzioni.previsione`. Il file non tocca la pagina: `node -e "const M = require('./modelli.js'); …"` per provarlo.
 

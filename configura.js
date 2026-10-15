@@ -663,18 +663,23 @@
     setTimeout(() => URL.revokeObjectURL(collegamento.href), 1000);
     avvisa('Copia salvata nella cartella dei download');
   });
-  async function caricaDaFile(input, conferma) {
-    const file = input.files[0];
-    input.value = '';
-    if (!file) return;
-    if (conferma && !confirm('I dati di adesso verranno sostituiti con quelli del file. Continuare?')) return;
+  // Sostituisce i dati con quelli di un salvataggio. La usa anche file-collegato.js, che apre i file a modo suo.
+  M.caricaSalvataggio = async function caricaSalvataggio(testo, conferma) {
+    if (conferma && !confirm('I dati di adesso verranno sostituiti con quelli del file. Continuare?')) return false;
     try {
-      Archivio.importa(await file.text());
+      Archivio.importa(testo);
     } catch (errore) {
-      return avvisa(errore.message, true);
+      avvisa(errore.message, true);
+      return false;
     }
     await M.avvia();
     avvisa('Dati caricati dal file');
+    return true;
+  };
+  async function caricaDaFile(input, conferma) {
+    const file = input.files[0];
+    input.value = '';
+    if (file) await M.caricaSalvataggio(await file.text(), conferma);
   }
   $('#carica-file input').addEventListener('change', evento => caricaDaFile(evento.target, true));
   $('#guida-carica input').addEventListener('change', evento => caricaDaFile(evento.target, false));

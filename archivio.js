@@ -86,23 +86,43 @@
   const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));
 
   // ---------- Lettura e scrittura nel browser ----------
-  let dati = null;
+  // "modificato" = quando i dati del browser sono cambiati l'ultima volta (serve a confrontarli con un file).
+  let dati = null, modificato = null;
   function carica() {
     if (dati) return dati;
     dati = { parametri: {}, rate: [], euribor: [], festivita: [] };
     let testo = null;
     if (NEL_BROWSER) try { testo = localStorage.getItem(CHIAVE); } catch { /* archivio del browser non disponibile: si lavora in memoria */ }
     if (testo) {
-      try { dati = pulisci(JSON.parse(testo)); } catch { /* dati illeggibili: si riparte da zero senza toccare quelli salvati */ }
+      try {
+        const grezzo = JSON.parse(testo);
+        dati = pulisci(grezzo);
+        if (typeof grezzo.modificato === 'string' && !isNaN(Date.parse(grezzo.modificato))) modificato = grezzo.modificato;
+      } catch { /* dati illeggibili: si riparte da zero senza toccare quelli salvati */ }
     }
     return dati;
   }
   function salva() {
-    // Senza archivio del browser si avvisa soltanto chi tiene il file dei dati.
-    if (!NEL_BROWSER) { if (window.Archivio.alCambio) window.Archivio.alCambio(); return; }
-    try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 1, ...dati })); }
-    catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva su file» per non perderli.'); }
+    modificato = new Date().toISOString();
+    if (NEL_BROWSER) {
+      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 1, modificato, ...dati })); }
+      catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva su file» per non perderli.'); }
+    }
+    // Chi tiene una copia in un file (file-collegato.js, o la variante in un unico file) la aggiorna.
+    if (window.Archivio.alCambio) window.Archivio.alCambio();
   }
+  // Legge un salvataggio (il .json, o il file dei dati della variante in un unico file) e lo rende valido.
+  function leggiSalvataggio(testo) {
+    let grezzo;
+    try { grezzo = JSON.parse(String(testo).replace(/^﻿?\s*window\.MutuoDatiSalvati\s*=\s*/, '').replace(/;\s*$/, '')); }
+    catch { throw new ErroreDati('Il file non è un salvataggio valido'); }
+    const nuovi = pulisci(grezzo);
+    richiedi(nuovi.parametri.importo_iniziale > 0, 'Il file non contiene la configurazione di un mutuo');
+    return nuovi;
+  }
+  // Testo che non dipende dall'ordine delle chiavi, per confrontare due insiemi di dati.
+  const confrontabile = d => JSON.stringify(d, (chiave, v) => v && typeof v === 'object' && !Array.isArray(v)
+    ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v);
   // Rende valido un insieme di dati letto dal browser o da un file.
   function pulisci(grezzo) {
     richiedi(grezzo && typeof grezzo === 'object', 'Il file non contiene i dati di un mutuo');
@@ -222,17 +242,19 @@
     esportaFile() { return PREFISSO_FILE + this.esporta() + ';\n'; },
     // Sostituisce tutti i dati con quelli di un salvataggio (va bene sia il .json sia il file dei dati).
     importa(testo) {
-      let grezzo;
-      try { grezzo = JSON.parse(String(testo).replace(/^﻿?\s*window\.MutuoDatiSalvati\s*=\s*/, '').replace(/;\s*$/, '')); }
-      catch { throw new ErroreDati('Il file non è un salvataggio valido'); }
-      const nuovi = pulisci(grezzo);
-      richiedi(nuovi.parametri.importo_iniziale > 0, 'Il file non contiene la configurazione di un mutuo');
-      dati = nuovi;
+      dati = leggiSalvataggio(testo);
       salva();
       return copia();
     },
+    // Vero se il salvataggio contiene esattamente i dati di adesso (la data del salvataggio non conta).
+    uguale(testo) {
+      try { return confrontabile(leggiSalvataggio(testo)) === confrontabile(carica()); } catch { return false; }
+    },
+    // Quando i dati del browser sono cambiati l'ultima volta (ISO), se si sa.
+    modificato: () => (carica(), modificato),
     azzera() {
       dati = { parametri: {}, rate: [], euribor: [], festivita: [] };
+      modificato = null;
       if (NEL_BROWSER) try { localStorage.removeItem(CHIAVE); } catch { /* niente da cancellare */ }
     },
   };
