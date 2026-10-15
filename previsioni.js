@@ -88,6 +88,7 @@
   // ---------- Modulo ----------
   const DESCRIZIONI = {
     media: 'Il metodo semplice: ogni mese l\'indice cambia della variazione media vista nel passato, e l\'incertezza cresce con il passare del tempo. È quello che il piano usa all\'inizio.',
+    costante: 'L\'indice resta dov\'è oggi; solo l\'incertezza cresce, come le variazioni passate insegnano. È il confronto minimo: un modello che non fa meglio di questo non serve.',
     arima: 'ARIMA guarda come la serie dipende dai suoi valori passati (parte «AR») e dagli errori passati (parte «MA»), eventualmente sulle variazioni mensili invece che sui livelli («d = 1»). Con «scegli da solo» prova diverse combinazioni e tiene quella che spiega meglio i dati senza troppi parametri.',
     var: 'Il VAR mette insieme i cinque Euribor: ognuno viene spiegato dai valori passati di tutti. Serve lo storico di tutte le serie (è nel programma, o si scarica). La proiezione mostrata è quella della serie scelta.',
     garch: 'GARCH non cerca la direzione ma la variabilità: dice se siamo in un periodo agitato o calmo e quanto a lungo l\'agitazione tende a durare. La linea centrale è quasi piatta; sono le fasce a cambiare.',
@@ -166,6 +167,87 @@
   });
   $('#togli-previsione').addEventListener('click', () => esegui('PUT', 'parametri', { previsione_modello: 'media', previsione_opzioni: '' }, 'Il piano torna alla media delle variazioni'));
 
+  // ---------- Confronto all'indietro: quale modello ha funzionato meglio ----------
+  // Per ogni modello (con le opzioni predefinite; ARIMA con gli ordini scelti una volta sull'intera serie) si rifanno
+  // le proiezioni dal passato e si misurano gli errori a 1 e 2 anni. Il migliore è quello con l'errore quadratico
+  // medio più basso all'orizzonte scelto, a parità di storico.
+  const moduloConfronto = $('#form-confronto');
+  const ORDINE_CONFRONTO = ['costante', 'media', 'arima', 'var', 'garch', 'vasicek'];
+  let confronto = null;
+  function opzioniPredefinite(modello, codice, dati) {
+    if (modello === 'arima') return { auto: true, d: 1 };
+    if (modello === 'var') return { p: 1 };
+    return {};
+  }
+  async function eseguiConfronto() {
+    const codice = modulo.serie.value, anni = +moduloConfronto.anni.value, orizzonte = +moduloConfronto.orizzonte.value;
+    const pulsante = $('button[type="submit"]', moduloConfronto), avviso = $('#avviso-confronto');
+    avviso.hidden = true;
+    pulsante.disabled = true;
+    pulsante.textContent = 'Confronto in corso…';
+    await new Promise(r => setTimeout(r, 30));   // lascia disegnare il pulsante
+    try {
+      await assicuraSerie(codice);
+      const serie = Mod.mensile(valoriScelti(codice, stato.dati));
+      const righe = [];
+      for (const modello of ORDINE_CONFRONTO) {
+        let opzioni = opzioniPredefinite(modello, codice, stato.dati);
+        try {
+          if (modello === 'var') {
+            if (codice === 'contratto') continue;
+            opzioni = { ...opzioni, altre: Internet.SERIE.map(s => Mod.mensile(valoriSerie(s.codice, stato.dati))), indice: Internet.SERIE.findIndex(s => s.codice === codice) };
+            if (opzioni.altre.some(l => l.length < 36)) continue;
+          }
+          if (modello === 'arima') { const r = Mod.stima('arima', serie, { ...opzioni, h: 1 }); opzioni = { auto: false, p: r.parametri.p, d: r.parametri.d, q: r.parametri.q }; }
+          righe.push({ ...Mod.confronta(modello, serie, opzioni, { anni, orizzonti: [12, 24] }), opzioni });
+        } catch (errore) {
+          righe.push({ modello, errore: errore.message, opzioni });
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+      confronto = { codice, anni, orizzonte, righe };
+      disegnaConfronto();
+    } catch (errore) {
+      avviso.textContent = errore.message;
+      avviso.hidden = false;
+    } finally {
+      pulsante.disabled = false;
+      pulsante.textContent = 'Confronta i modelli';
+    }
+  }
+  function disegnaConfronto() {
+    const blocco = $('#esito-confronto');
+    if (!confronto) { blocco.replaceChildren(); return; }
+    const colonna = confronto.orizzonte === 12 ? 0 : 1;
+    const validi = confronto.righe.filter(r => !r.errore && r.perOrizzonte[colonna].quanti);
+    const migliore = validi.reduce((m, r) => (!m || r.perOrizzonte[colonna].rmse < m.perOrizzonte[colonna].rmse ? r : m), null);
+    const cella = (r, i) => { const o = r.perOrizzonte[i]; return o.quanti ? `${ampiezza(o.rmse, 2)} · ${Math.round(o.copertura80 * 100)}%` : '–'; };
+    const tabella = crea('table', { className: 'tabella-previsione' },
+      crea('thead', {}, crea('tr', {}, ...['Modello', 'Errore a 1 anno · fascia 80%', 'Errore a 2 anni · fascia 80%', ''].map(t => crea('th', {}, t)))),
+      crea('tbody', {}, ...confronto.righe.map(r => crea('tr', { className: r === migliore ? 'migliore' : '' },
+        crea('td', {}, Mod.MODELLI[r.modello].nome + (r.modello === 'arima' && !r.errore ? ` (${r.opzioni.p},${r.opzioni.d},${r.opzioni.q})` : '') + (r === migliore ? ' ★' : '')),
+        ...(r.errore ? [crea('td', { colSpan: 2, className: 'testo' }, r.errore)] : [crea('td', {}, cella(r, 0)), crea('td', {}, cella(r, 1))]),
+        crea('td', { className: 'azione' }, ...(r.errore || r.modello === 'media' && false ? [] : [crea('button', { type: 'button', className: 'secondario piccolo', 'data-modello': r.modello }, 'Vedi')]))))));
+    const primo = validi[0];
+    blocco.replaceChildren(
+      crea('p', { className: 'nota' }, `${nomeSerie(confronto.codice)}: proiezioni rifatte da ${primo ? primo.tagli : 0} date fra ${primo ? primo.dal : '?'} e ${primo ? primo.al : '?'}, una ogni 6 mesi. «Errore» è l'errore quadratico medio fra proiezione e valore vero; la percentuale è quante volte il valore vero è caduto nella fascia 80% (se il modello è onesto, circa 80).`),
+      tabella,
+      crea('p', { className: 'nota' }, migliore ? `Il modello con l'errore più basso a ${confronto.orizzonte === 12 ? 'un anno' : 'due anni'} è ${Mod.MODELLI[migliore.modello].nome}${migliore.modello === 'costante' ? ': nessun modello ha fatto meglio del «resta com\'è», che è una lezione in sé.' : '.'} «Vedi» lo porta nel modulo qui sopra e calcola la proiezione.` : 'Nessun modello è stato confrontabile.'));
+  }
+  moduloConfronto.addEventListener('submit', evento => { evento.preventDefault(); eseguiConfronto(); });
+  $('#esito-confronto').addEventListener('click', evento => {
+    const pulsante = evento.target.closest('button[data-modello]');
+    if (!pulsante || !confronto) return;
+    const riga = confronto.righe.find(r => r.modello === pulsante.dataset.modello);
+    modulo.serie.value = confronto.codice;
+    modulo.modello.value = riga.modello;
+    disegnaParametri();
+    if (riga.modello === 'arima') { modulo.auto.checked = false; modulo.p.value = riga.opzioni.p; modulo.d.value = riga.opzioni.d; modulo.q.value = riga.opzioni.q; }
+    if (riga.modello === 'var') modulo.p.value = riga.opzioni.p;
+    modulo.requestSubmit();
+    modulo.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+
   // ---------- Esito in parole ----------
   function frasi(r) {
     const p = r.parametri, fine = r.proiezione[r.proiezione.length - 1], anni = r.h / 12;
@@ -173,6 +255,7 @@
     const righe = [`Serie usata: ${r.mesiStorico} mesi, fino al ${data(r.partenza.giorno)} (ultimo valore ${perc(r.partenza.valore, 3)}).`,
       `Valore atteso ${quando}: ${perc(fine.valore, 2)}; nell'80% dei casi fra ${perc(fine.basso80, 2)} e ${perc(fine.alto80, 2)}, nel 95% fra ${perc(fine.basso95, 2)} e ${perc(fine.alto95, 2)}.`];
     if (r.modello === 'media') righe.push(`Variazione media mensile ${punti(p.variazioneMedia, 3)}, con una variabilità tipica di ${ampiezza(p.deviazione)} al mese.`);
+    if (r.modello === 'costante') righe.push(`L'indice resta a ${perc(r.partenza.valore, 3)}; le fasce vengono dalla variabilità tipica delle variazioni mensili, ${ampiezza(p.deviazione)} al mese.`);
     if (r.modello === 'arima') {
       righe.push(`Modello ARIMA(${p.p},${p.d},${p.q})${p.auto ? ', scelto fra 12 combinazioni con il criterio AIC' : ''}; lavora ${p.d ? 'sulle variazioni mensili' : 'sui livelli'}.`);
       if (p.phi.length) righe.push(`Coefficienti AR: ${p.phi.map(v => numero(v, 3)).join(', ')}${p.theta.length ? `; MA: ${p.theta.map(v => numero(v, 3)).join(', ')}` : ''}; costante ${punti(p.c, 4)}.`);

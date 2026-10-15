@@ -110,6 +110,16 @@
       { parametri: { variazioneMedia: m, deviazione: Math.sqrt(v) } });
   }
 
+  // ---------- Nessun cambiamento ----------
+  // L'indice resta dov'è; l'incertezza è quella delle variazioni mensili passate. È il confronto minimo per ogni
+  // altro modello: se un modello non fa meglio di questo, non serve.
+  function modelloCostante(serie, { h }) {
+    controlla(serie, 3);
+    const d = differenze(serie.map(p => p.y)), v = varianza(d);
+    const ultimo = serie[serie.length - 1].y;
+    return esito(serie, new Array(h).fill(ultimo), Array.from({ length: h }, (_, i) => v * (i + 1)), { parametri: { deviazione: Math.sqrt(v) } });
+  }
+
   // ---------- ARIMA(p, d, q) ----------
   // Stima per somma dei quadrati condizionata (CSS) con Nelder-Mead; stime iniziali dai minimi quadrati sull'AR.
   // "psi" = i pesi della rappresentazione a media mobile, usati per la varianza delle previsioni e per il controllo
@@ -298,6 +308,7 @@
   // "serie" è la serie mensile scelta; per il VAR "altre" sono tutte le serie e "indice" la posizione di quella scelta.
   const MODELLI = {
     media: { nome: 'Media delle variazioni', breve: 'Media', calcola: (serie, o) => modelloMedia(serie, o) },
+    costante: { nome: 'Nessun cambiamento (resta com\'è)', breve: 'Costante', calcola: (serie, o) => modelloCostante(serie, o) },
     arima: { nome: 'ARIMA', breve: 'ARIMA', calcola: (serie, o) => arima(serie, o) },
     var: { nome: 'VAR (tutti gli Euribor insieme)', breve: 'VAR', calcola: (serie, o) => var_(o.altre, o) },
     garch: { nome: 'GARCH (volatilità)', breve: 'GARCH', calcola: (serie, o) => garch(serie, o) },
@@ -312,6 +323,33 @@
     r.h = h;
     return r;
   }
+  // ---------- Confronto all'indietro ----------
+  // Si finge di essere nel passato: per ogni data di taglio (una ogni "passo" mesi, negli ultimi "anni" anni) si
+  // stima il modello sui dati fino a lì e si confronta la proiezione con quello che è successo nei mesi dopo.
+  // Restituisce, per ogni orizzonte, errore medio assoluto, errore quadratico medio e quante volte il valore vero
+  // è caduto nelle fasce 80% e 95% (se il modello è onesto, circa l'80% e il 95% delle volte).
+  function confronta(modello, serie, opzioni, { anni = 10, passo = 6, orizzonti = [12, 24] } = {}) {
+    const n = serie.length, hMax = Math.max(...orizzonti);
+    const tagli = [];
+    for (let fine = n - hMax; fine >= Math.max(36, n - anni * 12 - hMax); fine -= passo) tagli.push(fine);
+    if (!tagli.length) throw new Error('Lo storico è troppo corto per un confronto all\'indietro.');
+    const conti = orizzonti.map(() => ({ abs: 0, quad: 0, dentro80: 0, dentro95: 0, quanti: 0 }));
+    let falliti = 0;
+    for (const fine of tagli) {
+      const parte = serie.slice(0, fine), ultimoMese = parte[parte.length - 1].mese;
+      let r;
+      try {
+        r = stima(modello, parte, { ...opzioni, h: hMax, altre: opzioni.altre ? opzioni.altre.map(l => l.filter(p => p.mese <= ultimoMese)) : undefined });
+      } catch { falliti++; continue; }
+      orizzonti.forEach((h, i) => {
+        const vero = serie[fine + h - 1].y, p = r.proiezione[h - 1], e = p.valore - vero, c = conti[i];
+        c.abs += Math.abs(e); c.quad += e * e; c.dentro80 += vero >= p.basso80 && vero <= p.alto80 ? 1 : 0; c.dentro95 += vero >= p.basso95 && vero <= p.alto95 ? 1 : 0; c.quanti++;
+      });
+    }
+    return { modello, tagli: tagli.length, falliti, dal: serie[tagli[tagli.length - 1] - 1].mese, al: serie[tagli[0] - 1].mese,
+      perOrizzonte: orizzonti.map((h, i) => { const c = conti[i]; return c.quanti ? { h, mae: c.abs / c.quanti, rmse: Math.sqrt(c.quad / c.quanti), copertura80: c.dentro80 / c.quanti, copertura95: c.dentro95 / c.quanti, quanti: c.quanti } : { h, quanti: 0 }; }) };
+  }
+
   // Funzione giorno → valore atteso, per il piano: interpola fra i mesi della proiezione; fino al giorno di partenza
   // restituisce null (il piano usa i valori veri o il suo metodo), oltre l'orizzonte tiene l'ultimo valore.
   const inGiorni = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000;
@@ -328,6 +366,6 @@
     };
   }
 
-  const Modelli = { MODELLI, stima, mensile, allinea, meseDopo, fineMese, perGiorno, strumenti: { ols, minimizza, risolvi, media, varianza } };
+  const Modelli = { MODELLI, stima, confronta, mensile, allinea, meseDopo, fineMese, perGiorno, strumenti: { ols, minimizza, risolvi, media, varianza } };
   if (radice.window) radice.window.Modelli = Modelli; else radice.module.exports = Modelli;
 })(typeof window !== 'undefined' ? { window } : { module });

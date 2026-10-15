@@ -259,6 +259,17 @@
           <div class="grafico" id="grafico-previsione"></div>
           <div id="esito-previsione"></div>
         </div>
+        <form class="carta" id="form-confronto">
+          <h2>Quale modello ha funzionato meglio in passato?</h2>
+          <p class="nota">Il programma finge di essere in una data passata, fa la proiezione con i dati disponibili fino a lì e la confronta con quello che è successo davvero. Lo ripete ogni sei mesi per tutti i modelli e misura chi ha sbagliato di meno a un anno e a due anni. Non è una garanzia per il futuro, ma dice quale modello ha descritto meglio questo indice finora.</p>
+          <div class="campi tre-colonne">
+            <label>Date passate da provare <select name="anni"><option value="5">ultimi 5 anni</option><option value="10" selected>ultimi 10 anni</option><option value="15">ultimi 15 anni</option></select></label>
+            <label>Scegli il migliore a <select name="orizzonte"><option value="12" selected>1 anno</option><option value="24">2 anni</option></select></label>
+          </div>
+          <div class="azioni"><button type="submit">Confronta i modelli</button></div>
+          <p class="nota evidenza" id="avviso-confronto" hidden></p>
+          <div class="blocco" id="esito-confronto"></div>
+        </form>
       </div>
     </section>
 

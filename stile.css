@@ -403,6 +403,9 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .frasi { margin: 12px 0; padding-left: 20px; font-size: 13.5px; }
 .frasi li { margin: 4px 0; }
 .tabella-previsione td, .tabella-previsione th { font-variant-numeric: tabular-nums; }
+.tabella-previsione tr.migliore td { font-weight: 600; background: var(--riga-pagata); }
+.tabella-previsione td.testo { color: var(--inchiostro-2); font-size: 12.5px; }
+#esito-confronto .tabella-previsione { margin: 10px 0; width: 100%; }
 .fumetto {
   position: absolute; pointer-events: none; background: var(--superficie); border: 1px solid var(--bordo);
   border-radius: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); padding: 7px 10px; font-size: 12px; white-space: nowrap;
