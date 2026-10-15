@@ -141,7 +141,8 @@
     if (!propria) voci.unshift(crea('option', { value: 'contratto' }, `${M.indice()} (${Mod.mensile(valoriContratto(stato.dati)).length} mesi inseriti)`));
     const attuale = modulo.serie.value;
     modulo.serie.replaceChildren(...voci);
-    modulo.serie.value = attuale && [...modulo.serie.options].some(o => o.value === attuale) ? attuale : propria ? propria.codice : 'contratto';
+    const valida = v => v && [...modulo.serie.options].some(o => o.value === v);
+    modulo.serie.value = valida(attuale) ? attuale : valida(scelte.serie) ? scelte.serie : propria ? propria.codice : 'contratto';
   }
   function disegnaParametri() {
     const modello = modulo.modello.value, blocco = $('#parametri-previsione');
@@ -178,12 +179,33 @@
     disegnaStatoPiano();
   }
   modulo.modello.replaceChildren(...Object.entries(Mod.MODELLI).map(([codice, m]) => crea('option', { value: codice }, m.nome)));
-  modulo.modello.value = 'vasicek';
   modulo.orizzonte.replaceChildren(...ORIZZONTI.map(([v, t]) => crea('option', { value: v, selected: v === '24' }, t)));
-  disegnaParametri();
+  // Le scelte del modulo restano nel browser (ricordo): a ogni riapertura si ritrovano, e la proiezione si ricalcola da sola.
+  const CHIAVE_SCELTE = 'previsioni';
+  let scelte = {};
+  try { scelte = JSON.parse(M.ricordo.leggi(CHIAVE_SCELTE) || '{}') || {}; } catch { scelte = {}; }
+  function salvaScelte() {
+    scelte = { serie: modulo.serie.value, modello: modulo.modello.value, orizzonte: modulo.orizzonte.value, scenario: modulo.scenario.value, ...opzioniScelte() };
+    M.ricordo.scrivi(CHIAVE_SCELTE, JSON.stringify(scelte));
+  }
+  const vale = (select, v) => v != null && [...select.options].some(o => o.value === String(v));
+  function ripristinaScelte() {
+    // Senza scelte ricordate: il modello che il piano sta usando, altrimenti Vasicek.
+    const delPiano = stato.dati && Mod.MODELLI[stato.dati.parametri.previsione_modello] && stato.dati.parametri.previsione_modello !== 'media' ? stato.dati.parametri.previsione_modello : null;
+    modulo.modello.value = vale(modulo.modello, scelte.modello) ? scelte.modello : delPiano || 'vasicek';
+    if (vale(modulo.orizzonte, scelte.orizzonte)) modulo.orizzonte.value = scelte.orizzonte;
+    disegnaParametri();
+    if (modulo.modello.value === 'arima' && scelte.p != null) { modulo.auto.checked = !!scelte.auto; modulo.p.value = scelte.p; modulo.d.value = scelte.d; modulo.q.value = scelte.q; }
+    else if (modulo.modello.value === 'arima' && delPiano === 'arima') { try { const o = JSON.parse(stato.dati.parametri.previsione_opzioni || '{}'); if (o.p != null) { modulo.auto.checked = !!o.auto; modulo.p.value = o.p; modulo.d.value = o.d; modulo.q.value = o.q; } } catch { /* opzioni non leggibili */ } }
+    if (modulo.modello.value === 'var' && scelte.p != null) modulo.p.value = scelte.p;
+    else if (modulo.modello.value === 'var' && delPiano === 'var') { try { const o = JSON.parse(stato.dati.parametri.previsione_opzioni || '{}'); if (vale(modulo.p, o.p)) modulo.p.value = o.p; } catch { /* opzioni non leggibili */ } }
+    if (vale(modulo.scenario, scelte.scenario)) { modulo.scenario.value = scelte.scenario; modulo.scenario.dataset.toccato = '1'; }
+  }
+  ripristinaScelte();
   modulo.modello.addEventListener('change', disegnaParametri);
-  modulo.addEventListener('submit', async evento => {
-    evento.preventDefault();
+  modulo.addEventListener('change', salvaScelte);
+  // Calcolo della proiezione con le scelte del modulo (dal pulsante, o da solo all'apertura della scheda).
+  async function eseguiCalcolo() {
     const pulsante = $('button[type="submit"]', modulo), codice = modulo.serie.value, modello = modulo.modello.value;
     const avviso = $('#avviso-previsione');
     avviso.hidden = true;
@@ -204,7 +226,8 @@
     } finally {
       pulsante.disabled = false;
     }
-  });
+  }
+  modulo.addEventListener('submit', evento => { evento.preventDefault(); salvaScelte(); eseguiCalcolo(); });
   $('#usa-previsione').addEventListener('click', () => {
     if (!ultimo) return;
     const scenario = SCENARI[modulo.scenario.value] ? modulo.scenario.value : 'atteso';
@@ -380,5 +403,15 @@
   M.viste.unshift(disegna);
   // previsioni.js si carica dopo tassi.js: all'apertura della scheda prima si aggiornano modulo e stato, poi il grafico.
   const aperturaTassi = M.allApertura.tassi;
-  M.allApertura.tassi = () => { disegna(); if (aperturaTassi) aperturaTassi(); };
+  let calcoloAutomaticoFatto = false;
+  M.allApertura.tassi = () => {
+    disegna();
+    if (aperturaTassi) aperturaTassi();
+    if (!calcoloAutomaticoFatto && stato.dati && !ultimo) {
+      calcoloAutomaticoFatto = true;
+      if (!scelte.modello) ripristinaScelte();   // il modello del piano, noto solo ora che i dati ci sono
+      const codice = modulo.serie.value;
+      if (codice === 'contratto' || Mod.mensile(valoriSerie(codice, stato.dati)).length >= 36) eseguiCalcolo();
+    }
+  };
 })();
