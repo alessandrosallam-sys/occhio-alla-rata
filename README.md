@@ -16,6 +16,8 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 
 Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il grafico («Cambia» lo apre). Sul telefono le pagine si scelgono dalla barra in basso e la tabella del piano scorre in orizzontale tenendo ferma la colonna delle rate. Il tema chiaro o scuro segue quello del sistema.
 
+**Aspetto**: dal pulsante «Aspetto» (o dal pannello di controllo) si sceglie fra otto temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia e Contrasto alto. Cambia solo l'aspetto; la scelta resta nel browser.
+
 I dati stanno nel browser (`localStorage`): se cancelli i dati di navigazione li perdi. Per questo c'è «Salva su file».
 
 ## Cosa sa calcolare
@@ -62,7 +64,8 @@ Tutto è HTML, CSS e JavaScript scritti a mano, senza librerie né passaggi di c
 
 ```
 index.html            pagina unica: guida iniziale + cinque schede (Piano, Tassi, Calendario, Festività, Pannello)
-stile.css             stile, tema chiaro e scuro
+stile.css             stile: un blocco di variabili per ogni tema, poi i componenti
+temi.js               scelta del tema (prima del disegno) e selettore «Aspetto»
 calcolo.js            motore di calcolo con le regole sceglibili, e taratura automatica
 archivio.js           dati nel browser: lettura, scrittura, controlli, salvataggio e caricamento su file
 app.js                nucleo della pagina: formati, piano, statistiche, pannello di controllo

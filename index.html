@@ -6,6 +6,9 @@
   <meta name="color-scheme" content="light dark">
   <title>Mutuo variabile</title>
   <link rel="stylesheet" href="stile.css">
+  <meta name="theme-color" content="#ffffff">
+  <!-- Il tema si sceglie qui, prima che la pagina si disegni (temi.js) -->
+  <script src="temi.js"></script>
 </head>
 <body>
   <!-- Testata: nome del mutuo, schede (in basso sui telefoni), configurazione -->
@@ -32,9 +35,14 @@
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg>
           <span>Pannello<span class="solo-largo"> di controllo</span></span></button>
       </nav>
+      <div class="azioni-testata">
+        <button type="button" class="secondario pulsante-icona" id="scegli-tema" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu-temi" title="Cambia i colori e l'aspetto della pagina">
+          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a8.8 8.8 0 1 0 0 17.6c1.2 0 1.9-1 1.5-2-.4-1.2.4-2.3 1.7-2.3h1.9a3.9 3.9 0 0 0 3.9-3.9c0-5.3-4-9.4-9-9.4z"/><circle cx="7.6" cy="11.2" r="1.2"/><circle cx="9.9" cy="7.2" r="1.2"/><circle cx="14.6" cy="7.4" r="1.2"/></svg>
+          <span class="testo-pulsante">Aspetto</span><span class="tema-attuale"></span></button>
       <button type="button" class="secondario pulsante-icona" id="apri-configurazione" title="Rivedi o rifai la configurazione guidata del mutuo" hidden>
         <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M5.5 18.5l2.1-2.1M16.4 7.6l2.1-2.1"/></svg>
         <span class="testo-pulsante">Configurazione</span></button>
+      </div>
     </div>
   </header>
 
@@ -419,10 +427,19 @@
           </div>
         </section>
 
+        <section class="gruppo-pannello" aria-labelledby="titolo-gruppo-aspetto">
+          <h2 class="titolo-gruppo" id="titolo-gruppo-aspetto">Aspetto della pagina</h2>
+          <p class="nota">Scegli i colori che preferisci: cambia solo l'aspetto, i dati e i calcoli restano uguali. Lo stesso elenco si apre dal pulsante «Aspetto» in alto.</p>
+          <div id="griglia-temi-pannello"></div>
+        </section>
+
         <p class="nota piede">È uno strumento di controllo, non una consulenza: i conti che fanno fede sono quelli della banca.</p>
       </div>
     </section>
   </main>
+
+  <!-- Riquadro dei temi: si apre dal pulsante «Aspetto» (temi.js) -->
+  <div class="menu-temi" id="menu-temi" role="dialog" hidden></div>
 
   <div id="avviso" class="notifica" role="status" aria-live="polite" hidden></div>
 
