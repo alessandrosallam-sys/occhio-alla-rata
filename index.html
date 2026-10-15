@@ -90,26 +90,26 @@
               <li><span class="chiave-linea tendenza"></span>tendenza lineare</li>
               <li><span class="chiave-linea media"></span>media del periodo</li>
               <li><span class="chiave-punto"></span>usato per una rata</li>
+              <li><span class="chiave-linea proiezione"></span>proiezione (valore atteso)</li>
+              <li><span class="chiave-banda"></span>fasce 80% e 95%</li>
             </ul>
           </div>
           <div class="grafico" id="grafico"></div>
-        </div>
 
-        <!-- Proiezioni dell'indice: modelli, scenari sulle rate, confronto all'indietro (previsioni.js) -->
-        <div class="carta">
-          <h2>Dove potrebbe andare l'indice: proiezioni</h2>
-          <p class="nota">Qui guardi la storia dell'Euribor dal 1999 e provi a proiettarla in avanti con diversi modelli statistici. Ogni modello dà un valore atteso e due fasce: quella dell'80% e quella del 95% dei casi, secondo il modello. Attenzione: i modelli conoscono solo il passato della serie, non le decisioni future della BCE, l'inflazione o le crisi. Le fasce dicono quanto l'indice è stato variabile finora, non cosa succederà: usale per immaginare le rate in scenari diversi, non come una previsione.</p>
-          <form id="form-previsioni">
-            <div class="campi due-colonne">
-              <label>Serie storica <select name="serie"></select></label>
+          <!-- Proiezione in avanti: modelli, scenari sulle rate, scelta per il piano (previsioni.js). Il disegno è nel grafico sopra. -->
+          <form class="blocco" id="form-previsioni">
+            <h3>Proiezione in avanti</h3>
+            <p class="nota">A destra dell'ultimo valore il grafico mostra dove potrebbe andare l'indice secondo il modello scelto, con due fasce: quella dell'80% e quella del 95% dei casi. I modelli conoscono solo il passato della serie, non le decisioni future della BCE: usali per immaginare le rate in scenari diversi, non come una previsione.</p>
+            <div class="campi tre-colonne">
+              <label>Serie <select name="serie"></select></label>
               <label>Modello <select name="modello"></select></label>
               <label>Quanto avanti <select name="orizzonte"></select></label>
-              <label>Storico nel grafico <select name="storico"><option value="5">ultimi 5 anni</option><option value="10" selected>ultimi 10 anni</option><option value="0">tutto, dal 1999</option></select></label>
             </div>
             <div class="campi tre-colonne" id="parametri-previsione"></div>
             <p class="nota" id="descrizione-modello"></p>
             <div class="azioni"><button type="submit">Calcola la proiezione</button></div>
             <p class="nota evidenza" id="avviso-previsione" hidden></p>
+            <div id="esito-previsione"></div>
             <div class="blocco" id="rate-future">
               <h3>Tassi per le rate future del piano</h3>
               <p class="nota" id="stato-previsione"></p>
@@ -120,18 +120,7 @@
             </div>
           </form>
         </div>
-        <div class="carta">
-          <div class="intestazione-carta">
-            <h2 id="titolo-previsione">Proiezione</h2>
-            <ul class="legenda">
-              <li><span class="chiave-linea serie"></span>storico (fine mese)</li>
-              <li><span class="chiave-linea proiezione"></span>valore atteso</li>
-              <li><span class="chiave-banda"></span>fascia 80% e 95%</li>
-            </ul>
-          </div>
-          <div class="grafico" id="grafico-previsione"></div>
-          <div id="esito-previsione"></div>
-        </div>
+
         <form class="carta" id="form-confronto">
           <h2>Quale modello ha funzionato meglio in passato?</h2>
           <p class="nota">Il programma finge di essere in una data passata, fa la proiezione con i dati disponibili fino a lì e la confronta con quello che è successo davvero. Lo ripete ogni sei mesi per tutti i modelli e misura chi ha sbagliato di meno a un anno e a due anni. Non è una garanzia per il futuro, ma dice quale modello ha descritto meglio questo indice finora.</p>

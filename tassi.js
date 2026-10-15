@@ -5,10 +5,11 @@
   const M = window.Mutuo;
   const { stato, $, crea, esegui, avvisa, modificaCella, MESI, data, meseAnno, giornoSettimana, perc, leggiNumero, daPercento } = M;
 
-  // [codice, etichetta, mesi all'indietro dall'ultimo tasso] — 0 = tutto lo storico
-  const PERIODI = [['3m', '3 mesi', 3], ['6m', '6 mesi', 6], ['1a', '1 anno', 12], ['2a', '2 anni', 24], ['tutto', 'Tutto', 0]];
-  const filtro = { periodo: 'tutto', da: '', a: '' };
+  // [codice, etichetta, mesi all'indietro dall'ultimo tasso] — null = il periodo del mutuo, 0 = tutto lo storico
+  const PERIODI = [['mutuo', 'Il mio mutuo', null], ['1a', '1 anno', 12], ['2a', '2 anni', 24], ['5a', '5 anni', 60], ['10a', '10 anni', 120], ['tutto', 'Tutto', 0]];
+  const filtro = { periodo: 'mutuo', da: '', a: '' };
   let scelti = [];        // punti del periodo scelto
+  let serieMostrata = { nome: '', valori: [], delContratto: true };   // la serie nel grafico (vedi serieCompleta)
 
   const inPunti = tassi => tassi.map(t => ({ x: Calcolo.isoInGiorno(t.giorno), y: t.tasso_360, giorno: t.giorno }));
   // Differenze fra tassi in punti percentuali, con il segno.
@@ -25,30 +26,35 @@
   const usiDeiTassi = () => new Map(stato.piano.righe.filter(r => r.origineEuribor === 'db' && !r.eredita && !r.mediaDi).map(r => [r.riferimento, r]));
   // Rate per data di riferimento, qualunque sia l'origine del tasso.
   const ratePerRiferimento = () => new Map(stato.piano.righe.filter(r => !r.eredita && !r.mediaDi).map(r => [r.riferimento, r]));
+  // La serie da mostrare: tutta la storia dell'indice (valori nel programma, scaricati e inseriti), scelta nella sezione
+  // delle proiezioni (previsioni.js); se quella sezione non c'è, i soli valori inseriti.
+  const serieCompleta = () => (M.serieGrafico ? M.serieGrafico() : { nome: M.indice(), valori: stato.dati.euribor, delContratto: true });
 
-  function intervallo() {
-    const tutti = stato.dati.euribor;
+  function intervallo(tutti) {
     if (!tutti.length) return { da: '', a: '' };
     const primo = tutti[0].giorno, ultimo = tutti[tutti.length - 1].giorno;
     if (filtro.periodo === 'personalizzato') return { da: filtro.da || primo, a: filtro.a || ultimo };
     const mesi = PERIODI.find(p => p[0] === filtro.periodo)[2];
+    if (mesi === null) return { da: window.TassiInternet ? TassiInternet.inizioScarico(stato.dati.parametri.data_prima_rata) : primo, a: ultimo };
     return { da: mesi ? mesiPrima(ultimo, mesi) : primo, a: ultimo };
   }
 
   function disegna() {
-    const { da, a } = intervallo();
-    const tutti = inPunti(stato.dati.euribor);
+    serieMostrata = serieCompleta();
+    const tutti = inPunti([...serieMostrata.valori].sort((a, b) => a.giorno.localeCompare(b.giorno)));
+    const { da, a } = intervallo(tutti);
     scelti = tutti.filter(p => p.giorno >= da && p.giorno <= a);
     disegnaFiltri(da, a, tutti.length);
     disegnaStatistiche(tutti);
     disegnaPerAnno();
-    disegnaTabella();
+    disegnaTabella(da, a);
     disegnaModuli();
     disegnaDisponibili();
     disegnaInternet();
-    $('#titolo-grafico').textContent = M.indice();
+    $('#titolo-grafico').textContent = serieMostrata.nome;
     if (!$('#scheda-tassi').hidden) disegnaGrafico();
   }
+  M.ridisegnaTassi = disegna;
 
   // ---------- Filtro ----------
   $('#periodi-tassi').replaceChildren(...PERIODI.map(([codice, etichetta]) =>
@@ -57,7 +63,7 @@
     for (const pulsante of $('#periodi-tassi').children) pulsante.setAttribute('aria-pressed', pulsante.dataset.periodo === filtro.periodo);
     $('#filtro-da').value = da;
     $('#filtro-a').value = a;
-    $('#conteggio-tassi').textContent = scelti.length === totale ? `${totale} rilevazioni` : `${scelti.length} rilevazioni su ${totale}`;
+    $('#conteggio-tassi').textContent = (scelti.length === totale ? `${totale} rilevazioni` : `${scelti.length} rilevazioni su ${totale}`) + (serieMostrata.delContratto ? ` (${stato.dati.euribor.length} inserite)` : '');
   }
   $('#periodi-tassi').addEventListener('click', evento => {
     const pulsante = evento.target.closest('button[data-periodo]');
@@ -67,7 +73,7 @@
   });
   for (const campo of ['da', 'a']) {
     $('#filtro-' + campo).addEventListener('change', evento => {
-      const attuale = intervallo();
+      const attuale = intervallo(inPunti([...serieMostrata.valori].sort((a, b) => a.giorno.localeCompare(b.giorno))));
       Object.assign(filtro, { periodo: 'personalizzato', da: attuale.da, a: attuale.a, [campo]: evento.target.value });
       disegna();
     });
@@ -119,11 +125,13 @@
   }
 
   // ---------- Tabella dei tassi ----------
-  function disegnaTabella() {
-    const usi = usiDeiTassi(), perGiorno = new Map(stato.dati.euribor.map(t => [t.giorno, t]));
+  // Solo i valori inseriti nel mutuo (quelli che il calcolo usa e che si possono modificare), nel periodo scelto.
+  function disegnaTabella(da, a) {
+    const usi = usiDeiTassi();
+    const propri = inPunti(stato.dati.euribor).filter(p => p.giorno >= da && p.giorno <= a);
     const righe = [];
-    for (let i = scelti.length - 1; i >= 0; i--) {
-      const t = perGiorno.get(scelti[i].giorno), uso = usi.get(t.giorno), prima = scelti[i - 1];
+    for (let i = propri.length - 1; i >= 0; i--) {
+      const t = stato.dati.euribor.find(v => v.giorno === propri[i].giorno), uso = usi.get(t.giorno), prima = propri[i - 1];
       righe.push(crea('tr', { 'data-giorno': t.giorno },
         crea('td', {}, data(t.giorno)),
         crea('td', { className: 'testo' }, giornoSettimana(t.giorno)),
@@ -157,7 +165,9 @@
   });
 
   // ---------- Grafico ----------
-  // Linea dell'indice nel periodo scelto, retta di tendenza, minimo e massimo, e le rilevazioni usate dalle rate.
+  // Linea dell'indice nel periodo scelto (tutta la serie, non solo i valori inseriti), retta di tendenza, minimo e
+  // massimo, le rilevazioni usate dalle rate e, a destra dell'ultimo valore, la proiezione scelta nella sezione sotto
+  // (previsioni.js): valore atteso tratteggiato, fasce 80% e 95%, e lo scenario usato dal piano se non è quello atteso.
   function disegnaGrafico() {
     const contenitore = $('#grafico');
     if (scelti.length < 2) { contenitore.replaceChildren(crea('p', { className: 'nota' }, 'Servono almeno due tassi nel periodo per disegnare il grafico.')); return; }
@@ -168,13 +178,16 @@
       if (testo != null) el.textContent = testo;
       return el;
     };
-    const serie = scelti, s = Calcolo.statistiche(serie), usi = usiDeiTassi();
+    const serie = scelti, s = Calcolo.statistiche(serie), usi = serieMostrata.delContratto ? usiDeiTassi() : new Map();
+    const pro = M.proiezionePerGrafico ? M.proiezionePerGrafico() : null;
+    const futuro = pro ? pro.risultato.proiezione.map(p => ({ x: Calcolo.isoInGiorno(p.giorno), ...p })) : [];
+    const partenza = pro ? { x: Calcolo.isoInGiorno(pro.risultato.partenza.giorno), y: pro.risultato.partenza.valore } : null;
     const larghezza = Math.max(contenitore.clientWidth, 320), altezza = 340;
     const margine = { sopra: 22, destra: 70, sotto: 26, sinistra: 46 };
-    const x0 = s.primo.x, x1 = s.ultimo.x;
+    const x0 = s.primo.x, xStorico = s.ultimo.x, x1 = futuro.length ? Math.max(xStorico, futuro[futuro.length - 1].x) : xStorico;
 
     // Scala verticale con valori tondi
-    const estremi = [s.minimo.y, s.massimo.y, s.tendenza(x0), s.tendenza(x1)];
+    const estremi = [s.minimo.y, s.massimo.y, s.tendenza(x0), s.tendenza(xStorico), ...futuro.flatMap(p => [p.basso95, p.alto95])];
     const minimo = Math.min(...estremi), massimo = Math.max(...estremi);
     const passo = [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.02, 0.05, 0.1].find(p => (massimo - minimo) / p <= 6) || 0.2;
     // Un po' di margine sopra e sotto, così le etichette di minimo e massimo non toccano gli assi.
@@ -184,15 +197,16 @@
     const sx = x => margine.sinistra + (x - x0) / (x1 - x0) * (larghezza - margine.sinistra - margine.destra);
     const sy = y => margine.sopra + (y1 - y) / (y1 - y0) * (altezza - margine.sopra - margine.sotto);
 
+    const descrizioneProiezione = pro ? ` Proiezione ${pro.nome} fino a ${data(futuro[futuro.length - 1].giorno)}: valore atteso ${perc(futuro[futuro.length - 1].valore, 2)}.` : '';
     const radice = svg('svg', { viewBox: `0 0 ${larghezza} ${altezza}`, height: altezza, tabindex: 0, role: 'img',
-      'aria-label': `${M.indice()} dal ${data(s.primo.giorno)} al ${data(s.ultimo.giorno)}: minimo ${perc(s.minimo.y, 3)}, massimo ${perc(s.massimo.y, 3)}, ultimo ${perc(s.ultimo.y, 3)}. Frecce sinistra e destra per leggere i valori.` });
+      'aria-label': `${serieMostrata.nome} dal ${data(s.primo.giorno)} al ${data(s.ultimo.giorno)}: minimo ${perc(s.minimo.y, 3)}, massimo ${perc(s.massimo.y, 3)}, ultimo ${perc(s.ultimo.y, 3)}.${descrizioneProiezione} Frecce sinistra e destra per leggere i valori.` });
     for (let y = y0; y <= y1 + passo / 2; y += passo) {
       radice.append(svg('line', { class: 'griglia', x1: margine.sinistra, x2: larghezza - margine.destra, y1: sy(y), y2: sy(y) }),
         svg('text', { x: margine.sinistra - 8, y: sy(y) + 4, 'text-anchor': 'end' }, perc(y, decimali)));
     }
     // Asse del tempo: una tacca ogni N mesi, in modo che le etichette non si tocchino
     const pixelPerMese = (larghezza - margine.sinistra - margine.destra) / Math.max((x1 - x0) / 30.44, 0.5);
-    const ogniMesi = [1, 3, 6, 12, 24, 60].find(n => n * pixelPerMese >= 64) || 120;
+    const ogniMesi = [1, 3, 6, 12, 24, 60, 120].find(n => n * pixelPerMese >= 64) || 240;
     for (let anno = new Date(x0 * 86400000).getUTCFullYear(), mese = 0; ; mese += ogniMesi) {
       const x = Date.UTC(anno, mese, 1) / 86400000;
       if (x > x1) break;
@@ -203,9 +217,23 @@
         svg('text', { x: sx(x), y: altezza - 6, 'text-anchor': 'middle' }, etichetta));
     }
     radice.append(svg('line', { class: 'asse', x1: margine.sinistra, x2: larghezza - margine.destra, y1: altezza - margine.sotto, y2: altezza - margine.sotto }));
-    radice.append(svg('line', { class: 'media', x1: margine.sinistra, x2: larghezza - margine.destra, y1: sy(s.media), y2: sy(s.media) }));
-    radice.append(svg('line', { class: 'tendenza', x1: sx(x0), y1: sy(s.tendenza(x0)), x2: sx(x1), y2: sy(s.tendenza(x1)) }));
+    // Proiezione: fasce (dal punto di partenza), separatore, linea tratteggiata, scenario usato dal piano.
+    if (futuro.length) {
+      const inizio = { x: partenza.x, basso80: partenza.y, alto80: partenza.y, basso95: partenza.y, alto95: partenza.y, valore: partenza.y };
+      const banda = (basso, alto, classe) => svg('path', { class: classe, d: [inizio, ...futuro].map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p[alto]).toFixed(1)}`).join('') + [...futuro].reverse().concat(inizio).map(p => `L${sx(p.x).toFixed(1)} ${sy(p[basso]).toFixed(1)}`).join('') + 'Z' });
+      radice.append(banda('basso95', 'alto95', 'banda95'), banda('basso80', 'alto80', 'banda80'));
+      radice.append(svg('line', { class: 'separatore', x1: sx(partenza.x), x2: sx(partenza.x), y1: margine.sopra, y2: altezza - margine.sotto }));
+    }
+    radice.append(svg('line', { class: 'media', x1: margine.sinistra, x2: sx(xStorico), y1: sy(s.media), y2: sy(s.media) }));
+    radice.append(svg('line', { class: 'tendenza', x1: sx(x0), y1: sy(s.tendenza(x0)), x2: sx(xStorico), y2: sy(s.tendenza(xStorico)) }));
     radice.append(svg('path', { class: 'linea', d: serie.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join('') }));
+    if (futuro.length) {
+      const inizio = { x: partenza.x, valore: partenza.y, [pro.campo]: partenza.y };
+      radice.append(svg('path', { class: 'proiezione', d: [inizio, ...futuro].map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p.valore).toFixed(1)}`).join('') }));
+      if (pro.campo !== 'valore') radice.append(svg('path', { class: 'scenario', d: [inizio, ...futuro].map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p[pro.campo]).toFixed(1)}`).join('') }));
+      const fine = futuro[futuro.length - 1];
+      radice.append(svg('text', { class: 'finale proiezione-testo', x: sx(fine.x) + 8, y: sy(fine[pro.campo]) + 4 }, perc(fine[pro.campo], 2)));
+    }
     // Rilevazioni usate per calcolare una rata
     for (const p of serie) if (usi.has(p.giorno)) radice.append(svg('circle', { class: 'usato', cx: sx(p.x), cy: sy(p.y), r: 3.5 }));
     // Minimo e massimo del periodo (se non coincidono con l'ultimo punto, che ha già la sua etichetta)
@@ -218,23 +246,32 @@
     etichettaEstremo(s.massimo, 'max', true);
     etichettaEstremo(s.minimo, 'min', false);
     radice.append(svg('circle', { class: 'punto', cx: sx(s.ultimo.x), cy: sy(s.ultimo.y), r: 4 }),
-      svg('text', { class: 'finale', x: sx(s.ultimo.x) + 9, y: sy(s.ultimo.y) + 4 }, perc(s.ultimo.y, 3)));
+      svg('text', { class: 'finale', x: sx(s.ultimo.x) + (futuro.length ? -9 : 9), y: sy(s.ultimo.y) + (futuro.length ? -8 : 4), 'text-anchor': futuro.length ? 'end' : 'start' }, perc(s.ultimo.y, 3)));
 
-    // Lettura dei valori: mirino verticale che si aggancia alla data più vicina
+    // Lettura dei valori: mirino verticale che si aggancia alla data più vicina (storico o proiezione)
     const mirino = svg('line', { class: 'mirino', y1: margine.sopra, y2: altezza - margine.sotto, visibility: 'hidden' });
     const segnale = svg('circle', { class: 'punto', r: 4, visibility: 'hidden' });
     const fumetto = crea('div', { className: 'fumetto', hidden: true });
     radice.append(mirino, segnale);
+    const tutti = [...serie.map(p => ({ x: p.x, y: p.y, storico: p })), ...futuro.map(f => ({ x: f.x, y: f[pro.campo], futuro: f }))];
     let indice = serie.length - 1;
     const mostra = i => {
-      indice = Math.max(0, Math.min(serie.length - 1, i));
-      const p = serie[indice], prima = serie[indice - 1], uso = usi.get(p.giorno), px = sx(p.x), py = sy(p.y);
+      indice = Math.max(0, Math.min(tutti.length - 1, i));
+      const t = tutti[indice], px = sx(t.x), py = sy(t.y);
       mirino.setAttribute('x1', px); mirino.setAttribute('x2', px); mirino.setAttribute('visibility', 'visible');
       segnale.setAttribute('cx', px); segnale.setAttribute('cy', py); segnale.setAttribute('visibility', 'visible');
-      fumetto.replaceChildren(crea('strong', {}, perc(p.y, 3)), crea('span', {}, `${giornoSettimana(p.giorno)} ${data(p.giorno)}`),
-        ...(prima ? [crea('span', {}, `${punti(p.y - prima.y)} dal ${data(prima.giorno)}`)] : []),
-        crea('span', {}, `media ${perc(s.media, 3)} · tendenza ${perc(s.tendenza(p.x), 3)}`),
-        ...(uso ? [crea('span', { className: 'in-evidenza' }, `usato per la rata di ${meseAnno(uso.inizio)}`)] : []));
+      if (t.storico) {
+        const p = t.storico, prima = tutti[indice - 1] && tutti[indice - 1].storico, uso = usi.get(p.giorno);
+        fumetto.replaceChildren(crea('strong', {}, perc(p.y, 3)), crea('span', {}, `${giornoSettimana(p.giorno)} ${data(p.giorno)}`),
+          ...(prima ? [crea('span', {}, `${punti(p.y - prima.y)} dal ${data(prima.giorno)}`)] : []),
+          crea('span', {}, `media ${perc(s.media, 3)} · tendenza ${perc(s.tendenza(p.x), 3)}`),
+          ...(uso ? [crea('span', { className: 'in-evidenza' }, `usato per la rata di ${meseAnno(uso.inizio)}`)] : []));
+      } else {
+        const f = t.futuro;
+        fumetto.replaceChildren(crea('strong', {}, perc(f[pro.campo], 2)), crea('span', {}, `${MESI[+f.mese.slice(5, 7) - 1]} ${f.mese.slice(0, 4)} · proiezione ${pro.nome}`),
+          ...(pro.campo !== 'valore' ? [crea('span', {}, `valore atteso ${perc(f.valore, 2)}`)] : []),
+          crea('span', {}, `80%: ${perc(f.basso80, 2)} – ${perc(f.alto80, 2)}`), crea('span', {}, `95%: ${perc(f.basso95, 2)} – ${perc(f.alto95, 2)}`));
+      }
       fumetto.hidden = false;
       const aDestra = px + 14 + fumetto.offsetWidth <= larghezza;
       fumetto.style.left = (aDestra ? px + 14 : px - 14 - fumetto.offsetWidth) + 'px';
@@ -244,9 +281,9 @@
     radice.addEventListener('pointermove', evento => {
       const riquadro = radice.getBoundingClientRect();
       const x = x0 + (evento.clientX - riquadro.left - margine.sinistra) / (larghezza - margine.sinistra - margine.destra) * (x1 - x0);
-      let basso = 0, alto = serie.length - 1;
-      while (alto - basso > 1) { const medio = (basso + alto) >> 1; if (serie[medio].x < x) basso = medio; else alto = medio; }
-      mostra(x - serie[basso].x <= serie[alto].x - x ? basso : alto);
+      let basso = 0, alto = tutti.length - 1;
+      while (alto - basso > 1) { const medio = (basso + alto) >> 1; if (tutti[medio].x < x) basso = medio; else alto = medio; }
+      mostra(x - tutti[basso].x <= tutti[alto].x - x ? basso : alto);
     });
     radice.addEventListener('pointerleave', nascondi);
     radice.addEventListener('focus', () => mostra(indice));

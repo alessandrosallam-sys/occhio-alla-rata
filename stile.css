@@ -396,6 +396,10 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .grafico .banda80 { fill: var(--serie); opacity: 0.18; }
 .grafico .proiezione { fill: none; stroke: var(--accento); stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; }
 .grafico .separatore { stroke: var(--linea-forte); stroke-width: 1; stroke-dasharray: 2 3; }
+.grafico .scenario { fill: none; stroke: var(--accento); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.grafico text.proiezione-testo { fill: var(--accento-testo); }
+#form-previsioni h3, #esito-previsione h3 { margin: 0 0 6px; font-size: 15px; }
+#esito-previsione h3 { margin-top: 14px; }
 .chiave-linea.proiezione { border-top: 2px dashed var(--accento); }
 .chiave-banda { width: 18px; height: 10px; border-radius: 2px; background: var(--serie); opacity: 0.25; }
 #parametri-previsione:empty { display: none; }

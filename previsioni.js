@@ -176,7 +176,6 @@
     if (!stato.dati) return;
     disegnaSerie();
     disegnaStatoPiano();
-    if (!ultimo) disegnaGrafico();
   }
   modulo.modello.replaceChildren(...Object.entries(Mod.MODELLI).map(([codice, m]) => crea('option', { value: codice }, m.nome)));
   modulo.modello.value = 'vasicek';
@@ -196,9 +195,9 @@
       const { risultato, serie } = calcola(modello, codice, { ...opzioniScelte(), h }, stato.dati);
       ultimo = { risultato, serie, codice, modello, opzioni: opzioniScelte() };
       disegnaSerie();
-      disegnaGrafico();
       disegnaEsito();
       disegnaStatoPiano();
+      ridisegna();
     } catch (errore) {
       avviso.textContent = errore.message;
       avviso.hidden = false;
@@ -331,88 +330,55 @@
   }
   function disegnaEsito() {
     const r = ultimo.risultato, blocco = $('#esito-previsione');
-    $('#titolo-previsione').textContent = `${nomeSerie(ultimo.codice)}: proiezione ${Mod.MODELLI[r.modello].breve}`;
     const tabella = crea('table', { className: 'tabella-previsione' }, crea('thead', {}, crea('tr', {}, ...['Mese', 'Atteso', 'Fascia 80%', 'Fascia 95%'].map(t => crea('th', {}, t)))),
       crea('tbody', {}, ...r.proiezione.filter((p, i) => i < 12 || (i + 1) % 12 === 0 || i === r.proiezione.length - 1).map(p => crea('tr', {},
         crea('td', {}, `${MESI[+p.mese.slice(5, 7) - 1]} ${p.mese.slice(0, 4)}`), crea('td', {}, perc(p.valore, 2)),
         crea('td', {}, `${perc(p.basso80, 2)} – ${perc(p.alto80, 2)}`), crea('td', {}, `${perc(p.basso95, 2)} – ${perc(p.alto95, 2)}`)))));
-    blocco.replaceChildren(crea('ul', { className: 'frasi' }, ...frasi(r).map(f => crea('li', {}, f))),
+    blocco.replaceChildren(crea('h3', {}, `${nomeSerie(ultimo.codice)}: proiezione ${Mod.MODELLI[r.modello].breve}`), crea('ul', { className: 'frasi' }, ...frasi(r).map(f => crea('li', {}, f))),
       crea('details', {}, crea('summary', {}, 'Tabella della proiezione (primi 12 mesi, poi un valore all\'anno)'), crea('div', { className: 'contenitore-tabella semplice' }, tabella)),
       ...tabellaScenari());
   }
 
-  // ---------- Grafico ----------
-  function disegnaGrafico() {
-    const contenitore = $('#grafico-previsione');
-    if (!ultimo) { contenitore.replaceChildren(crea('p', { className: 'nota' }, 'Scegli serie e modello e premi «Calcola la proiezione».')); return; }
-    const NS = 'http://www.w3.org/2000/svg';
-    const svg = (tag, attributi = {}, testo) => { const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attributi)) el.setAttribute(k, v); if (testo != null) el.textContent = testo; return el; };
-    const r = ultimo.risultato, anniStorico = +modulo.storico.value;
-    const partenza = inGiorni(r.partenza.giorno);
-    const storico = ultimo.serie.map(p => ({ x: inGiorni(p.giorno), y: p.y, mese: p.mese })).filter(p => !anniStorico || p.x >= partenza - anniStorico * 365.25);
-    const futuro = r.proiezione.map(p => ({ x: inGiorni(p.giorno), ...p }));
-    const larghezza = Math.max(contenitore.clientWidth, 320), altezza = 340;
-    const margine = { sopra: 22, destra: 70, sotto: 26, sinistra: 46 };
-    const x0 = storico[0].x, x1 = futuro[futuro.length - 1].x;
-    const valoriY = [...storico.map(p => p.y), ...futuro.flatMap(p => [p.basso95, p.alto95])];
-    const minimo = Math.min(...valoriY), massimo = Math.max(...valoriY);
-    const passo = [0.0025, 0.005, 0.01, 0.02, 0.05, 0.1].find(p => (massimo - minimo) / p <= 7) || 0.2;
-    const y0 = Math.floor((minimo - 0.3 * passo) / passo + 1e-9) * passo, y1 = Math.max(Math.ceil((massimo + 0.3 * passo) / passo - 1e-9) * passo, y0 + passo);
-    const decimali = passo < 0.01 ? (passo === 0.0025 ? 2 : 1) : 0;
-    const sx = x => margine.sinistra + (x - x0) / (x1 - x0) * (larghezza - margine.sinistra - margine.destra);
-    const sy = y => margine.sopra + (y1 - y) / (y1 - y0) * (altezza - margine.sopra - margine.sotto);
-    const radice = svg('svg', { viewBox: `0 0 ${larghezza} ${altezza}`, height: altezza, role: 'img', tabindex: 0,
-      'aria-label': `${nomeSerie(ultimo.codice)}: storico e proiezione ${Mod.MODELLI[r.modello].breve} fino a ${data(r.proiezione[r.proiezione.length - 1].giorno)}` });
-    for (let y = y0; y <= y1 + passo / 2; y += passo) radice.append(svg('line', { class: 'griglia', x1: margine.sinistra, x2: larghezza - margine.destra, y1: sy(y), y2: sy(y) }), svg('text', { x: margine.sinistra - 8, y: sy(y) + 4, 'text-anchor': 'end' }, perc(y, decimali)));
-    const pixelPerMese = (larghezza - margine.sinistra - margine.destra) / Math.max((x1 - x0) / 30.44, 1);
-    const ogniMesi = [1, 3, 6, 12, 24, 60, 120].find(n => n * pixelPerMese >= 64) || 240;
-    for (let anno = new Date(x0 * 86400000).getUTCFullYear(), mese = 0; ; mese += ogniMesi) {
-      const x = Date.UTC(anno, mese, 1) / 86400000;
-      if (x > x1) break;
-      if (x < x0) continue;
-      const d = new Date(x * 86400000);
-      radice.append(svg('line', { class: 'asse', x1: sx(x), x2: sx(x), y1: altezza - margine.sotto, y2: altezza - margine.sotto + 5 }),
-        svg('text', { x: sx(x), y: altezza - 6, 'text-anchor': 'middle' }, d.getUTCMonth() === 0 ? String(d.getUTCFullYear()) : `${MESI[d.getUTCMonth()].slice(0, 3)} ${String(d.getUTCFullYear()).slice(2)}`));
+  // ---------- Serie e proiezione per il grafico della scheda Tassi (tassi.js) ----------
+  // Il grafico mostra la serie scelta nel modulo (tutta la storia) e, a destra, la proiezione: quella calcolata
+  // dall'utente, oppure quella del modello che il piano sta usando (o della media, il metodo semplice).
+  const codiceCorrente = () => {
+    const propria = Internet.riconosci(M.indice()), predefinito = propria ? propria.codice : 'contratto';
+    const scelto = modulo.serie.value;
+    return scelto && (scelto === 'contratto' ? !propria : Internet.perCodice(scelto)) ? scelto : predefinito;
+  };
+  M.serieGrafico = () => {
+    const codice = codiceCorrente(), propria = Internet.riconosci(M.indice());
+    return { nome: nomeSerie(codice), valori: valoriScelti(codice, stato.dati), delContratto: codice === (propria ? propria.codice : 'contratto') };
+  };
+  const cacheGrafico = { chiave: null, risultato: null };
+  M.proiezionePerGrafico = () => {
+    const campo = SCENARI[modulo.scenario.value] ? SCENARI[modulo.scenario.value].campo : 'valore';
+    if (ultimo) return { risultato: ultimo.risultato, campo, nome: Mod.MODELLI[ultimo.modello].breve };
+    // Senza una proiezione calcolata a mano: quella che usa il piano (o la media), sulla serie del contratto.
+    const codice = codiceCorrente(), propria = Internet.riconosci(M.indice());
+    if (codice !== (propria ? propria.codice : 'contratto')) return null;
+    const modello = Mod.MODELLI[stato.dati.parametri.previsione_modello] ? stato.dati.parametri.previsione_modello : 'media';
+    let opzioni = {};
+    try { opzioni = JSON.parse(stato.dati.parametri.previsione_opzioni || '{}'); } catch { opzioni = {}; }
+    const h = modulo.orizzonte.value === 'fine' ? 'fine' : +modulo.orizzonte.value || 24;
+    const chiave = JSON.stringify([modello, opzioni, codice, h, stato.dati.euribor.length, stato.dati.parametri.data_prima_rata]);
+    if (cacheGrafico.chiave !== chiave) {
+      cacheGrafico.chiave = chiave;
+      try { cacheGrafico.risultato = calcola(modello, codice, { ...opzioni, h }, stato.dati).risultato; } catch { cacheGrafico.risultato = null; }
     }
-    radice.append(svg('line', { class: 'asse', x1: margine.sinistra, x2: larghezza - margine.destra, y1: altezza - margine.sotto, y2: altezza - margine.sotto }));
-    // Fasce: poligono dal basso all'alto, partendo dal punto di partenza.
-    const inizio = { x: partenza, basso80: r.partenza.valore, alto80: r.partenza.valore, basso95: r.partenza.valore, alto95: r.partenza.valore };
-    const banda = (basso, alto, classe) => svg('path', { class: classe, d: [inizio, ...futuro].map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p[alto]).toFixed(1)}`).join('') + [...futuro].reverse().concat(inizio).map(p => `L${sx(p.x).toFixed(1)} ${sy(p[basso]).toFixed(1)}`).join('') + 'Z' });
-    radice.append(banda('basso95', 'alto95', 'banda95'), banda('basso80', 'alto80', 'banda80'));
-    radice.append(svg('line', { class: 'separatore', x1: sx(partenza), x2: sx(partenza), y1: margine.sopra, y2: altezza - margine.sotto }));
-    radice.append(svg('path', { class: 'linea', d: storico.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join('') }));
-    radice.append(svg('path', { class: 'proiezione', d: [{ x: partenza, valore: r.partenza.valore }, ...futuro].map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)} ${sy(p.valore).toFixed(1)}`).join('') }));
-    const fine = futuro[futuro.length - 1];
-    radice.append(svg('circle', { class: 'punto', cx: sx(partenza), cy: sy(r.partenza.valore), r: 4 }), svg('text', { class: 'finale', x: sx(fine.x) + 8, y: sy(fine.valore) + 4 }, perc(fine.valore, 2)));
-    // Lettura dei valori con il puntatore.
-    const mirino = svg('line', { class: 'mirino', y1: margine.sopra, y2: altezza - margine.sotto, visibility: 'hidden' });
-    const fumetto = crea('div', { className: 'fumetto', hidden: true });
-    radice.append(mirino);
-    const tutti = [...storico.map(p => ({ x: p.x, testo: [perc(p.y, 3), `${MESI[+p.mese.slice(5, 7) - 1]} ${p.mese.slice(0, 4)} (storico)`] })),
-      ...futuro.map(p => ({ x: p.x, testo: [perc(p.valore, 2), `${MESI[+p.mese.slice(5, 7) - 1]} ${p.mese.slice(0, 4)} (proiezione)`, `80%: ${perc(p.basso80, 2)} – ${perc(p.alto80, 2)}`, `95%: ${perc(p.basso95, 2)} – ${perc(p.alto95, 2)}`] }))];
-    radice.addEventListener('pointermove', evento => {
-      const riquadro = radice.getBoundingClientRect();
-      const x = x0 + (evento.clientX - riquadro.left - margine.sinistra) / (larghezza - margine.sinistra - margine.destra) * (x1 - x0);
-      let vicino = tutti[0];
-      for (const p of tutti) if (Math.abs(p.x - x) < Math.abs(vicino.x - x)) vicino = p;
-      mirino.setAttribute('x1', sx(vicino.x)); mirino.setAttribute('x2', sx(vicino.x)); mirino.setAttribute('visibility', 'visible');
-      fumetto.replaceChildren(crea('strong', {}, vicino.testo[0]), ...vicino.testo.slice(1).map(t => crea('span', {}, t)));
-      fumetto.hidden = false;
-      const px = sx(vicino.x), aDestra = px + 14 + fumetto.offsetWidth <= larghezza;
-      fumetto.style.left = (aDestra ? px + 14 : px - 14 - fumetto.offsetWidth) + 'px';
-      fumetto.style.top = '10px';
-    });
-    radice.addEventListener('pointerleave', () => { mirino.setAttribute('visibility', 'hidden'); fumetto.hidden = true; });
-    contenitore.replaceChildren(radice, fumetto);
-  }
-  modulo.storico.addEventListener('change', disegnaGrafico);
-  let timer;
-  window.addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(() => { if (ultimo && !$('#scheda-tassi').hidden) disegnaGrafico(); }, 150); });
+    return cacheGrafico.risultato ? { risultato: cacheGrafico.risultato, campo: modello === 'media' ? 'valore' : campo, nome: Mod.MODELLI[modello].breve + (modello === 'media' ? ' (metodo del piano)' : ' (in uso nel piano)') } : null;
+  };
+  const ridisegna = () => { if (M.ridisegnaTassi) M.ridisegnaTassi(); };
+  modulo.serie.addEventListener('change', () => { ultimo = null; $('#esito-previsione').replaceChildren(); disegnaStatoPiano(); ridisegna(); });
+  modulo.orizzonte.addEventListener('change', () => { if (!ultimo) ridisegna(); });
+  modulo.scenario.addEventListener('change', ridisegna);
 
   // ---------- Agganci ----------
   // Le carte stanno in fondo alla scheda Tassi: all'apertura della scheda, dopo il grafico dei tassi (tassi.js), si
   // ridisegnano stato e proiezione.
-  M.viste.push(disegna);
+  M.viste.unshift(disegna);
+  // previsioni.js si carica dopo tassi.js: all'apertura della scheda prima si aggiornano modulo e stato, poi il grafico.
   const aperturaTassi = M.allApertura.tassi;
-  M.allApertura.tassi = () => { if (aperturaTassi) aperturaTassi(); disegna(); if (ultimo) disegnaGrafico(); };
+  M.allApertura.tassi = () => { disegna(); if (aperturaTassi) aperturaTassi(); };
 })();
