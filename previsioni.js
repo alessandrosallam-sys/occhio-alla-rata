@@ -11,6 +11,8 @@
   let ultimo = null;             // l'ultima proiezione calcolata, per il grafico e il pulsante "usa"
 
   const ORIZZONTI = [['12', '1 anno'], ['24', '2 anni'], ['60', '5 anni'], ['120', '10 anni'], ['fine', 'fino alla fine del mutuo']];
+  // Durata in anni di ciascun Euribor, nell'ordine di TassiInternet.SERIE (1 settimana, 1, 3, 6, 12 mesi): serve alla curva.
+  const TAU = Internet.SERIE.map(s => ({ W01: 7 / 360, M01: 1 / 12, M03: 0.25, M06: 0.5, M12: 1 })[s.codice]);
   const punti = (v, decimali = 2) => (v > 0 ? '+' : v < 0 ? '−' : '') + (Math.abs(v) * 100).toLocaleString('it-IT', { minimumFractionDigits: decimali, maximumFractionDigits: decimali }) + ' punti';
   const numero = (v, decimali = 2) => v.toLocaleString('it-IT', { minimumFractionDigits: decimali, maximumFractionDigits: decimali });
   const ampiezza = (v, decimali = 3) => numero(Math.abs(v) * 100, decimali) + ' punti';   // una variabilità, senza segno
@@ -49,12 +51,13 @@
     const serie = Mod.mensile(valoriScelti(codice, dati));
     if (!serie.length) throw new Error('Non ci sono valori per questa serie.');
     const o = { ...opzioni };
-    if (modello === 'var') {
-      if (codice === 'contratto') throw new Error('Il VAR mette insieme i cinque Euribor: scegli una delle serie Euribor.');
+    if (modello === 'var' || modello === 'curva') {
+      if (codice === 'contratto') throw new Error(modello === 'var' ? 'Il VAR mette insieme i cinque Euribor: scegli una delle serie Euribor.' : 'Le attese del mercato si leggono dalla curva dei cinque Euribor: scegli una delle serie Euribor.');
       o.altre = Internet.SERIE.map(s => Mod.mensile(valoriSerie(s.codice, dati)));
       o.indice = Internet.SERIE.findIndex(s => s.codice === codice);
+      o.tau = TAU;
       const vuote = Internet.SERIE.filter((s, i) => o.altre[i].length < 36).map(s => s.nome);
-      if (vuote.length) throw new Error(`Per il VAR servono anche: ${vuote.join(', ')}. Scegli una di queste serie e premi «Calcola»: lo storico viene scaricato.`);
+      if (vuote.length) throw new Error(`Servono anche: ${vuote.join(', ')}. Scegli una di queste serie e premi «Calcola»: lo storico viene scaricato.`);
     }
     if (o.h === 'fine') o.h = mesiFinoAllaFine(dati, serie[serie.length - 1].mese);
     return { risultato: Mod.stima(modello, serie, o), serie };
@@ -130,6 +133,7 @@
     var: 'Il VAR mette insieme i cinque Euribor: ognuno viene spiegato dai valori passati di tutti. Serve lo storico di tutte le serie (è nel programma, o si scarica). La proiezione mostrata è quella della serie scelta.',
     garch: 'GARCH non cerca la direzione ma la variabilità: dice se siamo in un periodo agitato o calmo e quanto a lungo l\'agitazione tende a durare. La linea centrale è quasi piatta; sono le fasce a cambiare.',
     vasicek: 'Vasicek è il modello classico dei tassi: il tasso tende a tornare verso un livello di lungo periodo, con una certa velocità e una certa variabilità. La proiezione parte dal valore di oggi e si avvicina a quel livello.',
+    curva: 'Non guarda il passato ma il mercato di oggi: i cinque Euribor (1 settimana, 1, 3, 6 e 12 mesi) formano una curva, e se il 12 mesi è più alto del 6 mesi vuol dire che il mercato si aspetta un 6 mesi più alto fra sei mesi (tasso «a termine»). Copre al massimo i prossimi 12 mesi; oltre, la proiezione resta ferma. Le fasce sono quelle dell\'incertezza storica, non del mercato.',
   };
   function disegnaSerie() {
     const propria = Internet.riconosci(M.indice());
@@ -214,7 +218,7 @@
   // le proiezioni dal passato e si misurano gli errori a 1 e 2 anni. Il migliore è quello con l'errore quadratico
   // medio più basso all'orizzonte scelto, a parità di storico.
   const moduloConfronto = $('#form-confronto');
-  const ORDINE_CONFRONTO = ['costante', 'media', 'arima', 'var', 'garch', 'vasicek'];
+  const ORDINE_CONFRONTO = ['costante', 'media', 'curva', 'arima', 'var', 'garch', 'vasicek'];
   let confronto = null;
   function opzioniPredefinite(modello, codice, dati) {
     if (modello === 'arima') return { auto: true, d: 1 };
@@ -235,9 +239,9 @@
       for (const modello of ORDINE_CONFRONTO) {
         let opzioni = opzioniPredefinite(modello, codice, stato.dati);
         try {
-          if (modello === 'var') {
+          if (modello === 'var' || modello === 'curva') {
             if (codice === 'contratto') continue;
-            opzioni = { ...opzioni, altre: Internet.SERIE.map(s => Mod.mensile(valoriSerie(s.codice, stato.dati))), indice: Internet.SERIE.findIndex(s => s.codice === codice) };
+            opzioni = { ...opzioni, altre: Internet.SERIE.map(s => Mod.mensile(valoriSerie(s.codice, stato.dati))), indice: Internet.SERIE.findIndex(s => s.codice === codice), tau: TAU };
             if (opzioni.altre.some(l => l.length < 36)) continue;
           }
           if (modello === 'arima') { const r = Mod.stima('arima', serie, { ...opzioni, h: 1 }); opzioni = { auto: false, p: r.parametri.p, d: r.parametri.d, q: r.parametri.q }; }
@@ -311,6 +315,12 @@
     if (r.modello === 'garch') {
       righe.push(`Variabilità attuale: ${ampiezza(p.volatilitaAttuale)} al mese, contro una media storica di ${ampiezza(p.volatilitaMedia)}${p.volatilitaLungo != null ? ` e un livello di lungo periodo di ${ampiezza(p.volatilitaLungo)}` : ''}.`);
       righe.push(`Persistenza α+β = ${numero(p.persistenza, 3)}: ${p.persistenza >= 0.995 ? 'la variabilità non torna a un livello fisso (modello al limite della stazionarietà): la proiezione usa quella di oggi' : p.persistenza > 0.9 ? 'i periodi agitati e quelli calmi durano a lungo' : 'la variabilità torna in fretta al suo livello normale'}. Variazione media mensile ${punti(p.mu, 4)}.`);
+    }
+    if (r.modello === 'curva') {
+      righe.push(`Curva Euribor del mese di partenza: ${Internet.SERIE.map((s, i) => `${s.nome.replace('Euribor ', '')} ${perc(p.oggi[i], 2)}`).join(', ')}.`);
+      righe.push(p.mesiCoperti > 0 ? `Il mercato prezza questo Euribor a ${perc(p.aTermine, 2)} fra ${p.mesiCoperti} mesi (tasso a termine implicito); oltre, la curva non dice niente e la proiezione resta ferma lì. I tassi a termine contengono anche un premio per il rischio: tendono a sovrastimare un po'.`
+        : 'Per l\'Euribor 12 mesi la curva non arriva oltre oggi: la proiezione resta ferma al valore attuale.');
+      righe.push(`Fasce dalla variabilità storica delle variazioni mensili, ${ampiezza(p.deviazione)} al mese.`);
     }
     if (r.modello === 'vasicek') {
       if (p.ritornoMedio) righe.push(`Livello di lungo periodo ${perc(p.b, 2)}; velocità di ritorno ${numero(p.a, 2)} l'anno, cioè metà della distanza si copre in circa ${Math.round(p.semivita)} mesi. Variabilità annua ${ampiezza(p.sigma, 2)}.`);

@@ -304,6 +304,34 @@
     return esito(serie, valori, varianze, { parametri: { a, b, sigma, semivita: a > 1e-6 ? Math.log(2) / a * 12 : null, ritornoMedio: a > 1e-6 } });
   }
 
+  // ---------- Attese del mercato: tassi a termine impliciti nella curva Euribor di oggi ----------
+  // I cinque Euribor di oggi (1 settimana, 1, 3, 6, 12 mesi) formano una curva: dai fattori di sconto 1/(1 + r·T),
+  // interpolati in modo log-lineare, si ricava il tasso a termine F(t, τ) = (DF(t)/DF(t+τ) − 1)/τ, cioè il valore
+  // dell'Euribor a τ che il mercato "prezza" fra t. Vale finché t + τ ≤ 1 anno: oltre, la curva non dice niente e
+  // la proiezione resta ferma. Le fasce sono quelle dell'incertezza storica (come il modello costante), non del
+  // mercato. I tassi a termine contengono anche un premio per il rischio, quindi tendono a sovrastimare un po'.
+  function curva(serieTutte, { indice = 0, tau, h }) {
+    if (!Array.isArray(serieTutte) || !Array.isArray(tau) || serieTutte.length !== tau.length || serieTutte.length < 2) throw new Error('Per le attese del mercato servono i valori di oggi di tutti gli Euribor.');
+    const liste = allinea(serieTutte), n = liste[0].length;
+    if (!n) throw new Error('Le serie non hanno mesi in comune.');
+    const oggi = liste.map(l => l[n - 1].y);
+    const nodi = [[0, 0], ...tau.map((t, i) => [t, Math.log(1 / (1 + oggi[i] * t))])].sort((a, b) => a[0] - b[0]);
+    const lnDF = T => {
+      if (T <= 0) return 0;
+      let i = 1;
+      while (i < nodi.length - 1 && nodi[i][0] < T) i++;
+      const [a, b] = [nodi[i - 1], nodi[i]];
+      return a[1] + (b[1] - a[1]) * (T - a[0]) / (b[0] - a[0]);
+    };
+    const t_ = tau[indice], serie = liste[indice], limite = Math.max(...tau) - t_;
+    const forward = t => (Math.exp(lnDF(t) - lnDF(t + t_)) - 1) / t_;
+    const v = varianza(differenze(serie.map(p => p.y)));
+    const valori = [], varianze = [];
+    for (let s = 1; s <= h; s++) { valori.push(forward(Math.min(s / 12, Math.max(0, limite)))); varianze.push(v * s); }
+    const termine = Math.round(limite * 12);
+    return esito(serie, valori, varianze, { parametri: { oggi, tau, mesiCoperti: termine, aTermine: termine > 0 ? forward(limite) : null, deviazione: Math.sqrt(v) } });
+  }
+
   // ---------- Ingresso unico ----------
   // "serie" è la serie mensile scelta; per il VAR "altre" sono tutte le serie e "indice" la posizione di quella scelta.
   const MODELLI = {
@@ -313,6 +341,7 @@
     var: { nome: 'VAR (tutti gli Euribor insieme)', breve: 'VAR', calcola: (serie, o) => var_(o.altre, o) },
     garch: { nome: 'GARCH (volatilità)', breve: 'GARCH', calcola: (serie, o) => garch(serie, o) },
     vasicek: { nome: 'Vasicek (ritorno verso la media)', breve: 'Vasicek', calcola: (serie, o) => vasicek(serie, o) },
+    curva: { nome: 'Attese del mercato (curva Euribor di oggi)', breve: 'Curva', calcola: (serie, o) => curva(o.altre, o) },
   };
   function stima(modello, serie, opzioni) {
     const m = MODELLI[modello];
