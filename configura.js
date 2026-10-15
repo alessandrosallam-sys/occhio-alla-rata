@@ -477,6 +477,7 @@
     $('#guida-annulla').hidden = !guida.riapertura;
     $('#guida-carica').hidden = guida.riapertura || guida.passo !== 0;
     $('#configurazione').scrollTop = 0;
+    window.scrollTo(0, 0);
     const primo = $('#campi-passo input[type="text"], #campi-passo input[type="date"]');
     if (primo && !passo.tipo) primo.focus({ preventScroll: true });
   }

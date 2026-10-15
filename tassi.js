@@ -182,8 +182,8 @@
     const pro = M.proiezionePerGrafico ? M.proiezionePerGrafico() : null;
     const futuro = pro ? pro.risultato.proiezione.map(p => ({ x: Calcolo.isoInGiorno(p.giorno), ...p })) : [];
     const partenza = pro ? { x: Calcolo.isoInGiorno(pro.risultato.partenza.giorno), y: pro.risultato.partenza.valore } : null;
-    const larghezza = Math.max(contenitore.clientWidth, 320), altezza = 340;
-    const margine = { sopra: 22, destra: 70, sotto: 26, sinistra: 46 };
+    const larghezza = Math.max(contenitore.clientWidth, 300), stretto = larghezza < 600, altezza = stretto ? 260 : 360;
+    const margine = { sopra: 22, destra: stretto ? 54 : 70, sotto: 28, sinistra: stretto ? 42 : 48 };
     const x0 = s.primo.x, xStorico = s.ultimo.x, x1 = futuro.length ? Math.max(xStorico, futuro[futuro.length - 1].x) : xStorico;
 
     // Scala verticale con valori tondi
@@ -310,7 +310,8 @@
     const mancanti = righe.filter(M.tassoMancante);
     const prossima = righe.find(r => r.riferimento > stato.oggi);
     for (const modulo of moduli) {
-      const blocco = $('.tassi-mancanti', modulo);
+      const blocco = $('.tassi-mancanti', modulo), pannello = modulo.closest('details');
+      if (pannello && mancanti.length && !pannello.dataset.aperto) { pannello.open = true; pannello.dataset.aperto = '1'; }
       blocco.replaceChildren();
       if (mancanti.length) {
         blocco.append(crea('p', { className: 'nota' }, 'Date di rilevazione già passate senza un valore inserito (clic per compilare la data):'),
@@ -325,6 +326,7 @@
   M.preparaTasso = giorno => {
     const modulo = $('#scheda-tassi .form-tasso');
     M.mostraScheda('tassi');
+    if (modulo.closest('details')) modulo.closest('details').open = true;
     modulo.giorno.value = giorno;
     avvisoEsistente(modulo);
     modulo.scrollIntoView({ block: 'center' });

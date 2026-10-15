@@ -153,15 +153,16 @@
     }
     const dettaglioEuribor = corrente.origineEuribor === 'db' ? `rilevato il ${data(corrente.riferimento)}`
       : corrente.origineEuribor === 'manuale' ? 'inserito a mano' : `previsione: manca il valore del ${data(corrente.riferimento)}`;
+    // La rata del mese è la tessera principale (classe "principale": più grande e in testa, vedi stile.css).
     const voci = [
       ['Debito residuo', euro(corrente.debito), `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato],
-      [`Rata di ${meseAnno(corrente.inizio)}`, euro(rata(corrente)), dettaglioRata],
+      [`Rata di ${meseAnno(corrente.inizio)}`, euro(rata(corrente)), dettaglioRata, null, 'principale'],
       [indice(), perc(corrente.euribor, 3), dettaglioEuribor],
       ['Tasso totale', perc(corrente.tassoTotale, 3), `indice + spread ${perc(corrente.spread, 3, 1)}`],
       ['Totale rate a fine piano', euro(ultima.cumulato), `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}`],
     ];
-    $('#riepilogo').replaceChildren(...voci.map(([etichetta, valore, dettaglio, quota]) => {
-      const tessera = crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, etichetta),
+    $('#riepilogo').replaceChildren(...voci.map(([etichetta, valore, dettaglio, quota, classe]) => {
+      const tessera = crea('div', { className: 'dato' + (classe ? ' ' + classe : '') }, crea('span', { className: 'etichetta' }, etichetta),
         crea('span', { className: 'valore' }, valore), crea('span', { className: 'dettaglio', title: dettaglio }, dettaglio));
       if (quota != null) {
         const riempimento = crea('span');
@@ -357,11 +358,33 @@
     $('tbody', tabella).innerHTML = html.join('');
     for (const [nome, numero] of Object.entries(quante)) $('#conta-' + nome).textContent = numero;
     $('#legenda-target').hidden = obiettivo() == null;
+    disegnaEsitoConti(quante);
   }
 
-  function vaiAlMeseCorrente() {
+  // In testa al piano, in una frase: i conti tornano, ci sono rate da controllare, o non c'è ancora niente da confrontare.
+  function disegnaEsitoConti(quante) {
+    const daControllare = quante.problema, pagate = quante.pagata;
+    const [classe, simbolo, titolo, spiegazione] = daControllare
+      ? ['ko', '!', `${daControllare === 1 ? '1 rata' : daControllare + ' rate'} da controllare`, 'Manca la rata vera o il valore dell\'indice, oppure la rata non coincide con il calcolo: sono le righe rosse.']
+      : pagate ? ['ok', '✓', 'I conti tornano', pagate === 1 ? 'La rata che hai inserito coincide con il calcolo.' : `Tutte le ${pagate} rate inserite coincidono con il calcolo.`]
+        : ['neutro', 'i', 'Nessuna rata da confrontare', 'Scrivi nella colonna «Rata vera» la cifra che la banca ti ha addebitato: la riga diventa verde se i conti tornano.'];
+    const esito = $('#esito-conti');
+    esito.className = 'esito-conti ' + classe;
+    esito.replaceChildren(crea('span', { className: 'simbolo-esito', 'aria-hidden': 'true' }, simbolo),
+      crea('span', { className: 'testo-esito' }, crea('strong', {}, titolo), crea('span', {}, spiegazione)),
+      ...(daControllare ? [crea('button', { type: 'button', className: 'secondario piccolo', 'data-stato': 'problema' }, 'Vai all\'ultima')] : []));
+  }
+
+  // Porta una riga al centro della tabella, che scorre nel suo riquadro. Con "mostra" porta in vista anche la tabella.
+  function centraRiga(riga, mostra) {
+    const riquadro = $('#contenitore-piano'), testa = $('#tabella-piano thead').offsetHeight;
+    const r = riga.getBoundingClientRect(), c = riquadro.getBoundingClientRect();
+    riquadro.scrollTop += r.top + r.height / 2 - (c.top + testa + (riquadro.clientHeight - testa) / 2);
+    if (mostra) riquadro.scrollIntoView({ block: 'nearest' });
+  }
+  function vaiAlMeseCorrente(mostra) {
     const riga = $('#tabella-piano tr.corrente');
-    if (riga) riga.scrollIntoView({ block: 'center' });
+    if (riga) centraRiga(riga, mostra === true);
   }
 
   $('#tabella-piano tbody').addEventListener('click', evento => {
@@ -430,13 +453,15 @@
   $('#compila-rate').addEventListener('click', compilaRate);
   $('#compila-rate-pannello').addEventListener('click', compilaRate);
   $('#togli-copiate').addEventListener('click', togliCopiate);
-  $('#vai-oggi').addEventListener('click', vaiAlMeseCorrente);
-  // Clic su uno stato della legenda: porta all'ultima riga con quello stato.
-  $('#legenda-piano').addEventListener('click', evento => {
+  $('#vai-oggi').addEventListener('click', () => vaiAlMeseCorrente(true));
+  // Clic su uno stato della legenda (o su «Vai all'ultima» nel riquadro in testa): porta all'ultima riga con quello stato.
+  const vaiAlloStato = evento => {
     const voce = evento.target.closest('button[data-stato]');
     const righe = voce ? document.querySelectorAll('#tabella-piano tr.stato-' + voce.dataset.stato) : [];
-    if (righe.length) righe[righe.length - 1].scrollIntoView({ block: 'center' });
-  });
+    if (righe.length) centraRiga(righe[righe.length - 1], true);
+  };
+  $('#legenda-piano').addEventListener('click', vaiAlloStato);
+  $('#esito-conti').addEventListener('click', vaiAlloStato);
 
   // ---------- Pannello di controllo ----------
   const formApplicato = $('#form-applicato');
@@ -549,8 +574,8 @@
   $('#mostra-statistiche').addEventListener('click', () => mostraStatistiche($('#statistiche-mutuo').hidden, true));
   {
     const scelta = ricordo.leggi('statistiche');
-    // Sugli schermi bassi partono chiuse, altrimenti la tabella resterebbe con poche righe.
-    mostraStatistiche(scelta ? scelta === 'aperte' : window.innerHeight >= 860, false);
+    // All'inizio sono chiuse, così in primo piano ci sono il riquadro dei conti e la tabella.
+    mostraStatistiche(scelta ? scelta === 'aperte' : false, false);
   }
 
   // Tasso applicato a mano
@@ -657,6 +682,8 @@
 
   // ---------- Schede ----------
   function mostraScheda(nome) {
+    const nuova = $('#scheda-' + nome);
+    if (nuova && nuova.hidden) window.scrollTo(0, 0);   // la pagina scorre tutta insieme: una scheda nuova parte dall'alto
     for (const pulsante of document.querySelectorAll('.schede button')) {
       const attiva = pulsante.dataset.scheda === nome;
       pulsante.setAttribute('aria-selected', attiva);

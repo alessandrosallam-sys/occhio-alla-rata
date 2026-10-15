@@ -170,6 +170,19 @@
     if (!usa.hidden) usa.textContent = `Usa ${Mod.MODELLI[ultimo.modello].breve} per le rate future del piano`;
     $('#scelta-scenario').hidden = usa.hidden;
     if (!$('#scelta-scenario').hidden && !modulo.scenario.dataset.toccato) modulo.scenario.value = scenarioDi(stato.dati);
+    disegnaRiassunto();
+  }
+  // La riga sempre visibile sotto il grafico: che proiezione è disegnata e che cosa usa il piano.
+  function disegnaRiassunto() {
+    const el = $('#riassunto-proiezione');
+    if (!el || !stato.dati) return;
+    const scelto = select => (select.options[select.selectedIndex] || {}).textContent || '';
+    const modello = Mod.MODELLI[modulo.modello.value], fine = ultimo && ultimo.risultato.proiezione[ultimo.risultato.proiezione.length - 1];
+    const voce = (titolo, testo) => crea('span', { className: 'voce-riassunto' }, crea('b', {}, titolo + ' '), testo);
+    el.replaceChildren(
+      voce('Grafico:', [modello ? modello.breve : '', scelto(modulo.orizzonte), SCENARI[modulo.scenario.value] ? SCENARI[modulo.scenario.value].nome : ''].filter(Boolean).join(', ')
+        + (fine ? ` → ${perc(fine.valore, 2)} a ${MESI[+fine.mese.slice(5, 7) - 1].slice(0, 3)} ${fine.mese.slice(0, 4)}` : '')),
+      voce('Il piano usa:', M.nomeModelloPiano(stato.dati) || 'media delle variazioni'));
   }
   modulo.scenario.replaceChildren(...Object.entries(SCENARI).map(([codice, s]) => crea('option', { value: codice }, s.nome)));
   modulo.scenario.addEventListener('change', () => { modulo.scenario.dataset.toccato = '1'; });
@@ -204,6 +217,13 @@
   ripristinaScelte();
   modulo.modello.addEventListener('change', disegnaParametri);
   modulo.addEventListener('change', salvaScelte);
+  modulo.addEventListener('change', disegnaRiassunto);
+  // Il pannello della proiezione resta aperto o chiuso come l'ha lasciato l'utente.
+  const pannello = $('#dettagli-proiezione');
+  if (pannello) {
+    pannello.open = M.ricordo.leggi('proiezione-aperta') === 'si';
+    pannello.addEventListener('toggle', () => M.ricordo.scrivi('proiezione-aperta', pannello.open ? 'si' : 'no'));
+  }
   // Calcolo della proiezione con le scelte del modulo (dal pulsante, o da solo all'apertura della scheda).
   async function eseguiCalcolo() {
     const pulsante = $('button[type="submit"]', modulo), codice = modulo.serie.value, modello = modulo.modello.value;
@@ -219,6 +239,7 @@
       disegnaSerie();
       disegnaEsito();
       disegnaStatoPiano();
+      disegnaRiassunto();
       ridisegna();
     } catch (errore) {
       avviso.textContent = errore.message;
@@ -313,6 +334,7 @@
     disegnaParametri();
     if (riga.modello === 'arima') { modulo.auto.checked = false; modulo.p.value = riga.opzioni.p; modulo.d.value = riga.opzioni.d; modulo.q.value = riga.opzioni.q; }
     if (riga.modello === 'var') modulo.p.value = riga.opzioni.p;
+    if (pannello) pannello.open = true;
     modulo.requestSubmit();
     modulo.scrollIntoView({ block: 'start', behavior: 'smooth' });
   });
