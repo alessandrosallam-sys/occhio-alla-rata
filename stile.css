@@ -871,6 +871,8 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
   .colonne-extra, .legenda#legenda-piano { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--s4)); padding: 0 var(--s4); }
   .colonne-extra::-webkit-scrollbar, .legenda#legenda-piano::-webkit-scrollbar { display: none; }
   .legenda#legenda-piano li { flex: none; }
+  /* Le righe che scorrono in orizzontale sfumano a destra: così si capisce che continuano. */
+  .colonne-extra, .legenda#legenda-piano { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
   .tabella-piano { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-left: 0; border-right: 0; min-height: 360px; }
   #tabella-piano { font-size: 14px; }
   #tabella-piano th { max-width: 96px; font-size: 12.5px; }
@@ -880,7 +882,9 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 
   /* Tassi */
   .filtri-tassi { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s2); }
-  .filtri-tassi .segmenti { justify-self: start; }
+  /* I sei periodi non stanno su una riga: vanno a capo invece di finire tagliati fuori dallo schermo. */
+  .filtri-tassi .segmenti { justify-self: stretch; flex-wrap: wrap; overflow: visible; }
+  .filtri-tassi .segmenti button { flex: 1 1 auto; }
   .date-filtro { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
   .date-filtro label { flex-direction: column; align-items: stretch; gap: 2px; font-size: 13px; }
   .date-filtro input { width: 100%; min-width: 0; }
@@ -905,7 +909,8 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
   #tabella-tassi th, #tabella-tassi td { padding-right: var(--s3); }
 
   /* Calendario: il dettaglio del giorno subito sopra i mesi */
-  .calendario { display: flex; flex-direction: column; }
+  .calendario { display: flex; flex-direction: column; align-items: stretch; }
+  .calendario > * { width: 100%; }
   .lato-calendario { display: contents; }
   .dettaglio-giorno { order: -1; }
   .mesi { grid-template-columns: minmax(0, 1fr); }
@@ -952,4 +957,9 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
   .scheda { padding-top: var(--s3); }
   .scheda-piano { gap: var(--s2); }
   #tabella-piano td { padding-block: 6px; }
+}
+
+/* Sui dispositivi touch il pulsante × delle festività ha un bersaglio di almeno 40 px. */
+@media (pointer: coarse) {
+  button[data-giorno][title="Elimina"] { min-width: 40px; min-height: 40px; }
 }
