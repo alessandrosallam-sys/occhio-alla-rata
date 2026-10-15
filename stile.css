@@ -411,6 +411,8 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .tabella-previsione.scenari td { text-align: right; white-space: nowrap; }
 .tabella-previsione.scenari thead th { text-align: right; }
 #scelta-scenario { margin-top: 2px; }
+#rate-future h3 { margin: 0 0 6px; font-size: 14px; }
+#rate-future .azioni { margin-top: 4px; }
 .fumetto {
   position: absolute; pointer-events: none; background: var(--superficie); border: 1px solid var(--bordo);
   border-radius: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); padding: 7px 10px; font-size: 12px; white-space: nowrap;

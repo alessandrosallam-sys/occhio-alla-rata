@@ -11,9 +11,8 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 1. Scarica il progetto (pulsante **Code → Download ZIP** su GitHub, oppure `git clone`) e apri `index.html` con un doppio clic. Provato con Microsoft Edge; dovrebbe funzionare con qualunque browser recente.
 2. Alla prima apertura parte la **configurazione guidata**: nove passi, con le spiegazioni. Tieni a portata di mano il contratto di mutuo e qualche ricevuta delle rate. Alle domande tecniche puoi rispondere «Non lo so»: se inserisci tre o quattro rate già pagate, il programma prova le combinazioni di regole e sceglie quella che le riproduce.
 3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no.
-4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano.
-5. Nella pagina **Previsioni** vedi la storia dell'Euribor dal 1999 e la proietti in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
-6. Dal **Pannello di controllo** puoi salvare tutto su un file, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
+4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Nella stessa pagina vedi la storia dell'Euribor dal 1999 e la proietti in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
+5. Dal **Pannello di controllo** puoi salvare tutto su un file, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
 
 I dati stanno nel browser (`localStorage`): se cancelli i dati di navigazione li perdi. Per questo c'è «Salva su file».
 
@@ -32,7 +31,7 @@ Le regole del contratto si scelgono nella configurazione (o le trova la taratura
 
 Le festività considerate sono quelle del calendario TARGET (quello su cui si pubblica l'Euribor), modificabili.
 
-**Le rate future** sono stime: l'indice dei mesi a venire non lo conosce nessuno. All'inizio il programma lo proietta con la variazione media del passato; nella pagina Previsioni si può scegliere un modello statistico al suo posto. Le fasce di incertezza dicono quanto l'indice è stato variabile finora, non cosa farà la BCE.
+**Le rate future** sono stime: l'indice dei mesi a venire non lo conosce nessuno. All'inizio il programma lo proietta con la variazione media del passato; nella pagina Tassi si può scegliere un modello statistico al suo posto. Le fasce di incertezza dicono quanto l'indice è stato variabile finora, non cosa farà la BCE.
 
 **Non sono coperti**: preammortamento, estinzioni parziali, rate non mensili, spread che cambia nel tempo (si può solo scrivere a mano, rata per rata, il tasso applicato).
 
@@ -60,14 +59,14 @@ Questo è uno strumento di controllo fatto da privati, senza alcuna garanzia. No
 Tutto è HTML, CSS e JavaScript scritti a mano, senza librerie né passaggi di compilazione: si modifica un file e si ricarica la pagina. Node serve solo per i due script dei dati.
 
 ```
-index.html            pagina unica: guida iniziale + sei schede (Piano, Tassi, Calendario, Festività, Previsioni, Pannello)
+index.html            pagina unica: guida iniziale + cinque schede (Piano, Tassi, Calendario, Festività, Pannello)
 stile.css             stile, tema chiaro e scuro
 calcolo.js            motore di calcolo con le regole sceglibili, e taratura automatica
 archivio.js           dati nel browser: lettura, scrittura, controlli, salvataggio e caricamento su file
 app.js                nucleo della pagina: formati, piano, statistiche, pannello di controllo
 tassi.js              scheda Tassi, scarico da internet
 calendario.js         schede Calendario e Festività
-previsioni.js         scheda Previsioni: serie storica, proiezioni, scelta del modello per le rate future
+previsioni.js         proiezioni dell'indice nella pagina Tassi: modelli, scenari, confronto, scelta per le rate future
 modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
 configura.js          configurazione guidata, regole nel pannello, taratura
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank

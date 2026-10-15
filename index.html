@@ -17,7 +17,6 @@
       <button role="tab" data-scheda="tassi" aria-selected="false">Tassi</button>
       <button role="tab" data-scheda="calendario" aria-selected="false">Calendario</button>
       <button role="tab" data-scheda="festivita" aria-selected="false">Festività</button>
-      <button role="tab" data-scheda="previsioni" aria-selected="false">Previsioni</button>
       <button role="tab" data-scheda="pannello" aria-selected="false">Pannello di controllo</button>
     </nav>
     <button type="button" class="secondario" id="apri-configurazione" title="Rivedi o rifai la configurazione guidata del mutuo" hidden>Configurazione</button>
@@ -95,6 +94,55 @@
           </div>
           <div class="grafico" id="grafico"></div>
         </div>
+
+        <!-- Proiezioni dell'indice: modelli, scenari sulle rate, confronto all'indietro (previsioni.js) -->
+        <div class="carta">
+          <h2>Dove potrebbe andare l'indice: proiezioni</h2>
+          <p class="nota">Qui guardi la storia dell'Euribor dal 1999 e provi a proiettarla in avanti con diversi modelli statistici. Ogni modello dà un valore atteso e due fasce: quella dell'80% e quella del 95% dei casi, secondo il modello. Attenzione: i modelli conoscono solo il passato della serie, non le decisioni future della BCE, l'inflazione o le crisi. Le fasce dicono quanto l'indice è stato variabile finora, non cosa succederà: usale per immaginare le rate in scenari diversi, non come una previsione.</p>
+          <form id="form-previsioni">
+            <div class="campi due-colonne">
+              <label>Serie storica <select name="serie"></select></label>
+              <label>Modello <select name="modello"></select></label>
+              <label>Quanto avanti <select name="orizzonte"></select></label>
+              <label>Storico nel grafico <select name="storico"><option value="5">ultimi 5 anni</option><option value="10" selected>ultimi 10 anni</option><option value="0">tutto, dal 1999</option></select></label>
+            </div>
+            <div class="campi tre-colonne" id="parametri-previsione"></div>
+            <p class="nota" id="descrizione-modello"></p>
+            <div class="azioni"><button type="submit">Calcola la proiezione</button></div>
+            <p class="nota evidenza" id="avviso-previsione" hidden></p>
+            <div class="blocco" id="rate-future">
+              <h3>Tassi per le rate future del piano</h3>
+              <p class="nota" id="stato-previsione"></p>
+              <div class="campi tre-colonne" id="scelta-scenario" hidden>
+                <label>Scenario da usare <select name="scenario"></select></label>
+              </div>
+              <div class="azioni"><button type="button" id="usa-previsione" hidden></button><button type="button" class="secondario" id="togli-previsione" hidden>Torna alla media delle variazioni</button></div>
+            </div>
+          </form>
+        </div>
+        <div class="carta">
+          <div class="intestazione-carta">
+            <h2 id="titolo-previsione">Proiezione</h2>
+            <ul class="legenda">
+              <li><span class="chiave-linea serie"></span>storico (fine mese)</li>
+              <li><span class="chiave-linea proiezione"></span>valore atteso</li>
+              <li><span class="chiave-banda"></span>fascia 80% e 95%</li>
+            </ul>
+          </div>
+          <div class="grafico" id="grafico-previsione"></div>
+          <div id="esito-previsione"></div>
+        </div>
+        <form class="carta" id="form-confronto">
+          <h2>Quale modello ha funzionato meglio in passato?</h2>
+          <p class="nota">Il programma finge di essere in una data passata, fa la proiezione con i dati disponibili fino a lì e la confronta con quello che è successo davvero. Lo ripete ogni sei mesi per tutti i modelli e misura chi ha sbagliato di meno a un anno e a due anni. Non è una garanzia per il futuro, ma dice quale modello ha descritto meglio questo indice finora.</p>
+          <div class="campi tre-colonne">
+            <label>Date passate da provare <select name="anni"><option value="5">ultimi 5 anni</option><option value="10" selected>ultimi 10 anni</option><option value="15">ultimi 15 anni</option></select></label>
+            <label>Scegli il migliore a <select name="orizzonte"><option value="12" selected>1 anno</option><option value="24">2 anni</option></select></label>
+          </div>
+          <div class="azioni"><button type="submit">Confronta i modelli</button></div>
+          <p class="nota evidenza" id="avviso-confronto" hidden></p>
+          <div class="blocco" id="esito-confronto"></div>
+        </form>
 
         <div class="due-carte">
           <div class="pila">
@@ -227,55 +275,6 @@
     </section>
 
     <!-- Pannello di controllo -->
-    <!-- Previsioni: serie storica e proiezioni dell'indice -->
-    <section id="scheda-previsioni" class="scheda scorrevole" role="tabpanel" hidden>
-      <div class="colonna">
-        <div class="carta">
-          <h2>Dove potrebbe andare l'indice</h2>
-          <p class="nota">Qui guardi la storia dell'Euribor dal 1999 e provi a proiettarla in avanti con diversi modelli statistici. Ogni modello dà un valore atteso e due fasce: quella dell'80% e quella del 95% dei casi, secondo il modello. Attenzione: i modelli conoscono solo il passato della serie, non le decisioni future della BCE, l'inflazione o le crisi. Le fasce dicono quanto l'indice è stato variabile finora, non cosa succederà: usale per immaginare le rate in scenari diversi, non come una previsione.</p>
-          <form id="form-previsioni">
-            <div class="campi due-colonne">
-              <label>Serie storica <select name="serie"></select></label>
-              <label>Modello <select name="modello"></select></label>
-              <label>Quanto avanti <select name="orizzonte"></select></label>
-              <label>Storico nel grafico <select name="storico"><option value="5">ultimi 5 anni</option><option value="10" selected>ultimi 10 anni</option><option value="0">tutto, dal 1999</option></select></label>
-            </div>
-            <div class="campi tre-colonne" id="parametri-previsione"></div>
-            <p class="nota" id="descrizione-modello"></p>
-            <div class="campi tre-colonne" id="scelta-scenario" hidden>
-              <label>Nel piano usa <select name="scenario"></select></label>
-            </div>
-            <div class="azioni"><button type="submit">Calcola la proiezione</button><button type="button" class="secondario" id="usa-previsione" hidden></button><button type="button" class="secondario" id="togli-previsione" hidden>Torna alla media delle variazioni</button></div>
-            <p class="nota evidenza" id="avviso-previsione" hidden></p>
-            <p class="nota piede" id="stato-previsione"></p>
-          </form>
-        </div>
-        <div class="carta">
-          <div class="intestazione-carta">
-            <h2 id="titolo-previsione">Proiezione</h2>
-            <ul class="legenda">
-              <li><span class="chiave-linea serie"></span>storico (fine mese)</li>
-              <li><span class="chiave-linea proiezione"></span>valore atteso</li>
-              <li><span class="chiave-banda"></span>fascia 80% e 95%</li>
-            </ul>
-          </div>
-          <div class="grafico" id="grafico-previsione"></div>
-          <div id="esito-previsione"></div>
-        </div>
-        <form class="carta" id="form-confronto">
-          <h2>Quale modello ha funzionato meglio in passato?</h2>
-          <p class="nota">Il programma finge di essere in una data passata, fa la proiezione con i dati disponibili fino a lì e la confronta con quello che è successo davvero. Lo ripete ogni sei mesi per tutti i modelli e misura chi ha sbagliato di meno a un anno e a due anni. Non è una garanzia per il futuro, ma dice quale modello ha descritto meglio questo indice finora.</p>
-          <div class="campi tre-colonne">
-            <label>Date passate da provare <select name="anni"><option value="5">ultimi 5 anni</option><option value="10" selected>ultimi 10 anni</option><option value="15">ultimi 15 anni</option></select></label>
-            <label>Scegli il migliore a <select name="orizzonte"><option value="12" selected>1 anno</option><option value="24">2 anni</option></select></label>
-          </div>
-          <div class="azioni"><button type="submit">Confronta i modelli</button></div>
-          <p class="nota evidenza" id="avviso-confronto" hidden></p>
-          <div class="blocco" id="esito-confronto"></div>
-        </form>
-      </div>
-    </section>
-
     <section id="scheda-pannello" class="scheda scorrevole" role="tabpanel" hidden>
       <div class="colonna griglia-pannello">
         <div class="pila">

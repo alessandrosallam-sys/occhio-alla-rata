@@ -161,7 +161,8 @@
   }
   function disegnaStatoPiano() {
     const nome = M.nomeModelloPiano(stato.dati), el = $('#stato-previsione');
-    el.textContent = nome ? `Il piano stima l'indice delle rate future con il modello ${nome}.` : 'Il piano stima l\'indice delle rate future con la media delle variazioni passate.';
+    el.textContent = nome ? `Oggi il piano stima l'indice delle rate future con il modello ${nome}. Per cambiare, calcola un'altra proiezione e premi «Usa …», oppure torna al metodo semplice.`
+      : 'Oggi il piano stima l\'indice delle rate future con il metodo semplice: la media delle variazioni passate. Calcola una proiezione qui sopra e premi «Usa …» per adottarla nel piano: le rate future (colonna «Rata calcolata») verranno ricalcolate con quei tassi.';
     $('#togli-previsione').hidden = !nome;
     const usa = $('#usa-previsione');
     usa.hidden = !ultimo || ultimo.modello === 'media' || ultimo.codice === 'contratto' && Internet.riconosci(M.indice());
@@ -406,9 +407,12 @@
   }
   modulo.storico.addEventListener('change', disegnaGrafico);
   let timer;
-  window.addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(() => { if (ultimo && !$('#scheda-previsioni').hidden) disegnaGrafico(); }, 150); });
+  window.addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(() => { if (ultimo && !$('#scheda-tassi').hidden) disegnaGrafico(); }, 150); });
 
   // ---------- Agganci ----------
+  // Le carte stanno in fondo alla scheda Tassi: all'apertura della scheda, dopo il grafico dei tassi (tassi.js), si
+  // ridisegnano stato e proiezione.
   M.viste.push(disegna);
-  M.allApertura.previsioni = () => { disegna(); if (ultimo) disegnaGrafico(); };
+  const aperturaTassi = M.allApertura.tassi;
+  M.allApertura.tassi = () => { if (aperturaTassi) aperturaTassi(); disegna(); if (ultimo) disegnaGrafico(); };
 })();
