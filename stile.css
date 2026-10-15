@@ -406,6 +406,11 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .tabella-previsione tr.migliore td { font-weight: 600; background: var(--riga-pagata); }
 .tabella-previsione td.testo { color: var(--inchiostro-2); font-size: 12.5px; }
 #esito-confronto .tabella-previsione { margin: 10px 0; width: 100%; }
+#esito-previsione h3 { margin: 18px 0 6px; font-size: 15px; }
+.tabella-previsione.scenari th:first-child { text-align: left; font-weight: 500; color: var(--inchiostro-2); }
+.tabella-previsione.scenari td { text-align: right; white-space: nowrap; }
+.tabella-previsione.scenari thead th { text-align: right; }
+#scelta-scenario { margin-top: 2px; }
 .fumetto {
   position: absolute; pointer-events: none; background: var(--superficie); border: 1px solid var(--bordo);
   border-radius: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); padding: 7px 10px; font-size: 12px; white-space: nowrap;

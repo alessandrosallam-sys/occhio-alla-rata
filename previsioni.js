@@ -62,28 +62,65 @@
 
   // Per il piano (app.js): funzione giorno → indice stimato secondo il modello salvato nei parametri, oppure null
   // (media delle variazioni, il metodo del piano). Il risultato resta in memoria finché i dati non cambiano.
+  // Scenari: quale valore della proiezione usare ("campo" di Modelli.perGiorno) e come chiamarlo.
+  const SCENARI = { atteso: { campo: 'valore', nome: 'valore atteso' }, alto80: { campo: 'alto80', nome: 'fascia alta 80% (prudente)' }, basso80: { campo: 'basso80', nome: 'fascia bassa 80% (ottimista)' } };
+  const scenarioDi = dati => SCENARI[dati.parametri.previsione_scenario] ? dati.parametri.previsione_scenario : 'atteso';
   const cachePiano = { chiave: null, funzione: null };
   M.perPiano = function perPiano(dati) {
     const modello = dati.parametri.previsione_modello || 'media';
     if (modello === 'media' || !Mod.MODELLI[modello]) return null;
     let opzioni = {};
     try { opzioni = JSON.parse(dati.parametri.previsione_opzioni || '{}'); } catch { opzioni = {}; }
-    const propria = Internet.riconosci(dati.parametri.indice_nome), codice = propria ? propria.codice : 'contratto';
+    const propria = Internet.riconosci(dati.parametri.indice_nome), codice = propria ? propria.codice : 'contratto', scenario = scenarioDi(dati);
     const serie = Mod.mensile(valoriScelti(codice, dati));
     if (!serie.length) return null;
     const u = serie[serie.length - 1];
-    const chiave = JSON.stringify([modello, opzioni, codice, serie.length, u.giorno, u.y, dati.parametri.numero_rate, dati.parametri.data_prima_rata]);
+    const chiave = JSON.stringify([modello, opzioni, scenario, codice, serie.length, u.giorno, u.y, dati.parametri.numero_rate, dati.parametri.data_prima_rata]);
     if (cachePiano.chiave === chiave) return cachePiano.funzione;
     let funzione = null;
-    try { funzione = Mod.perGiorno(calcola(modello, codice, { ...opzioni, h: 'fine' }, dati).risultato); }
+    try { funzione = Mod.perGiorno(calcola(modello, codice, { ...opzioni, h: 'fine' }, dati).risultato, SCENARI[scenario].campo); }
     catch { funzione = null; }   // dati insufficienti: il piano torna alla media delle variazioni
     Object.assign(cachePiano, { chiave, funzione });
     return funzione;
   };
   M.nomeModelloPiano = dati => {
-    const modello = dati.parametri.previsione_modello || 'media';
-    return modello !== 'media' && Mod.MODELLI[modello] ? Mod.MODELLI[modello].breve : null;
+    const modello = dati.parametri.previsione_modello || 'media', scenario = scenarioDi(dati);
+    return modello !== 'media' && Mod.MODELLI[modello] ? Mod.MODELLI[modello].breve + (scenario !== 'atteso' ? `, ${SCENARI[scenario].nome}` : '') : null;
   };
+
+  // ---------- Cosa vorrebbe dire per le rate ----------
+  // Il piano ricalcolato con la proiezione (fino alla fine del mutuo) nei tre scenari: fascia bassa, atteso, fascia alta.
+  function scenariRate() {
+    const propria = Internet.riconosci(M.indice());
+    if (!ultimo || ultimo.modello === 'media' || (propria ? ultimo.codice !== propria.codice : ultimo.codice !== 'contratto')) return null;
+    let risultato;
+    try { risultato = calcola(ultimo.modello, ultimo.codice, { ...ultimo.opzioni, h: 'fine' }, stato.dati).risultato; } catch { return null; }
+    const colonne = [['basso80', 'Fascia bassa 80%'], ['valore', 'Valore atteso'], ['alto80', 'Fascia alta 80%']].map(([campo, titolo]) => {
+      const righe = Calcolo.calcolaPiano(stato.dati, { previsione: Mod.perGiorno(risultato, campo) }).righe;
+      const future = righe.filter(r => r.rataVera == null && r.fine >= stato.oggi);
+      if (!future.length) return null;
+      const somma = (lista, f) => lista.reduce((s, r) => s + f(r), 0);
+      return { titolo, prossima: future[0], fraUnAnno: future[Math.min(11, future.length - 1)], massima: future.reduce((m, r) => (r.rataCalcolata > m.rataCalcolata ? r : m)), interessi: somma(future, r => r.interessi), totale: somma(future, r => r.rataCalcolata), indiceMassimo: Math.max(...future.map(r => r.euribor)) };
+    });
+    return colonne.every(Boolean) ? colonne : null;
+  }
+  function tabellaScenari() {
+    const scenari = scenariRate();
+    if (!scenari) return [];
+    const { euro, meseAnno } = M;
+    const riga = (titolo, f) => crea('tr', {}, crea('th', {}, titolo), ...scenari.map(s => crea('td', {}, f(s))));
+    return [crea('h3', {}, 'Cosa vorrebbe dire per le tue rate'),
+      crea('p', { className: 'nota' }, 'Il piano ricalcolato con questa proiezione fino alla fine del mutuo, in tre scenari. Gli importi delle rate future sono stime; «interessi ancora da pagare» somma gli interessi di tutte le rate non ancora addebitate.'),
+      crea('div', { className: 'contenitore-tabella semplice' }, crea('table', { className: 'tabella-previsione scenari' },
+        crea('thead', {}, crea('tr', {}, crea('th', {}), ...scenari.map(s => crea('th', {}, s.titolo)))),
+        crea('tbody', {},
+          riga(`Prossima rata (${meseAnno(scenari[1].prossima.inizio)})`, s => euro(s.prossima.rataCalcolata)),
+          riga(`Rata fra un anno (${meseAnno(scenari[1].fraUnAnno.inizio)})`, s => euro(s.fraUnAnno.rataCalcolata)),
+          riga('Rata più alta', s => `${euro(s.massima.rataCalcolata)} (${meseAnno(s.massima.inizio)})`),
+          riga('Indice più alto', s => perc(s.indiceMassimo, 2)),
+          riga('Interessi ancora da pagare', s => euro(s.interessi)),
+          riga('Totale ancora da pagare', s => euro(s.totale)))))];
+  }
 
   // ---------- Modulo ----------
   const DESCRIZIONI = {
@@ -125,7 +162,11 @@
     const usa = $('#usa-previsione');
     usa.hidden = !ultimo || ultimo.modello === 'media' || ultimo.codice === 'contratto' && Internet.riconosci(M.indice());
     if (!usa.hidden) usa.textContent = `Usa ${Mod.MODELLI[ultimo.modello].breve} per le rate future del piano`;
+    $('#scelta-scenario').hidden = usa.hidden;
+    if (!$('#scelta-scenario').hidden && !modulo.scenario.dataset.toccato) modulo.scenario.value = scenarioDi(stato.dati);
   }
+  modulo.scenario.replaceChildren(...Object.entries(SCENARI).map(([codice, s]) => crea('option', { value: codice }, s.nome)));
+  modulo.scenario.addEventListener('change', () => { modulo.scenario.dataset.toccato = '1'; });
   function disegna() {
     if (!stato.dati) return;
     disegnaSerie();
@@ -162,10 +203,11 @@
   });
   $('#usa-previsione').addEventListener('click', () => {
     if (!ultimo) return;
-    esegui('PUT', 'parametri', { previsione_modello: ultimo.modello, previsione_opzioni: JSON.stringify(ultimo.opzioni) },
-      `Da ora il piano stima le rate future con il modello ${Mod.MODELLI[ultimo.modello].breve}`);
+    const scenario = SCENARI[modulo.scenario.value] ? modulo.scenario.value : 'atteso';
+    esegui('PUT', 'parametri', { previsione_modello: ultimo.modello, previsione_opzioni: JSON.stringify(ultimo.opzioni), previsione_scenario: scenario },
+      `Da ora il piano stima le rate future con il modello ${Mod.MODELLI[ultimo.modello].breve}${scenario !== 'atteso' ? ` (${SCENARI[scenario].nome})` : ''}`);
   });
-  $('#togli-previsione').addEventListener('click', () => esegui('PUT', 'parametri', { previsione_modello: 'media', previsione_opzioni: '' }, 'Il piano torna alla media delle variazioni'));
+  $('#togli-previsione').addEventListener('click', () => esegui('PUT', 'parametri', { previsione_modello: 'media', previsione_opzioni: '', previsione_scenario: 'atteso' }, 'Il piano torna alla media delle variazioni'));
 
   // ---------- Confronto all'indietro: quale modello ha funzionato meglio ----------
   // Per ogni modello (con le opzioni predefinite; ARIMA con gli ordini scelti una volta sull'intera serie) si rifanno
@@ -284,7 +326,8 @@
         crea('td', {}, `${MESI[+p.mese.slice(5, 7) - 1]} ${p.mese.slice(0, 4)}`), crea('td', {}, perc(p.valore, 2)),
         crea('td', {}, `${perc(p.basso80, 2)} – ${perc(p.alto80, 2)}`), crea('td', {}, `${perc(p.basso95, 2)} – ${perc(p.alto95, 2)}`)))));
     blocco.replaceChildren(crea('ul', { className: 'frasi' }, ...frasi(r).map(f => crea('li', {}, f))),
-      crea('details', {}, crea('summary', {}, 'Tabella della proiezione (primi 12 mesi, poi un valore all\'anno)'), crea('div', { className: 'contenitore-tabella semplice' }, tabella)));
+      crea('details', {}, crea('summary', {}, 'Tabella della proiezione (primi 12 mesi, poi un valore all\'anno)'), crea('div', { className: 'contenitore-tabella semplice' }, tabella)),
+      ...tabellaScenari());
   }
 
   // ---------- Grafico ----------

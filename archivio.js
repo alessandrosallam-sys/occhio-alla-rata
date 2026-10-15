@@ -49,6 +49,7 @@
     // Come il piano stima l'indice delle rate future: si sceglie nella scheda «Previsioni» (previsioni.js).
     previsione_modello: { tipo: 'scelta', iniziale: 'media', nascosto: true, opzioni: ['media', 'arima', 'var', 'garch', 'vasicek'].map(valore => ({ valore })) },
     previsione_opzioni: { tipo: 'testo', iniziale: '', nascosto: true },
+    previsione_scenario: { tipo: 'scelta', iniziale: 'atteso', nascosto: true, opzioni: ['atteso', 'alto80', 'basso80'].map(valore => ({ valore })) },
     soglia_differenza: { tipo: 'euro', min: 0, max: 1e6, iniziale: 0.005, nascosto: true },
   };
   // "rata_copiata" è la rata presa dal calcolo con «Compila le rate dal calcolo»: vale come rata vera finché

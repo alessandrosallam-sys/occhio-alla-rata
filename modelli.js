@@ -353,8 +353,9 @@
   // Funzione giorno → valore atteso, per il piano: interpola fra i mesi della proiezione; fino al giorno di partenza
   // restituisce null (il piano usa i valori veri o il suo metodo), oltre l'orizzonte tiene l'ultimo valore.
   const inGiorni = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000;
-  function perGiorno(risultato) {
-    const punti = [{ x: inGiorni(risultato.partenza.giorno), y: risultato.partenza.valore }, ...risultato.proiezione.map(p => ({ x: inGiorni(p.giorno), y: p.valore }))];
+  // "campo" sceglie lo scenario: 'valore' (atteso), 'alto80', 'basso80', 'alto95', 'basso95'.
+  function perGiorno(risultato, campo = 'valore') {
+    const punti = [{ x: inGiorni(risultato.partenza.giorno), y: risultato.partenza.valore }, ...risultato.proiezione.map(p => ({ x: inGiorni(p.giorno), y: p[campo] }))];
     return giorno => {
       if (!giorno || giorno <= risultato.partenza.giorno) return null;
       const x = inGiorni(giorno);
