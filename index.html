@@ -22,6 +22,9 @@
         <button role="tab" data-scheda="prestiti" aria-selected="false" aria-controls="scheda-prestiti">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M6.5 4h11M3.5 12.5h17"/></svg>
           <span>Prestiti</span></button>
+        <button role="tab" data-scheda="offerte" aria-selected="false" aria-controls="scheda-offerte">
+          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M7 20h10M5 8h14"/><path d="M5 8l-2.5 6a2.5 2.5 0 0 0 5 0z"/><path d="M19 8l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>
+          <span>Offerte</span></button>
         <button role="tab" data-scheda="piano" aria-selected="true" aria-controls="scheda-piano">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.8h17M9.5 9.5V20"/></svg>
           <span>Piano</span></button>
@@ -84,6 +87,23 @@
           <button type="button" id="aggiungi-prestito">Aggiungi un prestito</button>
         </div>
         <div id="contenuto-prestiti" class="blocco-prestiti"></div>
+      </div>
+    </section>
+
+    <!-- Confronto di offerte prima di firmare (offerte.js) -->
+    <section id="scheda-offerte" class="scheda scorrevole" role="tabpanel" aria-label="Offerte" hidden>
+      <div class="colonna pannello">
+        <div class="intestazione-prestiti">
+          <div>
+            <h2>Confronta le offerte</h2>
+            <p class="nota">Prima di firmare: scrivi le offerte di banche e finanziarie e guarda uno accanto all'altro rata, interessi, costo totale e TAEG. Le cifre sono nel foglio informativo che ti devono dare prima della firma (PIES per i mutui, SECCI per i finanziamenti).</p>
+          </div>
+          <div class="azioni">
+            <button type="button" class="secondario" id="segui-prestito-offerte" hidden>Segui un prestito che hai già</button>
+            <button type="button" id="aggiungi-offerta">Aggiungi un'offerta</button>
+          </div>
+        </div>
+        <div id="contenuto-offerte" class="blocco-prestiti"></div>
       </div>
     </section>
 
@@ -477,6 +497,7 @@
   <script src="configura.js"></script>
   <script src="prestiti.js"></script>
   <script src="costi.js"></script>
+  <script src="offerte.js"></script>
   <script src="file-collegato.js"></script>
 </body>
 </html>

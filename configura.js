@@ -391,7 +391,11 @@
       crea('ul', { className: 'documenti' },
         crea('li', {}, 'Ci vogliono circa dieci minuti. Ogni domanda spiega che cosa ti viene chiesto e dove trovarlo.'),
         crea('li', {}, 'Se una risposta non la sai, spesso puoi scegliere «Non lo so»: il programma la ricava dalle rate che hai già pagato.'),
-        crea('li', {}, 'Niente è definitivo: puoi tornare indietro, e rifare tutto quando vuoi con il pulsante «Configurazione» in alto.')));
+        crea('li', {}, 'Niente è definitivo: puoi tornare indietro, e rifare tutto quando vuoi con il pulsante «Configurazione» in alto.')),
+      // Chi deve ancora firmare può confrontare le offerte delle banche, senza seguire ancora nessun prestito.
+      ...(guida.riapertura || guida.nuovo || guida.daOfferte ? [] : [crea('div', { className: 'consiglio' },
+        crea('p', {}, crea('strong', {}, 'Devi ancora firmare? '), 'Puoi confrontare le offerte di banche e finanziarie: rata, interessi, costo totale e TAEG, uno accanto all\'altro. Quando avrai scelto, la seguirai da qui.'),
+        crea('button', { type: 'button', className: 'secondario', id: 'apri-offerte' }, 'Confronta delle offerte'))]));
   }
 
   function disegnaRate(contenitore) {
@@ -518,7 +522,7 @@
     }
     $('#guida-indietro').hidden = guida.passo === 0;
     $('#guida-avanti').textContent = ultimo ? (guida.riapertura ? 'Salva la configurazione' : 'Crea il prestito') : passo.tipo === 'benvenuto' ? 'Cominciamo' : 'Avanti';
-    $('#guida-annulla').hidden = !guida.riapertura && !guida.nuovo;
+    $('#guida-annulla').hidden = !guida.riapertura && !guida.nuovo && !guida.daOfferte;
     $('#guida-carica').hidden = guida.riapertura || guida.nuovo || guida.passo !== 0;
     $('#configurazione').scrollTop = 0;
     window.scrollTo(0, 0);
@@ -548,11 +552,14 @@
     return true;
   }
   // "riapertura": si rivede il prestito aperto; "nuovo": se ne aggiunge un altro. Senza nessuno dei due è il primo.
-  M.apriGuida = function apriGuida(riapertura, nuovo = false) {
+  // "partenza": risposte già date, ad esempio quelle di un'offerta che si comincia a seguire.
+  M.apriGuida = function apriGuida(riapertura, nuovo = false, partenza = null) {
     const rate = {};
     if (riapertura) for (const r of stato.dati.rate) if (r.rata_vera != null || r.quota_capitale != null) rate[r.n] = { rata: perCampo(r.rata_vera), quota: perCampo(r.quota_capitale), esisteva: true };
-    Object.assign(guida, { passo: 0, massimo: riapertura ? PASSI.length - 1 : 0, riapertura, nuovo: !riapertura && nuovo, rate, righeRate: Math.max(12, ...Object.keys(rate).map(Number)), caricaTassi: true, scaricati: null,
-      nonSo: new Set(), ricavate: null, dubbio: null, bozza: { ...Archivio.predefiniti(), ...(riapertura ? stato.dati.parametri : {}) } });
+    // Senza prestiti si può essere arrivati dalla scheda «Offerte»: «Annulla» ci riporta.
+    const daOfferte = !riapertura && !Archivio.configurato() && (stato.soloOfferte || Archivio.offerte().length > 0);
+    Object.assign(guida, { passo: 0, massimo: riapertura ? PASSI.length - 1 : 0, riapertura, nuovo: !riapertura && nuovo && Archivio.configurato(), daOfferte, rate, righeRate: Math.max(12, ...Object.keys(rate).map(Number)), caricaTassi: true, scaricati: null,
+      nonSo: new Set(), ricavate: null, dubbio: null, bozza: { ...Archivio.predefiniti(), ...(riapertura ? stato.dati.parametri : partenza || {}) } });
     $('#configurazione').hidden = false;
     for (const id of ['#principale', '.schede', '#riepilogo', '#apri-configurazione']) $(id).hidden = true;
     disegnaPasso();
@@ -574,6 +581,7 @@
     if (evento.target.id === 'altre-rate') { leggiCaselleRate(); guida.righeRate += 12; disegnaPasso(); }
     if (evento.target.id === 'usa-consiglio' && guida.consiglio) { Object.assign(guida.bozza, guida.consiglio); disegnaPasso(); }
     if (evento.target.id === 'scarica-guida') scaricaNellaGuida(evento.target);
+    if (evento.target.id === 'apri-offerte') { stato.soloOfferte = true; M.avvia(); }
   });
   async function scaricaNellaGuida(pulsante) {
     raccogliPasso(false);
@@ -634,6 +642,9 @@
     if (tassi.length || rate.length || !variabile(guida.bozza)) { M.mostraScheda('piano'); avvisa('Prestito creato. Nel piano le rate verdi tornano con i conti della banca.'); }
     else { M.mostraScheda('tassi'); avvisa(TassiInternet.riconosci(guida.bozza.indice_nome) ? 'Prestito creato. Ora scarica da internet i valori dell\'indice, con il pulsante qui sotto.' : 'Prestito creato. Ora inserisci i valori dell\'indice: le date che servono sono elencate qui.'); }
   });
+
+  // I moduli costruiti dalla descrizione dei campi servono anche alla scheda «Offerte».
+  M.campi = { crea: creaCampo, leggi: leggiCampi, aggiornaVisibili };
 
   // ---------- Regole del contratto nel pannello ----------
   const CHIAVI_REGOLE = Object.keys(CAMPI).filter(c => !CAMPI[c].nascosto);

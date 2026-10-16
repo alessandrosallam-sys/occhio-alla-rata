@@ -1265,6 +1265,26 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
   #aggiungi-prestito { width: 100%; }
 }
 
+/* Confronto di offerte (offerte.js): tabella con una colonna per offerta, poi una carta per offerta */
+.scorri-offerte { overflow-x: auto; margin: 0 calc(-1 * var(--s2)); }
+.tabella-offerte { border-collapse: collapse; font-size: 14.5px; min-width: 100%; }
+.tabella-offerte th, .tabella-offerte td { padding: 9px var(--s3); border-bottom: 1px solid var(--linea); vertical-align: top; text-align: right; }
+.tabella-offerte tbody th { text-align: left; font-weight: 500; min-width: 170px; position: sticky; left: 0; background: var(--carta-sfondo); }
+.tabella-offerte th small, .tabella-offerte td small { display: block; color: var(--tenue); font-weight: 400; font-size: 12.5px; }
+.tabella-offerte thead th { font-size: 15px; font-weight: 700; white-space: nowrap; }
+.tabella-offerte thead .etichetta-aperto { display: block; width: max-content; margin: 4px 0 0 auto; }
+.tabella-offerte td { min-width: 150px; font-variant-numeric: tabular-nums; }
+.tabella-offerte .migliore { background: var(--accento-tenue); }
+.tabella-offerte td.manca { color: var(--tenue); }
+#confronto-offerte { display: flex; flex-direction: column; gap: var(--s3); }
+#confronto-offerte .nota { margin: 0; }
+#confronto-offerte .campo-in-linea { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); font-size: 14px; font-weight: 600; }
+#modello-offerte { width: auto; max-width: 100%; }
+.carta-offerta { display: flex; flex-direction: column; gap: var(--s3); }
+.carta-offerta h3 { margin: 0; }
+.carta-offerta .campi { margin: 0; }
+.carta-offerta .azioni .pericoloso { margin-left: auto; }
+
 /* Quanto costa il prestito (costi.js), nel pannello di controllo */
 .carta-costo { display: flex; flex-direction: column; gap: var(--s3); }
 .carta-costo h3 { margin: 0; }
@@ -1409,6 +1429,8 @@ button.tessera-tema[aria-pressed="true"] .nome-tema::after { content: "✓"; col
   .testata-interno { gap: var(--s3); }
   .azioni-testata .testo-pulsante { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .azioni-testata button { width: var(--alto-controllo); padding: 0; }
+  /* Sette schede (con Prestiti e Offerte): un po' più strette, così ci stanno anche a 800 px */
+  .schede button { padding: 0 8px; font-size: 14px; }
 }
 @media (max-width: 1180px) {
   .statistiche { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }

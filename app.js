@@ -706,8 +706,8 @@
       pulsante.setAttribute('aria-selected', attiva);
       $('#scheda-' + pulsante.dataset.scheda).hidden = !attiva;
     }
-    // I numeri del mese in testa riguardano il prestito aperto: nella scheda con tutti i prestiti non servono.
-    $('#riepilogo').hidden = nome === 'prestiti';
+    // I numeri del mese in testa riguardano il prestito aperto: nelle schede con tutti i prestiti e con le offerte non servono.
+    $('#riepilogo').hidden = nome === 'prestiti' || nome === 'offerte' || !stato.dati;
     history.replaceState(null, '', '#' + nome);   // ricaricando la pagina si resta sulla stessa scheda
     if (M.allApertura[nome]) M.allApertura[nome]();
     if (nome === 'piano' && !stato.schedaVista.piano) vaiAlMeseCorrente();
@@ -715,10 +715,19 @@
   }
   // ---------- Avvio ----------
   // Senza una configurazione parte la guida (configura.js); altrimenti si mostra il programma.
+  // Senza prestiti ma con delle offerte (o se lo si è chiesto dalla guida) c'è solo la scheda «Offerte»: serve a chi
+  // deve ancora firmare.
   M.avvia = async function avvia() {
     const pronto = Archivio.configurato();
-    $('#configurazione').hidden = pronto;
-    for (const id of ['#principale', '.schede', '#riepilogo', '#apri-configurazione']) $(id).hidden = !pronto;
+    const soloOfferte = !pronto && (stato.soloOfferte || Archivio.offerte().length > 0);
+    $('#configurazione').hidden = pronto || soloOfferte;
+    for (const id of ['#principale', '.schede']) $(id).hidden = !pronto && !soloOfferte;
+    for (const id of ['#riepilogo', '#apri-configurazione']) $(id).hidden = !pronto;
+    if (soloOfferte) {
+      stato.dati = stato.piano = null;
+      for (const pulsante of document.querySelectorAll('.schede button[data-scheda]')) pulsante.hidden = pulsante.dataset.scheda !== 'offerte';
+      return mostraScheda('offerte');
+    }
     if (!pronto) return M.apriGuida(false);
     try {
       aggiorna(await api('GET', 'dati'));

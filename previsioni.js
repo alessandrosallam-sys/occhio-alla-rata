@@ -89,6 +89,31 @@
     if (cachePiano.size > 8) cachePiano.delete(cachePiano.keys().next().value);
     return funzione;
   };
+  // Per le offerte (offerte.js): dove potrebbe andare un Euribor nei prossimi "mesi" secondo un modello, con i valori
+  // nel programma (e quelli scaricati in questa sessione). Restituisce l'ultimo valore noto e, per ogni scenario
+  // (atteso, alto80, basso80), una funzione giorno → indice; null se l'indice non è un Euribor o mancano i dati.
+  const cacheOfferte = new Map();
+  M.proiezioneIndice = function proiezioneIndice(nomeIndice, mesi, modello) {
+    const propria = Internet.riconosci(nomeIndice);
+    if (!propria || !Mod.MODELLI[modello]) return null;
+    const dati = { parametri: { indice_nome: nomeIndice }, euribor: [] };
+    const serie = Mod.mensile(valoriSerie(propria.codice, dati));
+    if (serie.length < 36) return null;
+    const u = serie[serie.length - 1], chiave = JSON.stringify([modello, propria.codice, mesi, serie.length, u.giorno, u.y]);
+    if (!cacheOfferte.has(chiave)) {
+      let esito = null;
+      try {
+        const { risultato } = calcola(modello, propria.codice, { h: mesi }, dati);
+        const ultimo = { giorno: u.giorno, valore: u.y };
+        // Prima della partenza della proiezione (o se manca un valore) vale l'ultimo valore noto.
+        const scenario = campo => { const f = Mod.perGiorno(risultato, campo); return giorno => { const v = f(giorno); return v == null ? ultimo.valore : v; }; };
+        esito = { ultimo, nomeSerie: propria.nome, scenari: { atteso: scenario('valore'), alto80: scenario('alto80'), basso80: scenario('basso80') } };
+      } catch { esito = null; }   // dati insufficienti per il modello
+      cacheOfferte.set(chiave, esito);
+      if (cacheOfferte.size > 20) cacheOfferte.delete(cacheOfferte.keys().next().value);
+    }
+    return cacheOfferte.get(chiave);
+  };
   M.nomeModelloPiano = dati => {
     const modello = dati.parametri.previsione_modello || 'media', scenario = scenarioDi(dati);
     return modello !== 'media' && Mod.MODELLI[modello] ? Mod.MODELLI[modello].breve + (scenario !== 'atteso' ? `, ${SCENARI[scenario].nome}` : '') : null;
