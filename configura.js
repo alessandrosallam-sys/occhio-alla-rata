@@ -172,7 +172,8 @@
   ];
   const NON_SO = '?';
   // rate: importi scritti, per numero di rata; nonSo: domande lasciate al programma; massimo: ultimo passo raggiunto
-  const guida = { passo: 0, massimo: 0, bozza: {}, riapertura: false, rate: {}, righeRate: 12, caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null };
+  // nuovo: si aggiunge un prestito accanto a quelli che ci sono già (dalla scheda «Prestiti»)
+  const guida = { passo: 0, massimo: 0, bozza: {}, riapertura: false, nuovo: false, rate: {}, righeRate: 12, caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null };
   // Valori dell'indice pronti per la conferma: quelli già nel programma (se la casella è spuntata) e quelli scaricati
   // da internet nel passo del tasso, purché siano della stessa versione dell'Euribor scelta.
   function tassiScaricati(b) {
@@ -342,7 +343,8 @@
     const documento = (nome, contenuto) => crea('li', {}, crea('strong', {}, nome), ' ' + contenuto);
     contenitore.replaceChildren(
       crea('p', {}, guida.riapertura ? `Stai rivedendo la configurazione di «${guida.bozza.nome || 'Il mio mutuo'}». Le risposte già date sono compilate: cambia solo quello che ti serve. Rate e tassi inseriti restano dove sono.`
-        : 'Questo programma ricostruisce, rata per rata, il tuo mutuo a tasso variabile: ti dice se la banca ti addebita la cifra giusta, quanto hai pagato finora di interessi e come potrebbero cambiare le rate future.'),
+        : guida.nuovo ? 'Aggiungi un altro prestito: le stesse domande della prima volta. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».'
+          : 'Questo programma ricostruisce, rata per rata, il tuo mutuo a tasso variabile: ti dice se la banca ti addebita la cifra giusta, quanto hai pagato finora di interessi e come potrebbero cambiare le rate future.'),
       crea('h3', {}, 'Tieni a portata di mano'),
       crea('ul', { className: 'documenti' },
         documento('Il contratto di mutuo', '(o il «documento di sintesi» che lo accompagna): servono importo, durata, indice e spread.'),
@@ -474,8 +476,8 @@
     }
     $('#guida-indietro').hidden = guida.passo === 0;
     $('#guida-avanti').textContent = ultimo ? (guida.riapertura ? 'Salva la configurazione' : 'Crea il mio mutuo') : passo.tipo === 'benvenuto' ? 'Cominciamo' : 'Avanti';
-    $('#guida-annulla').hidden = !guida.riapertura;
-    $('#guida-carica').hidden = guida.riapertura || guida.passo !== 0;
+    $('#guida-annulla').hidden = !guida.riapertura && !guida.nuovo;
+    $('#guida-carica').hidden = guida.riapertura || guida.nuovo || guida.passo !== 0;
     $('#configurazione').scrollTop = 0;
     window.scrollTo(0, 0);
     const primo = $('#campi-passo input[type="text"], #campi-passo input[type="date"]');
@@ -503,10 +505,11 @@
     }
     return true;
   }
-  M.apriGuida = function apriGuida(riapertura) {
+  // "riapertura": si rivede il prestito aperto; "nuovo": se ne aggiunge un altro. Senza nessuno dei due è il primo.
+  M.apriGuida = function apriGuida(riapertura, nuovo = false) {
     const rate = {};
     if (riapertura) for (const r of stato.dati.rate) if (r.rata_vera != null || r.quota_capitale != null) rate[r.n] = { rata: perCampo(r.rata_vera), quota: perCampo(r.quota_capitale), esisteva: true };
-    Object.assign(guida, { passo: 0, massimo: riapertura ? PASSI.length - 1 : 0, riapertura, rate, righeRate: Math.max(12, ...Object.keys(rate).map(Number)), caricaTassi: true, scaricati: null,
+    Object.assign(guida, { passo: 0, massimo: riapertura ? PASSI.length - 1 : 0, riapertura, nuovo: !riapertura && nuovo, rate, righeRate: Math.max(12, ...Object.keys(rate).map(Number)), caricaTassi: true, scaricati: null,
       nonSo: new Set(), ricavate: null, dubbio: null, bozza: { ...Archivio.predefiniti(), ...(riapertura ? stato.dati.parametri : {}) } });
     $('#configurazione').hidden = false;
     for (const id of ['#principale', '.schede', '#riepilogo', '#apri-configurazione']) $(id).hidden = true;
@@ -579,7 +582,7 @@
     if (guida.passo < PASSI.length - 1) { guida.passo++; return disegnaPasso(); }
     const rate = rateInserite(), tassi = tassiPronti(guida.bozza);
     try {
-      await Archivio.richiesta('POST', 'configura', { parametri: guida.bozza, tassi, rate });
+      await Archivio.richiesta('POST', 'configura', { parametri: guida.bozza, tassi, rate, nuovo: guida.nuovo });
     } catch (errore) {
       return mostraErrore(errore.message);
     }
@@ -665,7 +668,7 @@
   });
   // Sostituisce i dati con quelli di un salvataggio. La usa anche file-collegato.js, che apre i file a modo suo.
   M.caricaSalvataggio = async function caricaSalvataggio(testo, conferma) {
-    if (conferma && !confirm('I dati di adesso verranno sostituiti con quelli del file. Continuare?')) return false;
+    if (conferma && !confirm('Tutti i prestiti di adesso verranno sostituiti con quelli del file. Continuare?')) return false;
     try {
       Archivio.importa(testo);
     } catch (errore) {
@@ -684,7 +687,7 @@
   $('#carica-file input').addEventListener('change', evento => caricaDaFile(evento.target, true));
   $('#guida-carica input').addEventListener('change', evento => caricaDaFile(evento.target, false));
   $('#cancella-tutto').addEventListener('click', () => {
-    if (!confirm('Cancellare il mutuo, le rate e i tassi inseriti? Se non hai salvato una copia su file non si possono recuperare.')) return;
+    if (!confirm('Cancellare tutti i prestiti, con le rate e i tassi inseriti? Se non hai salvato una copia su file non si possono recuperare. Per toglierne uno solo usa «Elimina» nella pagina «Prestiti».')) return;
     Archivio.azzera();
     location.hash = '';
     M.avvia();

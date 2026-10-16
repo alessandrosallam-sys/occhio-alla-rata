@@ -19,6 +19,9 @@
         <h1 id="titolo-mutuo">Mutuo variabile</h1>
       </div>
       <nav class="schede" role="tablist" aria-label="Sezioni" hidden>
+        <button role="tab" data-scheda="prestiti" aria-selected="false" aria-controls="scheda-prestiti">
+          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M6.5 4h11M3.5 12.5h17"/></svg>
+          <span>Prestiti</span></button>
         <button role="tab" data-scheda="piano" aria-selected="true" aria-controls="scheda-piano">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.8h17M9.5 9.5V20"/></svg>
           <span>Piano</span></button>
@@ -70,6 +73,20 @@
   </section>
 
   <main id="principale" hidden>
+    <!-- Tutti i prestiti seguiti, con i totali (prestiti.js): le altre schede lavorano sul prestito aperto -->
+    <section id="scheda-prestiti" class="scheda scorrevole" role="tabpanel" aria-label="Prestiti" hidden>
+      <div class="colonna pannello">
+        <div class="intestazione-prestiti">
+          <div>
+            <h2>I tuoi prestiti</h2>
+            <p class="nota">Mutui e finanziamenti che segui. Le altre pagine (Piano, Tassi, Pannello…) riguardano quello aperto: per passare a un altro premi «Apri».</p>
+          </div>
+          <button type="button" id="aggiungi-prestito">Aggiungi un prestito</button>
+        </div>
+        <div id="contenuto-prestiti" class="blocco-prestiti"></div>
+      </div>
+    </section>
+
     <!-- Piano di ammortamento -->
     <section id="scheda-piano" class="scheda scheda-piano" role="tabpanel" aria-label="Piano">
       <div class="barra barra-piano">
@@ -338,7 +355,7 @@
         <div class="carta carta-dati">
           <div class="testo-dati">
             <h2>I tuoi dati</h2>
-            <p class="nota">Tutto resta in questo browser: se cancelli i dati di navigazione si perdono. Salva una copia su file per sicurezza, o per portare i dati su un altro computer o browser.</p>
+            <p class="nota">Tutto resta in questo browser, per tutti i prestiti: se cancelli i dati di navigazione si perdono. Salva una copia su file per sicurezza, o per portare i dati su un altro computer o browser.</p>
           </div>
           <div class="azioni">
             <button type="button" id="salva-file">Salva su file</button>
@@ -453,6 +470,7 @@
   <script src="calendario.js"></script>
   <script src="previsioni.js"></script>
   <script src="configura.js"></script>
+  <script src="prestiti.js"></script>
   <script src="file-collegato.js"></script>
 </body>
 </html>

@@ -69,7 +69,8 @@
   // Scenari: quale valore della proiezione usare ("campo" di Modelli.perGiorno) e come chiamarlo.
   const SCENARI = { atteso: { campo: 'valore', nome: 'valore atteso' }, alto80: { campo: 'alto80', nome: 'fascia alta 80% (prudente)' }, basso80: { campo: 'basso80', nome: 'fascia bassa 80% (ottimista)' } };
   const scenarioDi = dati => SCENARI[dati.parametri.previsione_scenario] ? dati.parametri.previsione_scenario : 'atteso';
-  const cachePiano = { chiave: null, funzione: null };
+  // Una proiezione per ogni prestito (la scheda «Prestiti» calcola il piano di tutti): le ultime otto restano in memoria.
+  const cachePiano = new Map();
   M.perPiano = function perPiano(dati) {
     const modello = dati.parametri.previsione_modello || 'media';
     if (modello === 'media' || !Mod.MODELLI[modello]) return null;
@@ -80,11 +81,12 @@
     if (!serie.length) return null;
     const u = serie[serie.length - 1];
     const chiave = JSON.stringify([modello, opzioni, scenario, codice, serie.length, u.giorno, u.y, dati.parametri.numero_rate, dati.parametri.data_prima_rata]);
-    if (cachePiano.chiave === chiave) return cachePiano.funzione;
+    if (cachePiano.has(chiave)) return cachePiano.get(chiave);
     let funzione = null;
     try { funzione = Mod.perGiorno(calcola(modello, codice, { ...opzioni, h: 'fine' }, dati).risultato, SCENARI[scenario].campo); }
     catch { funzione = null; }   // dati insufficienti: il piano torna alla media delle variazioni
-    Object.assign(cachePiano, { chiave, funzione });
+    cachePiano.set(chiave, funzione);
+    if (cachePiano.size > 8) cachePiano.delete(cachePiano.keys().next().value);
     return funzione;
   };
   M.nomeModelloPiano = dati => {
@@ -447,6 +449,13 @@
   // Le carte stanno in fondo alla scheda Tassi: all'apertura della scheda, dopo il grafico dei tassi (tassi.js), si
   // ridisegnano stato e proiezione.
   M.viste.unshift(disegna);
+  // Aperto un altro prestito: la proiezione calcolata era sulla serie del precedente; le scelte si rileggono dai suoi dati.
+  M.cambioPrestito.push(() => {
+    ultimo = null;
+    applicate = undefined;
+    calcoloAutomaticoFatto = false;
+    $('#esito-previsione').replaceChildren();
+  });
   // previsioni.js si carica dopo tassi.js: all'apertura della scheda prima si aggiornano modulo e stato, poi il grafico.
   const aperturaTassi = M.allApertura.tassi;
 

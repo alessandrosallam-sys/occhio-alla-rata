@@ -13,6 +13,7 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no.
 4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Il grafico mostra tutta la storia dell'Euribor dal 1999 (all'inizio solo il periodo del tuo mutuo) e, a destra, la proiezione in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
 5. Dal **Pannello di controllo** puoi collegare un file in cui salvare tutto, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
+6. Hai più di un prestito? Nella pagina **Prestiti** li vedi tutti, con il totale delle rate del mese e del debito residuo, e con «Aggiungi un prestito» ne segui un altro. Le altre pagine riguardano il prestito aperto: per passare a un altro premi «Apri».
 
 Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il grafico («Cambia» lo apre). Sul telefono le pagine si scelgono dalla barra in basso e la tabella del piano scorre in orizzontale tenendo ferma la colonna delle rate. Il tema chiaro o scuro segue quello del sistema.
 
@@ -77,6 +78,7 @@ calendario.js         schede Calendario e Festività
 previsioni.js         proiezioni dell'indice nella pagina Tassi: modelli, scenari, confronto, scelta per le rate future
 modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
 configura.js          configurazione guidata, regole nel pannello, taratura
+prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali
 file-collegato.js     il file collegato: i dati scritti da soli in un file scelto dall'utente (Edge e Chrome)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
@@ -84,9 +86,9 @@ crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `file-collegato.js`.
+Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `file-collegato.js`.
 
-**Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del salvataggio su file: `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni (`GET dati`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Dopo ogni modifica l'archivio chiama `Archivio.alCambio`: `file-collegato.js` lo usa per riscrivere il file collegato (File System Access API, `showSaveFilePicker`; la maniglia del file è ricordata in IndexedDB, database `mutuo-variabile`).
+**Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del salvataggio su file: `{ versione: 2, attivo, prestiti: [...] }`, e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Dopo ogni modifica l'archivio chiama `Archivio.alCambio`: `file-collegato.js` lo usa per riscrivere il file collegato (File System Access API, `showSaveFilePicker`; la maniglia del file è ricordata in IndexedDB, database `mutuo-variabile`).
 
 **Modelli.** `Modelli.stima(modello, serieMensile, opzioni)` (in `modelli.js`) restituisce la proiezione con le fasce; `Modelli.perGiorno` la trasforma nella funzione giorno → valore che il piano riceve come `opzioni.previsione`. Il file non tocca la pagina: `node -e "const M = require('./modelli.js'); …"` per provarlo.
 

@@ -1,4 +1,4 @@
-// Logica della pagina: legge i dati dall'archivio del browser, ricalcola il piano e gestisce le modifiche.
+// Logica della pagina: legge i dati del prestito aperto dall'archivio del browser, ricalcola il piano e gestisce le modifiche.
 (function () {
   'use strict';
   const $ = (selettore, dentro = document) => dentro.querySelector(selettore);
@@ -61,7 +61,10 @@
   }
 
   function aggiorna(dati) {
+    const altroPrestito = !stato.dati || stato.dati.id !== dati.id;
     stato.dati = dati;
+    // Aperto un altro prestito: le pagine dimenticano quello che avevano calcolato per il precedente.
+    if (altroPrestito) for (const f of M.cambioPrestito) f();
     // L'indice delle rate future viene dal modello scelto nella scheda «Previsioni», se c'è (previsioni.js).
     stato.piano = Calcolo.calcolaPiano(dati, { previsione: M.perPiano ? M.perPiano(dati) : null });
     if (M.ORIGINI) M.ORIGINI.previsione = M.nomeModelloPiano && M.nomeModelloPiano(dati) ? `previsione (modello ${M.nomeModelloPiano(dati)})` : 'previsione';
@@ -136,7 +139,7 @@
   const M = window.Mutuo = {
     stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI,
     data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice,
-    viste: [], allApertura: {}, dopoAvvio: [], ricordo,
+    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], ricordo,
   };
 
   // ---------- Riepilogo in testata ----------
@@ -689,6 +692,8 @@
       pulsante.setAttribute('aria-selected', attiva);
       $('#scheda-' + pulsante.dataset.scheda).hidden = !attiva;
     }
+    // I numeri del mese in testa riguardano il prestito aperto: nella scheda con tutti i prestiti non servono.
+    $('#riepilogo').hidden = nome === 'prestiti';
     history.replaceState(null, '', '#' + nome);   // ricaricando la pagina si resta sulla stessa scheda
     if (M.allApertura[nome]) M.allApertura[nome]();
     if (nome === 'piano' && !stato.schedaVista.piano) vaiAlMeseCorrente();

@@ -89,26 +89,40 @@
   const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));
 
   // ---------- Lettura e scrittura nel browser ----------
+  // L'archivio contiene uno o più prestiti, ognuno con parametri, rate, valori dell'indice e festività, e ricorda
+  // quale è aperto: le operazioni di "richiesta" lavorano sul prestito aperto ("dati").
   // "modificato" = quando i dati del browser sono cambiati l'ultima volta (serve a confrontarli con un file).
-  let dati = null, modificato = null;
+  let archivio = null, dati = null, modificato = null;
+  const nuovoId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const vuoto = () => ({ id: nuovoId(), parametri: {}, rate: [], euribor: [], festivita: [] });
+  const configurato = p => p.parametri.importo_iniziale > 0;
+  // Apre un prestito; senza prestiti ne prepara uno vuoto, che la guida riempie (e che non viene salvato finché è vuoto).
+  function scegli(id) {
+    dati = archivio.prestiti.find(p => p.id === id) || archivio.prestiti[0] || null;
+    if (!dati) { dati = vuoto(); archivio.prestiti.push(dati); }
+    archivio.attivo = dati.id;
+  }
   function carica() {
-    if (dati) return dati;
-    dati = { parametri: {}, rate: [], euribor: [], festivita: [] };
+    if (archivio) return dati;
+    archivio = { attivo: null, prestiti: [] };
     let testo = null;
     if (NEL_BROWSER) try { testo = localStorage.getItem(CHIAVE); } catch { /* archivio del browser non disponibile: si lavora in memoria */ }
     if (testo) {
       try {
         const grezzo = JSON.parse(testo);
-        dati = pulisci(grezzo);
+        archivio = pulisciArchivio(grezzo);
         if (typeof grezzo.modificato === 'string' && !isNaN(Date.parse(grezzo.modificato))) modificato = grezzo.modificato;
       } catch { /* dati illeggibili: si riparte da zero senza toccare quelli salvati */ }
     }
+    scegli(archivio.attivo);
     return dati;
   }
+  // L'archivio da salvare o da confrontare: solo i prestiti configurati.
+  const daSalvare = () => ({ attivo: archivio.attivo, prestiti: archivio.prestiti.filter(configurato) });
   function salva() {
     modificato = new Date().toISOString();
     if (NEL_BROWSER) {
-      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 1, modificato, ...dati })); }
+      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 2, modificato, ...daSalvare() })); }
       catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva su file» per non perderli.'); }
     }
     // Chi tiene una copia in un file (file-collegato.js, o la variante in un unico file) la aggiorna.
@@ -117,18 +131,34 @@
   // Legge un salvataggio (il .json, o il file dei dati della variante in un unico file) e lo rende valido.
   function leggiSalvataggio(testo) {
     let grezzo;
-    try { grezzo = JSON.parse(String(testo).replace(/^﻿?\s*window\.MutuoDatiSalvati\s*=\s*/, '').replace(/;\s*$/, '')); }
+    try { grezzo = JSON.parse(String(testo).replace(/^\uFEFF?\s*window\.MutuoDatiSalvati\s*=\s*/, '').replace(/;\s*$/, '')); }
     catch { throw new ErroreDati('Il file non è un salvataggio valido'); }
-    const nuovi = pulisci(grezzo);
-    richiedi(nuovi.parametri.importo_iniziale > 0, 'Il file non contiene la configurazione di un mutuo');
-    return nuovi;
+    const nuovo = pulisciArchivio(grezzo);
+    richiedi(nuovo.prestiti.length > 0, 'Il file non contiene la configurazione di un mutuo');
+    return nuovo;
   }
   // Testo che non dipende dall'ordine delle chiavi, per confrontare due insiemi di dati.
   const confrontabile = d => JSON.stringify(d, (chiave, v) => v && typeof v === 'object' && !Array.isArray(v)
     ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v);
-  // Rende valido un insieme di dati letto dal browser o da un file.
-  function pulisci(grezzo) {
+  // Rende valido un archivio letto dal browser o da un file. I salvataggi fino alla versione 1 avevano un solo mutuo,
+  // con i dati in cima: diventano un archivio con un prestito. I prestiti lasciati a metà della guida si scartano.
+  function pulisciArchivio(grezzo) {
     richiedi(grezzo && typeof grezzo === 'object', 'Il file non contiene i dati di un mutuo');
+    const elenco = Array.isArray(grezzo.prestiti) ? grezzo.prestiti : [grezzo];
+    const visti = new Set(), prestiti = [];
+    for (const voce of elenco) {
+      if (!voce || typeof voce !== 'object') continue;
+      const pulito = pulisci(voce);
+      if (!configurato(pulito)) continue;
+      const id = typeof voce.id === 'string' && /^[a-z0-9]{1,40}$/i.test(voce.id) && !visti.has(voce.id) ? voce.id : nuovoId();
+      visti.add(id);
+      prestiti.push({ id, ...pulito });
+    }
+    const attivo = prestiti.some(p => p.id === grezzo.attivo) ? grezzo.attivo : prestiti.length ? prestiti[0].id : null;
+    return { attivo, prestiti };
+  }
+  // Rende valido un prestito.
+  function pulisci(grezzo) {
     const parametri = grezzo.parametri && typeof grezzo.parametri === 'object' ? controllaParametri(grezzo.parametri, false) : {};
     const rate = (Array.isArray(grezzo.rate) ? grezzo.rate : []).filter(r => r && Number.isInteger(r.n) && r.n >= 1 && r.n <= 600).map(r => {
       const riga = { n: r.n, data_riferimento: dataValida(r.data_riferimento) ? r.data_riferimento : null };
@@ -147,7 +177,8 @@
     return d;
   }
   // Copia da consegnare alla pagina: i parametri mancanti prendono il valore iniziale.
-  const copia = () => JSON.parse(JSON.stringify({ ...dati, parametri: { ...predefiniti(), ...dati.parametri } }));
+  const copiaDi = p => JSON.parse(JSON.stringify({ ...p, parametri: { ...predefiniti(), ...p.parametri } }));
+  const copia = () => copiaDi(dati);
 
   // ---------- Operazioni ----------
   function salvaRata(n, corpo) {
@@ -177,14 +208,17 @@
     const primo = +parametri.data_prima_rata.slice(0, 4) - 1, ultimo = primo + Math.ceil(parametri.numero_rate / 12) + 2;
     for (let anno = primo; anno <= ultimo; anno++) dati.festivita.push(...Calcolo.festivitaTarget(anno));
   }
+  const esiste = id => archivio.prestiti.some(p => p.id === id && configurato(p));
 
   async function richiesta(metodo, percorso, corpo) {
     carica();
     const [risorsa, chiave] = percorso.split('/');
-    const prima = JSON.stringify(dati);
+    const prima = JSON.stringify(archivio);
     try {
       if (metodo === 'GET' && risorsa === 'dati') return copia();
       if (metodo === 'POST' && risorsa === 'configura') {
+        // "nuovo": un prestito in più, accanto a quelli che ci sono già.
+        if (corpo.nuovo && configurato(dati)) { const p = vuoto(); archivio.prestiti.push(p); scegli(p.id); }
         const parametri = controllaParametri(corpo.parametri || {}, true);
         dati.parametri = { ...dati.parametri, ...parametri };
         generaFestivita(dati.parametri);
@@ -194,6 +228,12 @@
         if (nuovi.length) salvaTassi(nuovi);
         // Rate già pagate inserite nella guida.
         for (const r of corpo.rate || []) salvaRata(r.n, { rata_vera: r.rata_vera, quota_capitale: r.quota_capitale });
+      }
+      else if (metodo === 'PUT' && risorsa === 'attivo') { richiedi(esiste(chiave), 'Prestito non trovato'); scegli(chiave); }
+      else if (metodo === 'DELETE' && risorsa === 'prestiti') {
+        richiedi(esiste(chiave), 'Prestito non trovato');
+        archivio.prestiti = archivio.prestiti.filter(p => p.id !== chiave);
+        scegli(archivio.attivo === chiave ? null : archivio.attivo);
       }
       else if (metodo === 'PUT' && risorsa === 'parametri') dati.parametri = { ...dati.parametri, ...controllaParametri(corpo, false) };
       else if (metodo === 'PUT' && risorsa === 'rate') salvaRata(Number(chiave), corpo);
@@ -212,7 +252,8 @@
       salva();
       return copia();
     } catch (errore) {
-      dati = JSON.parse(prima);   // o si salva tutto o niente
+      archivio = JSON.parse(prima);   // o si salva tutto o niente
+      scegli(archivio.attivo);
       throw errore;
     }
   }
@@ -236,28 +277,45 @@
     return dal ? tutti.filter(t => t.giorno >= dal) : tutti;
   }
 
+  // Breve descrizione di un archivio, per riconoscerlo: nomi dei prestiti e rate pagate inserite.
+  function descrivi(a) {
+    const rate = a.prestiti.reduce((n, p) => n + p.rate.filter(r => r.rata_vera != null || r.rata_copiata != null).length, 0);
+    return { nomi: a.prestiti.map(p => p.parametri.nome || 'Prestito senza nome'), rate };
+  }
+
   window.Archivio = {
     CAMPI, richiesta, predefiniti, precaricati,
-    configurato: () => carica().parametri.importo_iniziale > 0,
+    // Il prestito aperto è configurato (se non lo è, non ce n'è nessuno: parte la guida).
+    configurato: () => configurato(carica()),
+    attivo: () => (carica(), archivio.attivo),
+    // Tutti i prestiti, come li dà "GET dati" (parametri completi), nell'ordine in cui sono stati creati.
+    elenco: () => (carica(), archivio.prestiti.filter(configurato).map(copiaDi)),
     // Testo del salvataggio da scaricare come file.
-    esporta: () => JSON.stringify({ programma: 'mutuo-variabile', versione: 1, salvato: new Date().toISOString(), ...carica() }, null, 1),
+    esporta: () => (carica(), JSON.stringify({ programma: 'mutuo-variabile', versione: 2, salvato: new Date().toISOString(), ...daSalvare() }, null, 1)),
     // Lo stesso salvataggio nella forma del file dei dati della versione in un unico file.
     esportaFile() { return PREFISSO_FILE + this.esporta() + ';\n'; },
-    // Sostituisce tutti i dati con quelli di un salvataggio (va bene sia il .json sia il file dei dati).
+    // Sostituisce tutti i dati con quelli di un salvataggio (va bene sia il .json sia il file dei dati, di ogni versione).
     importa(testo) {
-      dati = leggiSalvataggio(testo);
+      archivio = leggiSalvataggio(testo);
+      scegli(archivio.attivo);
       salva();
       return copia();
     },
     // Vero se il salvataggio contiene esattamente i dati di adesso, o quelli del salvataggio "altro" se c'è
     // (la data del salvataggio non conta).
     uguale(testo, altro) {
-      try { return confrontabile(leggiSalvataggio(testo)) === confrontabile(altro === undefined ? carica() : leggiSalvataggio(altro)); } catch { return false; }
+      try { return confrontabile(leggiSalvataggio(testo)) === confrontabile(leggiSalvataggio(altro === undefined ? this.esporta() : altro)); } catch { return false; }
+    },
+    // Descrizione di un salvataggio (null se non è leggibile) o, senza testo, dei dati di adesso.
+    descrivi(testo) {
+      if (testo === undefined) return (carica(), descrivi(daSalvare()));
+      try { return descrivi(leggiSalvataggio(testo)); } catch { return null; }
     },
     // Quando i dati del browser sono cambiati l'ultima volta (ISO), se si sa.
     modificato: () => (carica(), modificato),
     azzera() {
-      dati = { parametri: {}, rate: [], euribor: [], festivita: [] };
+      archivio = { attivo: null, prestiti: [] };
+      scegli(null);
       modificato = null;
       if (NEL_BROWSER) try { localStorage.removeItem(CHIAVE); } catch { /* niente da cancellare */ }
     },

@@ -1,0 +1,94 @@
+// Scheda «Prestiti»: tutti i prestiti seguiti, ognuno con i suoi numeri del mese, e i totali. Da qui se ne apre uno
+// (le altre schede lavorano sul prestito aperto), se ne aggiunge uno nuovo con la configurazione guidata o lo si elimina.
+(function () {
+  'use strict';
+  const M = window.Mutuo, { stato, $, crea, euro, perc, meseAnno, avvisa } = M;
+
+  // Numeri di un prestito, calcolati sul suo piano come fa la scheda Piano (stessa previsione dell'indice).
+  function riassunto(d) {
+    const righe = Calcolo.calcolaPiano(d, { previsione: M.perPiano ? M.perPiano(d) : null }).righe;
+    const oggi = stato.oggi, prima = righe[0], ultima = righe[righe.length - 1], p = d.parametri;
+    const corrente = Calcolo.rataPerData(righe, oggi);
+    const rata = r => r.rataVera != null ? r.rataVera : r.rataCalcolata;
+    // Da oggi alla fine: la rata del mese in corso e tutte le successive.
+    const restanti = righe.filter(r => r.fine >= oggi);
+    return {
+      d, righe, corrente, prima, ultima,
+      stato: oggi > ultima.fine ? 'finito' : oggi < prima.inizio ? 'futuro' : 'corso',
+      rata: corrente ? rata(corrente) : restanti.length ? rata(restanti[0]) : 0,
+      meseRata: corrente ? corrente.inizio : restanti.length ? restanti[0].inizio : null,
+      debito: restanti.length ? restanti[0].debito : 0,
+      rimborsato: restanti.length ? 1 - restanti[0].debito / p.importo_iniziale : 1,
+      interessiRestanti: restanti.reduce((s, r) => s + r.rataCalcolata - r.quotaCapitale - p.spese_rata, 0),
+      rateRestanti: restanti.length,
+    };
+  }
+  // Che prestito è, in poche parole.
+  const descriviTipo = p => `Mutuo a tasso variabile · ${p.indice_nome || 'indice'} + ${perc(p.spread, 3, 1)}`;
+
+  function cartaPrestito(r, aperto) {
+    const p = r.d.parametri;
+    const voce = (etichetta, valore, dettaglio) => crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, etichetta),
+      crea('span', { className: 'valore' }, valore), ...(dettaglio ? [crea('span', { className: 'dettaglio' }, dettaglio)] : []));
+    const fine = r.stato === 'finito' ? 'Finito' : meseAnno(r.ultima.inizio);
+    const barra = crea('span');
+    barra.style.width = (Math.max(0, Math.min(1, r.rimborsato)) * 100).toFixed(1) + '%';
+    const apri = crea('button', { type: 'button', className: aperto ? 'secondario' : '', 'data-apri': r.d.id }, aperto ? 'Vai al piano' : 'Apri');
+    const elimina = crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina': r.d.id }, 'Elimina');
+    return crea('article', { className: 'carta carta-prestito' + (aperto ? ' aperto' : '') },
+      crea('header', {}, crea('div', {}, crea('h3', {}, p.nome || 'Prestito senza nome'), crea('p', { className: 'nota' }, descriviTipo(p))),
+        ...(aperto ? [crea('span', { className: 'etichetta-aperto' }, 'Aperto ora')] : [])),
+      crea('div', { className: 'numeri-prestito' },
+        voce(r.meseRata ? `Rata di ${meseAnno(r.meseRata)}` : 'Rata', r.stato === 'finito' ? '—' : euro(r.rata), r.stato === 'futuro' ? 'la prima' : null),
+        voce('Debito residuo', euro(r.debito), `di ${euro(p.importo_iniziale)}`),
+        voce('Ultima rata', fine, r.stato === 'finito' ? null : `${r.rateRestanti} rate da pagare`)),
+      crea('div', { className: 'avanzamento', title: `Rimborsato il ${perc(r.rimborsato, 1)}` }, barra),
+      crea('div', { className: 'azioni' }, apri, elimina));
+  }
+
+  function disegna() {
+    if ($('#scheda-prestiti').hidden || !Archivio.configurato()) return;
+    const attivo = Archivio.attivo(), tutti = Archivio.elenco().map(riassunto);
+    const contenuto = [crea('div', { className: 'elenco-prestiti' }, ...tutti.map(r => cartaPrestito(r, r.d.id === attivo)))];
+    if (tutti.length > 1) {
+      const somma = valore => tutti.reduce((s, r) => s + valore(r), 0);
+      const inCorso = tutti.filter(r => r.stato !== 'finito');
+      contenuto.unshift(crea('div', { className: 'carta totali-prestiti' },
+        crea('h2', {}, 'Tutti i prestiti'),
+        crea('div', { className: 'numeri-prestito' },
+          crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, 'Rate di questo mese'), crea('span', { className: 'valore' }, euro(somma(r => r.stato === 'corso' ? r.rata : 0))),
+            crea('span', { className: 'dettaglio' }, `${inCorso.length === 1 ? '1 prestito in corso' : inCorso.length + ' prestiti in corso'}`)),
+          crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, 'Debito residuo'), crea('span', { className: 'valore' }, euro(somma(r => r.debito))),
+            crea('span', { className: 'dettaglio' }, `di ${euro(somma(r => r.d.parametri.importo_iniziale))} ricevuti`)),
+          crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, 'Interessi ancora da pagare'), crea('span', { className: 'valore' }, euro(somma(r => r.interessiRestanti))),
+            crea('span', { className: 'dettaglio' }, 'secondo le previsioni')))));
+    }
+    $('#contenuto-prestiti').replaceChildren(...contenuto);
+  }
+
+  $('#contenuto-prestiti').addEventListener('click', async evento => {
+    const apri = evento.target.closest('button[data-apri]'), elimina = evento.target.closest('button[data-elimina]');
+    if (apri) {
+      if (apri.dataset.apri !== Archivio.attivo()) await Archivio.richiesta('PUT', 'attivo/' + apri.dataset.apri);
+      await M.avvia();
+      M.mostraScheda('piano');
+      return;
+    }
+    if (elimina) {
+      const d = Archivio.elenco().find(x => x.id === elimina.dataset.elimina), nome = d ? d.parametri.nome || 'Prestito senza nome' : '';
+      if (!d || !confirm(`Eliminare «${nome}»?\n\nLe rate e i tassi inseriti per questo prestito si perdono. Gli altri prestiti restano. Se vuoi tenerne una copia, prima usa «Salva una copia» nel pannello di controllo.`)) return;
+      try {
+        await Archivio.richiesta('DELETE', 'prestiti/' + d.id);
+      } catch (errore) {
+        return avvisa(errore.message, true);
+      }
+      await M.avvia();
+      if (Archivio.configurato()) M.mostraScheda('prestiti');
+      avvisa(`«${nome}» eliminato`);
+    }
+  });
+  $('#aggiungi-prestito').addEventListener('click', () => M.apriGuida(false, true));
+
+  M.viste.push(disegna);
+  M.allApertura.prestiti = disegna;
+})();

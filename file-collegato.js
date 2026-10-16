@@ -105,7 +105,9 @@
   // ---------- Collegare un file nuovo ----------
   async function collega() {
     let maniglia;
-    const nome = ((M.stato.dati && M.stato.dati.parametri.nome) || 'mutuo').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'mutuo';
+    // Con più prestiti il file li contiene tutti: il nome non è quello di uno solo.
+    const nome = Archivio.elenco().length > 1 ? 'i-miei-prestiti'
+      : ((M.stato.dati && M.stato.dati.parametri.nome) || 'mutuo').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'mutuo';
     try {
       maniglia = await window.showSaveFilePicker({ suggestedName: nome + '.json', types: [TIPO_JSON] });
     } catch (errore) {
@@ -174,17 +176,18 @@
       file.tengo = false;
     }
   }
-  const contaRate = d => (Array.isArray(d.rate) ? d.rate : []).filter(r => r && (r.rata_vera != null || r.rata_copiata != null)).length;
   const testoRate = n => n === 1 ? '1 rata pagata inserita' : `${n} rate pagate inserite`;
+  // Nomi dei prestiti e rate inserite (in tutti i prestiti), per riconoscere i due insiemi di dati.
   function descriviFile(testo) {
-    let d;
-    try { d = JSON.parse(testo); } catch { return null; }
-    if (!d || typeof d !== 'object' || !d.parametri || !(d.parametri.importo_iniziale > 0)) return null;
-    return { nome: d.parametri.nome || 'Mutuo senza nome', quando: typeof d.salvato === 'string' && !isNaN(Date.parse(d.salvato)) ? d.salvato : null, rate: contaRate(d) };
+    const d = Archivio.descrivi(testo);
+    if (!d) return null;
+    let quando = null;
+    try { const s = JSON.parse(testo).salvato; if (typeof s === 'string' && !isNaN(Date.parse(s))) quando = s; } catch { /* nessuna data */ }
+    return { nome: d.nomi.join(', '), quando, rate: d.rate };
   }
   async function descriviBrowser() {
-    const d = await Archivio.richiesta('GET', 'dati');
-    return { nome: d.parametri.nome || 'Mutuo senza nome', quando: Archivio.modificato(), rate: contaRate(d) };
+    const d = Archivio.descrivi();
+    return { nome: d.nomi.join(', ') || 'Nessun prestito', quando: Archivio.modificato(), rate: d.rate };
   }
   async function usaFile() {
     const { testo } = file.diverso;

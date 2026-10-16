@@ -442,6 +442,7 @@
     }
   }
   M.dopoAvvio.push(aggiornaAutomatico);
+  M.cambioPrestito.push(() => { esitoInternet = null; });   // l'ultimo scarico riguardava il prestito di prima
 
   moduloInternet.addEventListener('submit', async evento => {
     evento.preventDefault();
