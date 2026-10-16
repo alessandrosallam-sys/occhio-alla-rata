@@ -50,6 +50,9 @@
     previsione_modello: { tipo: 'scelta', iniziale: 'media', nascosto: true, opzioni: ['media', 'arima', 'var', 'garch', 'vasicek'].map(valore => ({ valore })) },
     previsione_opzioni: { tipo: 'testo', iniziale: '', nascosto: true },
     previsione_scenario: { tipo: 'scelta', iniziale: 'atteso', nascosto: true, opzioni: ['atteso', 'alto80', 'basso80'].map(valore => ({ valore })) },
+    // Le scelte del modulo della proiezione (serie, modello, parametri, orizzonte, scenario), così lo stesso file
+    // mostra la stessa proiezione in qualunque browser.
+    previsione_modulo: { tipo: 'testo', iniziale: '', nascosto: true, lunghezza: 400 },
     soglia_differenza: { tipo: 'euro', min: 0, max: 1e6, iniziale: 0.005, nascosto: true },
   };
   // "rata_copiata" è la rata presa dal calcolo con «Compila le rate dal calcolo»: vale come rata vera finché
@@ -69,7 +72,7 @@
       const campo = CAMPI[chiave];
       if (!campo) continue;   // chiavi sconosciute (ad esempio di versioni vecchie) si ignorano
       const nome = campo.etichetta || chiave;
-      if (campo.tipo === 'testo') { richiedi(typeof valore === 'string' && valore.trim().length <= 80, `Testo non valido: ${nome}`); puliti[chiave] = valore.trim(); }
+      if (campo.tipo === 'testo') { richiedi(typeof valore === 'string' && valore.trim().length <= (campo.lunghezza || 80), `Testo non valido: ${nome}`); puliti[chiave] = valore.trim(); }
       else if (campo.tipo === 'data') {
         richiedi(dataValida(valore), `Data non valida: ${nome}`);
         richiedi(+valore.slice(8) <= 28, `${nome}: scegli un giorno fra 1 e 28, così ogni mese ha il suo periodo`);

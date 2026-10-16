@@ -9,6 +9,7 @@
   const modulo = $('#form-previsioni');
   const scaricate = new Map();   // codice → valori giornalieri scaricati in questa sessione (serie senza precaricati)
   let ultimo = null;             // l'ultima proiezione calcolata, per il grafico e il pulsante "usa"
+  let calcoloAutomaticoFatto = false;   // la proiezione delle scelte salvate è già stata calcolata da sola
 
   const ORIZZONTI = [['12', '1 anno'], ['24', '2 anni'], ['60', '5 anni'], ['120', '10 anni'], ['fine', 'fino alla fine del mutuo']];
   // Durata in anni di ciascun Euribor, nell'ordine di TassiInternet.SERIE (1 settimana, 1, 3, 6, 12 mesi): serve alla curva.
@@ -188,21 +189,29 @@
   modulo.scenario.addEventListener('change', () => { modulo.scenario.dataset.toccato = '1'; });
   function disegna() {
     if (!stato.dati) return;
+    applicaScelteDeiDati();
     disegnaSerie();
     disegnaStatoPiano();
   }
   modulo.modello.replaceChildren(...Object.entries(Mod.MODELLI).map(([codice, m]) => crea('option', { value: codice }, m.nome)));
   modulo.orizzonte.replaceChildren(...ORIZZONTI.map(([v, t]) => crea('option', { value: v, selected: v === '24' }, t)));
-  // Le scelte del modulo restano nel browser (ricordo): a ogni riapertura si ritrovano, e la proiezione si ricalcola da sola.
-  const CHIAVE_SCELTE = 'previsioni';
-  let scelte = {};
-  try { scelte = JSON.parse(M.ricordo.leggi(CHIAVE_SCELTE) || '{}') || {}; } catch { scelte = {}; }
+  // Le scelte del modulo stanno con i dati del mutuo (parametro nascosto previsione_modulo): a ogni riapertura si
+  // ritrovano, anche in un altro browser o caricando il file, e la proiezione si ricalcola da sola.
+  // Prima stavano nella memoria del browser (chiave «previsioni»), diversa in ogni browser: non si leggono più.
+  let scelte = {}, applicate;   // applicate = il testo delle scelte già messo nel modulo
+  function leggiScelte() {
+    try { return JSON.parse((stato.dati && stato.dati.parametri.previsione_modulo) || '{}') || {}; } catch { return {}; }
+  }
   function salvaScelte() {
     scelte = { serie: modulo.serie.value, modello: modulo.modello.value, orizzonte: modulo.orizzonte.value, scenario: modulo.scenario.value, ...opzioniScelte() };
-    M.ricordo.scrivi(CHIAVE_SCELTE, JSON.stringify(scelte));
+    const testo = JSON.stringify(scelte);
+    if (!stato.dati || testo === stato.dati.parametri.previsione_modulo) return;
+    applicate = testo;
+    esegui('PUT', 'parametri', { previsione_modulo: testo });
   }
   const vale = (select, v) => v != null && [...select.options].some(o => o.value === String(v));
   function ripristinaScelte() {
+    if (vale(modulo.serie, scelte.serie)) modulo.serie.value = scelte.serie;
     // Senza scelte ricordate: il modello che il piano sta usando, altrimenti Vasicek.
     const delPiano = stato.dati && Mod.MODELLI[stato.dati.parametri.previsione_modello] && stato.dati.parametri.previsione_modello !== 'media' ? stato.dati.parametri.previsione_modello : null;
     modulo.modello.value = vale(modulo.modello, scelte.modello) ? scelte.modello : delPiano || 'vasicek';
@@ -215,6 +224,21 @@
     if (vale(modulo.scenario, scelte.scenario)) { modulo.scenario.value = scelte.scenario; modulo.scenario.dataset.toccato = '1'; }
   }
   ripristinaScelte();
+  // Dati nuovi (avvio, file caricato, file collegato ripreso): se le scelte salvate sono cambiate si rimettono nel
+  // modulo, e la proiezione già calcolata con le scelte di prima si rifà.
+  function applicaScelteDeiDati() {
+    const testo = stato.dati.parametri.previsione_modulo || '';
+    if (testo === applicate) return;
+    const prima = applicate;
+    applicate = testo;
+    scelte = leggiScelte();
+    ripristinaScelte();
+    if (prima === undefined || !calcoloAutomaticoFatto) return;
+    ultimo = null;
+    $('#esito-previsione').replaceChildren();
+    if ($('#scheda-tassi').hidden) calcoloAutomaticoFatto = false;   // si ricalcola alla prossima apertura della scheda
+    else eseguiCalcolo();
+  }
   modulo.modello.addEventListener('change', disegnaParametri);
   modulo.addEventListener('change', salvaScelte);
   modulo.addEventListener('change', disegnaRiassunto);
@@ -425,7 +449,7 @@
   M.viste.unshift(disegna);
   // previsioni.js si carica dopo tassi.js: all'apertura della scheda prima si aggiornano modulo e stato, poi il grafico.
   const aperturaTassi = M.allApertura.tassi;
-  let calcoloAutomaticoFatto = false;
+
   M.allApertura.tassi = () => {
     disegna();
     if (aperturaTassi) aperturaTassi();
