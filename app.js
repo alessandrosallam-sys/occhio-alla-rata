@@ -147,9 +147,12 @@
   };
 
   // ---------- Riepilogo in testata ----------
+  // La rata «di questo mese»: quella in corso; se il prestito non è ancora partito la prima, se è finito l'ultima.
+  const rataDelMese = M.rataDelMese = righe => Calcolo.rataPerData(righe, stato.oggi) || (stato.oggi < righe[0].inizio ? righe[0] : righe[righe.length - 1]);
+
   function disegnaRiepilogo() {
     const righe = stato.piano.righe, p = stato.dati.parametri;
-    const corrente = Calcolo.rataPerData(righe, stato.oggi) || righe[righe.length - 1];
+    const corrente = rataDelMese(righe), nonPartito = stato.oggi < righe[0].inizio;
     const precedente = righe[corrente.n - 2], ultima = righe[righe.length - 1];
     const rata = r => r.rataVera != null ? r.rataVera : r.rataCalcolata;
     const rimborsato = Math.max(0, Math.min(1, 1 - corrente.debito / p.importo_iniziale));
@@ -168,7 +171,7 @@
     // La rata del mese è la tessera principale (classe "principale": più grande e in testa, vedi stile.css).
     const voci = [
       ['Debito residuo', euro(corrente.debito), `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato],
-      [`Rata di ${meseAnno(corrente.inizio)}`, euro(rata(corrente)), dettaglioRata, null, 'principale'],
+      [nonPartito ? `Prima rata, ${meseAnno(corrente.inizio)}` : `Rata di ${meseAnno(corrente.inizio)}`, euro(rata(corrente)), nonPartito ? 'il prestito non è ancora partito' : dettaglioRata, null, 'principale'],
       ...tassi,
       ['Totale rate a fine piano', euro(ultima.cumulato), `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}`],
     ];
@@ -283,7 +286,10 @@
     { g: 2, t: 'Quota capitale', campo: 'quota_capitale', aiuto: 'Dal piano di rimborso scelto nelle regole del contratto, oppure inserita a mano',
       v: r => euroT(r.quotaCapitale), manuale: r => r.quotaCapitaleManuale, titolo: titoloQuota },
     { extra: true, g: 2, t: '% quota capitale', aiuto: 'Quota capitale / debito residuo', v: r => percT(r.percQuota), classe: minore },
-    { g: 2, t: 'Quota interessi', aiuto: 'Rata vera − quota capitale − spese', v: r => euroT(r.quotaInteressi) },
+    // Senza la rata vera si mostrano gli interessi calcolati, più chiari: così la colonna non resta vuota.
+    { g: 2, t: 'Quota interessi', aiuto: 'Rata vera − quota capitale − spese; dove manca la rata vera, quella calcolata',
+      v: r => euroT(r.quotaInteressi != null ? r.quotaInteressi : r.rataCalcolata - r.quotaCapitale - stato.dati.parametri.spese_rata),
+      classe: r => r.quotaInteressi == null ? 'minore' : '' },
     { extra: true, g: 3, t: 'Indice', x: 'Indice applicato dalla banca', soloVariabile: true, aiuto: 'Tasso totale applicato − spread', v: r => percT(r.euriborApplicato, 3) },
     { extra: true, g: 3, t: 'Tasso totale', x: 'Tasso totale applicato', campo: 'tasso_applicato', percento: true, aiuto: 'Uguale al tasso totale, oppure inserito a mano',
       v: r => percT(r.tassoApplicato, 3), manuale: r => r.tassoApplicatoManuale },
@@ -498,7 +504,7 @@
     if (document.activeElement !== formObiettivo.rata) formObiettivo.rata.value = perCampo(target);
     $('#togli-obiettivo').hidden = target == null;
     if (target == null) { blocco.replaceChildren(); return; }
-    const corrente = Calcolo.rataPerData(righe, stato.oggi) || righe[righe.length - 1];
+    const corrente = rataDelMese(righe);
     const pagate = righe.filter(r => r.rataVera != null);
     const entro = r => r.distanzaObiettivo <= 0.005;
     const distanza = corrente.distanzaObiettivo;
@@ -567,7 +573,7 @@
 
     // Tassi applicati
     const tassoBasso = estremo(pagate, r => r.tassoTotale, -1), tassoAlto = estremo(pagate, r => r.tassoTotale, 1);
-    const corrente = Calcolo.rataPerData(righe, stato.oggi) || ultima;
+    const corrente = rataDelMese(righe);
     const tassi = !variabile() ? null : riquadro('Tassi applicati', perc(somma(pagate, r => r.tassoTotale) / pagate.length, 3), 'tasso totale medio (indice + spread)',
       [['Più basso', perc(tassoBasso.tassoTotale, 3), mese(tassoBasso)], ['Più alto', perc(tassoAlto.tassoTotale, 3), mese(tassoAlto)], ['Di questo mese', perc(corrente.tassoTotale, 3), mese(corrente)]]);
 
