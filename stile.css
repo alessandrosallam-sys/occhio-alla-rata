@@ -1246,8 +1246,12 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .carta-file > .nota { flex: 1 1 360px; margin: 0; }
 .carta-file .confronto { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s3); }
 .carta-file .file-trovato { margin: 0; }
+/* Indicatore in testata: dove finiscono le modifiche. L'ora dell'ultimo salvataggio si vede nella barra laterale. */
+.dettaglio-salvataggio { display: none; }
+#stato-salvataggio.da-riprendere { background: var(--avviso-sfondo); color: var(--avviso-testo); border-color: color-mix(in srgb, var(--avviso-testo) 40%, transparent); }
 @media (min-width: 1100px) {
   body:has(.schede:not([hidden])) .barra-file { padding: var(--s5) var(--s6) 0; }
+  body:has(.schede:not([hidden])) .dettaglio-salvataggio { display: inline; margin-left: auto; font-size: 13px; font-weight: 450; color: var(--tenue); }
 }
 @media (max-width: 760px) {
   .barra-file { padding: var(--s3) var(--s4) 0; }

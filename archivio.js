@@ -246,9 +246,10 @@
       salva();
       return copia();
     },
-    // Vero se il salvataggio contiene esattamente i dati di adesso (la data del salvataggio non conta).
-    uguale(testo) {
-      try { return confrontabile(leggiSalvataggio(testo)) === confrontabile(carica()); } catch { return false; }
+    // Vero se il salvataggio contiene esattamente i dati di adesso, o quelli del salvataggio "altro" se c'è
+    // (la data del salvataggio non conta).
+    uguale(testo, altro) {
+      try { return confrontabile(leggiSalvataggio(testo)) === confrontabile(altro === undefined ? carica() : leggiSalvataggio(altro)); } catch { return false; }
     },
     // Quando i dati del browser sono cambiati l'ultima volta (ISO), se si sa.
     modificato: () => (carica(), modificato),
