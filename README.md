@@ -1,6 +1,6 @@
 # Mutuo variabile
 
-Una pagina web che ricostruisce, rata per rata, un mutuo a tasso variabile e lo confronta con quello che la banca addebita. Dice se ogni rata è giusta al centesimo, quanto si è pagato finora di interessi e come potrebbero andare le rate future.
+Una pagina web che ricostruisce, rata per rata, un mutuo (a tasso variabile o fisso) o un finanziamento e lo confronta con quello che la banca addebita. Dice se ogni rata è giusta al centesimo, quanto costa davvero il prestito (con spese, assicurazioni e TAEG), quanto si è pagato finora di interessi e, per il variabile, come potrebbero andare le rate future.
 
 È pensata per chi non sa niente di mutui: una configurazione guidata spiega ogni domanda, dove trovare la risposta nei documenti e cosa fare se non la si conosce. Dove può, il programma ricava le regole del contratto da solo, a partire dalle rate già pagate.
 
@@ -13,7 +13,8 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no.
 4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Il grafico mostra tutta la storia dell'Euribor dal 1999 (all'inizio solo il periodo del tuo mutuo) e, a destra, la proiezione in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
 5. Dal **Pannello di controllo** puoi collegare un file in cui salvare tutto, ricaricarlo su un altro computer, rivedere le regole del contratto o lanciare la taratura automatica.
-6. Hai più di un prestito? Nella pagina **Prestiti** li vedi tutti, con il totale delle rate del mese e del debito residuo, e con «Aggiungi un prestito» ne segui un altro. Le altre pagine riguardano il prestito aperto: per passare a un altro premi «Apri».
+6. Nel **Pannello di controllo** trovi anche **quanto costa il prestito**: interessi, spese, assicurazioni, costo totale e TAEG. Se scrivi il TAEG del contratto, il programma ti dice se il suo calcolo coincide.
+7. Hai più di un prestito? Nella pagina **Prestiti** li vedi tutti, con il totale delle rate del mese e del debito residuo, e con «Aggiungi un prestito» ne segui un altro. Le altre pagine riguardano il prestito aperto: per passare a un altro premi «Apri».
 
 Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il grafico («Cambia» lo apre). Sul telefono le pagine si scelgono dalla barra in basso e la tabella del piano scorre in orizzontale tenendo ferma la colonna delle rate. Il tema chiaro o scuro segue quello del sistema.
 
@@ -25,6 +26,8 @@ Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il 
 - **con gli altri browser** usa «Salva su file» ogni tanto: scarica una copia da ricaricare con «Carica da file».
 
 ## Cosa sa calcolare
+
+Il tipo di prestito: **mutuo a tasso variabile** (indice + spread), **mutuo a tasso fisso** o **finanziamento** (prestito personale, auto, acquisti a rate). A tasso fisso le pagine dell'indice (Tassi, Calendario, Festività) non compaiono. Per ogni prestito: spese per rata, spese iniziali, assicurazioni (all'inizio o a ogni rata), spese annuali, e il **TAEG** calcolato come prevede la direttiva europea sul credito ai consumatori (2008/48/CE), da confrontare con quello del contratto.
 
 Le regole del contratto si scelgono nella configurazione (o le trova la taratura):
 
@@ -43,7 +46,7 @@ Le festività considerate sono quelle del calendario TARGET (quello su cui si pu
 
 **Non sono coperti**: preammortamento, estinzioni parziali, rate non mensili, spread che cambia nel tempo (si può solo scrivere a mano, rata per rata, il tasso applicato).
 
-**Attenzione**: il programma riproduce al centesimo un solo contratto vero, quello su cui è nato (Euribor 6 mesi, rilevazione quattro giorni lavorativi prima della fine del periodo, giorni effettivi su 365/366, quote fissate all'inizio). Le altre combinazioni hanno superato solo controlli di coerenza. Se il tuo contratto torna, o non torna, apri una segnalazione: è il modo per migliorarlo.
+**Attenzione**: il programma riproduce al centesimo un solo contratto vero, quello su cui è nato (Euribor 6 mesi, rilevazione quattro giorni lavorativi prima della fine del periodo, giorni effettivi su 365/366, quote fissate all'inizio). Le altre combinazioni, compresi tasso fisso e finanziamenti, hanno superato solo controlli di coerenza (per esempio: a tasso fisso la rata è costante; senza costi il TAEG è il TAN composto mese per mese). Se il tuo contratto torna, o non torna, apri una segnalazione: è il modo per migliorarlo.
 
 ## Dati dell'Euribor e licenza
 
@@ -79,6 +82,7 @@ previsioni.js         proiezioni dell'indice nella pagina Tassi: modelli, scenar
 modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
 configura.js          configurazione guidata, regole nel pannello, taratura
 prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali
+costi.js              quanto costa il prestito aperto: costo totale e TAEG (pannello di controllo)
 file-collegato.js     il file collegato: i dati scritti da soli in un file scelto dall'utente (Edge e Chrome)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
@@ -86,7 +90,7 @@ crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `file-collegato.js`.
+Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `file-collegato.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del salvataggio su file: `{ versione: 2, attivo, prestiti: [...] }`, e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Dopo ogni modifica l'archivio chiama `Archivio.alCambio`: `file-collegato.js` lo usa per riscrivere il file collegato (File System Access API, `showSaveFilePicker`; la maniglia del file è ricordata in IndexedDB, database `mutuo-variabile`).
 

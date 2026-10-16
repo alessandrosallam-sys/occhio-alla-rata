@@ -47,6 +47,10 @@
   const api = (metodo, percorso, corpo) => Archivio.richiesta(metodo, percorso, corpo);
   // Nome dell'indice del contratto (Euribor 3 mesi, tasso BCE...), per i testi.
   const indice = () => (stato.dati && stato.dati.parametri.indice_nome) || 'indice';
+  // Mutuo a tasso variabile (con indice, rilevazioni, Euribor) oppure a tasso fisso (mutuo fisso, finanziamento).
+  const variabile = () => !stato.dati || (stato.dati.parametri.tipo_prestito || 'variabile') === 'variabile';
+  // Schede che servono solo a chi ha un indice da seguire.
+  const SCHEDE_VARIABILE = ['tassi', 'calendario', 'festivita'];
 
   // Esegue una modifica: l'archivio risponde con tutti i dati aggiornati.
   async function esegui(metodo, percorso, corpo, messaggio) {
@@ -138,7 +142,7 @@
   // "viste" = funzioni da richiamare a ogni aggiornamento dei dati, "allApertura" = funzioni per scheda.
   const M = window.Mutuo = {
     stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI,
-    data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice,
+    data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice, variabile,
     viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], ricordo,
   };
 
@@ -156,12 +160,16 @@
     }
     const dettaglioEuribor = corrente.origineEuribor === 'db' ? `rilevato il ${data(corrente.riferimento)}`
       : corrente.origineEuribor === 'manuale' ? 'inserito a mano' : `previsione: manca il valore del ${data(corrente.riferimento)}`;
+    // A tasso fisso al posto di indice e tasso totale ci sono il TAN e il TAEG (che conta anche spese e assicurazioni).
+    const taeg = variabile() ? null : Calcolo.costi(stato.dati, righe, true).taeg;
+    const tassi = variabile()
+      ? [[indice(), perc(corrente.euribor, 3), dettaglioEuribor], ['Tasso totale', perc(corrente.tassoTotale, 3), `indice + spread ${perc(corrente.spread, 3, 1)}`]]
+      : [['Tasso fisso (TAN)', perc(p.tasso_fisso, 3, 1), 'uguale fino all\'ultima rata'], ['TAEG', taeg == null ? '—' : perc(taeg, 2), 'il costo vero, con spese e assicurazioni']];
     // La rata del mese è la tessera principale (classe "principale": più grande e in testa, vedi stile.css).
     const voci = [
       ['Debito residuo', euro(corrente.debito), `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato],
       [`Rata di ${meseAnno(corrente.inizio)}`, euro(rata(corrente)), dettaglioRata, null, 'principale'],
-      [indice(), perc(corrente.euribor, 3), dettaglioEuribor],
-      ['Tasso totale', perc(corrente.tassoTotale, 3), `indice + spread ${perc(corrente.spread, 3, 1)}`],
+      ...tassi,
       ['Totale rate a fine piano', euro(ultima.cumulato), `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}`],
     ];
     $('#riepilogo').replaceChildren(...voci.map(([etichetta, valore, dettaglio, quota, classe]) => {
@@ -244,11 +252,13 @@
     ? `Inserita a mano: il piano prevede ${euro(r.quotaPiano)}. Svuota la cella per usare il piano` : '';
 
   const GRUPPI = ['Periodo', 'Debito', 'Rata', 'Applicato dalla banca', 'Indice e tasso'];
+  const titoloGruppo = g => g === 4 && !variabile() ? 'Tasso' : GRUPPI[g];
   // Dopo l'etichetta della rata, le colonne del foglio TABELLA nello stesso ordine, più variazione e target.
-  // "g" = gruppo, "x" = nome completo della colonna (se diverso), "campo" = colonna modificabile (nome nel database).
+  // "g" = gruppo, "x" = nome completo della colonna (se diverso), "campo" = colonna modificabile (nome nel database),
+  // "soloVariabile" = colonna che riguarda l'indice: a tasso fisso non c'è.
   const COLONNE = [
     { g: 0, t: 'Rata', aiuto: 'Numero della rata e mese di competenza', v: etichettaRata, titolo: (r, s) => s.titolo },
-    { g: 0, t: 'Data di rilevazione', x: 'Data di rilevazione dell\'indice', campo: 'data_riferimento', tipo: 'data',
+    { g: 0, t: 'Data di rilevazione', x: 'Data di rilevazione dell\'indice', campo: 'data_riferimento', tipo: 'data', soloVariabile: true,
       aiuto: 'Il giorno in cui si legge l\'indice secondo le regole del contratto; oppure forzata a mano',
       v: r => data(r.riferimento), manuale: r => r.riferimentoManuale,
       titolo: r => r.riferimentoManuale ? `Forzata a mano (calcolata: ${data(r.riferimentoAutomatico)}): svuota la cella per tornare alla data calcolata` : '' },
@@ -266,7 +276,7 @@
       v: r => r.rataVera == null ? '' : esito((!rataUguale(r) ? '≠ ' : r.rataCopiata ? '= ' : '✓ ') + euroT(r.rataVera)),
       classe: r => r.rataVera == null ? '' : !rataUguale(r) ? 'ko' : r.rataCopiata ? 'copiata' : 'ok',
       titolo: r => r.rataCopiata ? 'Presa dal calcolo, non controllata. Clic: Invio la conferma come controllata, un\'altra cifra la sostituisce, vuota la toglie' : '' },
-    { g: 2, t: 'Variazione sul mese prima', aiuto: 'Confronto in percentuale del costo al giorno: rata divisa per i giorni del mese, rispetto al mese precedente',
+    { g: 2, t: 'Variazione sul mese prima', soloVariabile: true, aiuto: 'Confronto in percentuale del costo al giorno: rata divisa per i giorni del mese, rispetto al mese precedente',
       v: cellaVariazione, classe: r => r.rataVera == null ? previsione(r) : '', titolo: titoloVariazione },
     { g: 2, t: 'Distanza dal target', visibile: () => obiettivo() != null, aiuto: 'Rata del mese − rata ideale impostata nel pannello di controllo',
       v: cellaObiettivo, classe: r => r.rataVera == null ? previsione(r) : '', titolo: titoloObiettivo },
@@ -274,47 +284,48 @@
       v: r => euroT(r.quotaCapitale), manuale: r => r.quotaCapitaleManuale, titolo: titoloQuota },
     { extra: true, g: 2, t: '% quota capitale', aiuto: 'Quota capitale / debito residuo', v: r => percT(r.percQuota), classe: minore },
     { g: 2, t: 'Quota interessi', aiuto: 'Rata vera − quota capitale − spese', v: r => euroT(r.quotaInteressi) },
-    { extra: true, g: 3, t: 'Indice', x: 'Indice applicato dalla banca', aiuto: 'Tasso totale applicato − spread', v: r => percT(r.euriborApplicato, 3) },
+    { extra: true, g: 3, t: 'Indice', x: 'Indice applicato dalla banca', soloVariabile: true, aiuto: 'Tasso totale applicato − spread', v: r => percT(r.euriborApplicato, 3) },
     { extra: true, g: 3, t: 'Tasso totale', x: 'Tasso totale applicato', campo: 'tasso_applicato', percento: true, aiuto: 'Uguale al tasso totale, oppure inserito a mano',
       v: r => percT(r.tassoApplicato, 3), manuale: r => r.tassoApplicatoManuale },
     { extra: true, g: 3, t: 'Differenza rata', aiuto: 'Rata calcolata − rata vera',
       v: r => r.differenza > stato.dati.parametri.soglia_differenza ? esito(euroT(r.differenza)) : euroT(r.differenza),
       classe: r => r.differenza > stato.dati.parametri.soglia_differenza ? 'avviso' : '' },
-    { g: 4, t: 'Indice', x: 'Valore dell\'indice', campo: 'euribor', percento: true,
+    { g: 4, t: 'Indice', x: 'Valore dell\'indice', campo: 'euribor', percento: true, soloVariabile: true,
       aiuto: 'Il valore inserito nella pagina dei tassi per la data di rilevazione, oppure inserito a mano; per il futuro è una stima',
       v: r => (tassoMancante(r) ? '⚠ ' : '') + (r.alTetto ? '<span class="tetto">max</span>' : '') + percT(r.euribor, 3),
       classe: previsione, manuale: r => r.origineEuribor === 'manuale',
       titolo: r => tassoMancante(r) ? `Manca il valore dell'indice del ${data(r.riferimento)}: quello mostrato è una stima`
         : r.alTetto ? 'Previsione ferma al tetto massimo impostato nel pannello di controllo' : '' },
-    { extra: true, g: 4, t: 'Aumento mensile', x: 'Variazione dell\'indice', aiuto: 'Differenza con la rilevazione precedente; per il futuro: secondo la proiezione scelta nella pagina «Previsioni» (all\'inizio: media delle variazioni passate)',
+    { extra: true, g: 4, t: 'Aumento mensile', x: 'Variazione dell\'indice', soloVariabile: true, aiuto: 'Differenza con la rilevazione precedente; per il futuro: secondo la proiezione scelta nella pagina «Previsioni» (all\'inizio: media delle variazioni passate)',
       v: r => percT(r.variazione), classe: r => 'minore ' + previsione(r) },
-    { extra: true, g: 4, t: 'Spread', campo: 'spread', percento: true, v: r => percT(r.spread, 3, 1), manuale: r => r.spreadManuale },
-    { g: 4, t: 'Tasso totale', aiuto: 'Indice + spread', v: r => percT(r.tassoTotale, 3), classe: r => 'forte ' + previsione(r) },
+    { extra: true, g: 4, t: 'Spread', campo: 'spread', percento: true, soloVariabile: true, v: r => percT(r.spread, 3, 1), manuale: r => r.spreadManuale },
+    { g: 4, t: 'Tasso totale', aiuto: 'Indice + spread (a tasso fisso: il TAN)', v: r => percT(r.tassoTotale, 3), classe: r => 'forte ' + previsione(r) },
   ];
 
   // Colonne di approfondimento ("extra"): restano nascoste finché non si apre il loro gruppo, così la tabella
   // di base entra nello schermo. I gruppi aperti vengono ricordati.
   const gruppiAperti = new Set();
   try { for (const g of JSON.parse(ricordo.leggi('colonne') || '[]')) if (GRUPPI[g]) gruppiAperti.add(g); } catch { /* si parte con tutto chiuso */ }
-  const extraDelGruppo = g => COLONNE.filter(c => c.g === g && c.extra).length;
-  const GRUPPI_CON_EXTRA = GRUPPI.map((_, g) => g).filter(extraDelGruppo);
+  const colonnaPossibile = c => !c.soloVariabile || variabile();
+  const extraDelGruppo = g => COLONNE.filter(c => c.g === g && c.extra && colonnaPossibile(c)).length;
+  const gruppiConExtra = () => GRUPPI.map((_, g) => g).filter(extraDelGruppo);
   function apriGruppi(gruppi, aperti) {
     for (const g of gruppi) if (aperti) gruppiAperti.add(g); else gruppiAperti.delete(g);
     ricordo.scrivi('colonne', JSON.stringify([...gruppiAperti]));
     disegnaPiano();
   }
   function disegnaSceltaColonne() {
-    const tutti = GRUPPI_CON_EXTRA.every(g => gruppiAperti.has(g));
+    const tutti = gruppiConExtra().every(g => gruppiAperti.has(g));
     $('#colonne-extra').replaceChildren(crea('span', {}, 'Approfondisci:'),
-      ...GRUPPI_CON_EXTRA.map(g => crea('button', { type: 'button', 'data-gruppo': g, 'aria-pressed': String(gruppiAperti.has(g)),
-        title: (gruppiAperti.has(g) ? 'Nascondi' : 'Mostra') + ' le colonne: ' + COLONNE.filter(c => c.g === g && c.extra).map(c => c.t).join(', ') }, `${GRUPPI[g]} +${extraDelGruppo(g)}`)),
+      ...gruppiConExtra().map(g => crea('button', { type: 'button', 'data-gruppo': g, 'aria-pressed': String(gruppiAperti.has(g)),
+        title: (gruppiAperti.has(g) ? 'Nascondi' : 'Mostra') + ' le colonne: ' + COLONNE.filter(c => c.g === g && c.extra && colonnaPossibile(c)).map(c => c.t).join(', ') }, `${titoloGruppo(g)} +${extraDelGruppo(g)}`)),
       crea('button', { type: 'button', 'data-gruppo': 'tutti', 'aria-pressed': String(tutti) }, 'Tutte'));
   }
   $('#colonne-extra').addEventListener('click', evento => {
     const pulsante = evento.target.closest('button[data-gruppo]');
     if (!pulsante) return;
     const aperto = pulsante.getAttribute('aria-pressed') === 'true';
-    apriGruppi(pulsante.dataset.gruppo === 'tutti' ? GRUPPI_CON_EXTRA : [+pulsante.dataset.gruppo], !aperto);
+    apriGruppi(pulsante.dataset.gruppo === 'tutti' ? gruppiConExtra() : [+pulsante.dataset.gruppo], !aperto);
   });
   // Anche un clic sul titolo di un gruppo, in testa alla tabella, apre o chiude le sue colonne.
   $('#tabella-piano thead').addEventListener('click', evento => {
@@ -327,13 +338,13 @@
     disegnaSceltaColonne();
     // Colonne da mostrare, con l'indice nell'elenco completo: il target c'è solo se impostato,
     // quelle di approfondimento solo se il loro gruppo è aperto.
-    const visibili = COLONNE.map((c, i) => ({ c, i })).filter(({ c }) => (!c.visibile || c.visibile()) && (!c.extra || gruppiAperti.has(c.g)));
+    const visibili = COLONNE.map((c, i) => ({ c, i })).filter(({ c }) => colonnaPossibile(c) && (!c.visibile || c.visibile()) && (!c.extra || gruppiAperti.has(c.g)));
     const classiColonna = visibili.map(({ c }, k) => (k && visibili[k - 1].c.g !== c.g ? ' inizio-gruppo' : '') + (c.g % 2 ? ' banda' : ''));
     $('thead', tabella).replaceChildren(
       crea('tr', { className: 'gruppi' }, ...GRUPPI.map((titolo, g) => ({ titolo, g, colonne: visibili.filter(({ c }) => c.g === g).length }))
         .filter(gruppo => gruppo.colonne).map(({ titolo, g, colonne }, k) => {
           const extra = extraDelGruppo(g), aperto = gruppiAperti.has(g);
-          const th = crea('th', { scope: 'colgroup', colSpan: colonne, className: (k ? 'inizio-gruppo' : '') + (g % 2 ? ' banda' : '') + (extra ? ' apribile' : '') }, titolo);
+          const th = crea('th', { scope: 'colgroup', colSpan: colonne, className: (k ? 'inizio-gruppo' : '') + (g % 2 ? ' banda' : '') + (extra ? ' apribile' : '') }, titoloGruppo(g));
           if (extra) {
             th.dataset.gruppo = g;
             th.title = aperto ? 'Clic per nascondere le colonne di approfondimento' : `Clic per mostrare altre ${extra} colonne`;
@@ -361,6 +372,7 @@
     $('tbody', tabella).innerHTML = html.join('');
     for (const [nome, numero] of Object.entries(quante)) $('#conta-' + nome).textContent = numero;
     $('#legenda-target').hidden = obiettivo() == null;
+    for (const voce of document.querySelectorAll('#legenda-piano [data-solo-variabile]')) voce.hidden = !variabile();
     disegnaEsitoConti(quante);
   }
 
@@ -368,7 +380,7 @@
   function disegnaEsitoConti(quante) {
     const daControllare = quante.problema, pagate = quante.pagata;
     const [classe, simbolo, titolo, spiegazione] = daControllare
-      ? ['ko', '!', `${daControllare === 1 ? '1 rata' : daControllare + ' rate'} da controllare`, 'Manca la rata vera o il valore dell\'indice, oppure la rata non coincide con il calcolo: sono le righe rosse.']
+      ? ['ko', '!', `${daControllare === 1 ? '1 rata' : daControllare + ' rate'} da controllare`, (variabile() ? 'Manca la rata vera o il valore dell\'indice' : 'Manca la rata vera') + ', oppure la rata non coincide con il calcolo: sono le righe rosse.']
       : pagate ? ['ok', '✓', 'I conti tornano', pagate === 1 ? 'La rata che hai inserito coincide con il calcolo.' : `Tutte le ${pagate} rate inserite coincidono con il calcolo.`]
         : ['neutro', 'i', 'Nessuna rata da confrontare', 'Scrivi nella colonna «Rata vera» la cifra che la banca ti ha addebitato: la riga diventa verde se i conti tornano.'];
     const esito = $('#esito-conti');
@@ -475,6 +487,8 @@
     disegnaObiettivo();
     disegnaAllinea();
     disegnaStatisticheMutuo();
+    // I valori a mano per una rata riguardano l'indice: a tasso fisso non servono.
+    $('#form-applicato').hidden = !variabile();
   }
 
   // Rata ideale (target)
@@ -544,7 +558,7 @@
     // Andamento mese per mese, a parità di giorni
     const variazioni = pagate.filter(r => r.variazioneRata != null && righe[r.n - 2].rataVera != null);
     let andamento = null;
-    if (variazioni.length) {
+    if (variazioni.length && variabile()) {   // a tasso fisso la rata non cambia: conterebbe solo la lunghezza dei mesi
       const aumento = estremo(variazioni, r => r.variazioneRata, 1), calo = estremo(variazioni, r => r.variazioneRata, -1);
       const su = variazioni.filter(r => r.variazioneRata > 0.00005).length, giu = variazioni.filter(r => r.variazioneRata < -0.00005).length;
       andamento = riquadro('Andamento mese per mese', percConSegno(somma(variazioni, r => r.variazioneRata) / variazioni.length), 'variazione media al mese del costo al giorno',
@@ -554,7 +568,7 @@
     // Tassi applicati
     const tassoBasso = estremo(pagate, r => r.tassoTotale, -1), tassoAlto = estremo(pagate, r => r.tassoTotale, 1);
     const corrente = Calcolo.rataPerData(righe, stato.oggi) || ultima;
-    const tassi = riquadro('Tassi applicati', perc(somma(pagate, r => r.tassoTotale) / pagate.length, 3), 'tasso totale medio (indice + spread)',
+    const tassi = !variabile() ? null : riquadro('Tassi applicati', perc(somma(pagate, r => r.tassoTotale) / pagate.length, 3), 'tasso totale medio (indice + spread)',
       [['Più basso', perc(tassoBasso.tassoTotale, 3), mese(tassoBasso)], ['Più alto', perc(tassoAlto.tassoTotale, 3), mese(tassoAlto)], ['Di questo mese', perc(corrente.tassoTotale, 3), mese(corrente)]]);
 
     // Da qui alla fine (previsione)
@@ -562,7 +576,7 @@
     let futuro = null;
     if (future.length) {
       const massima = estremo(future, r => r.rataCalcolata, 1), fine = righe[righe.length - 1];
-      futuro = riquadro('Da qui alla fine', euro(somma(future, r => r.rataCalcolata - r.quotaCapitale - p.spese_rata)), `interessi ancora da pagare (previsione)`,
+      futuro = riquadro('Da qui alla fine', euro(somma(future, r => r.rataCalcolata - r.quotaCapitale - p.spese_rata)), 'interessi ancora da pagare' + (variabile() ? ' (previsione)' : ''),
         [['Rate mancanti', String(future.length), `fino a ${mese(fine)}`], ['Capitale da rimborsare', euro(future[0].debito)], ['Rata prevista più alta', euro(massima.rataCalcolata), mese(massima)]]);
     }
     contenitore.replaceChildren(...[pagato, rate, andamento, tassi, futuro].filter(Boolean));
@@ -713,8 +727,9 @@
     }
     formApplicato.giorno.value = stato.oggi;
     caricaValoriRata();
+    for (const pulsante of document.querySelectorAll('.schede button[data-scheda]')) pulsante.hidden = !variabile() && SCHEDE_VARIABILE.includes(pulsante.dataset.scheda);
     const scheda = location.hash.slice(1);
-    mostraScheda(/^[a-z]+$/.test(scheda) && $('#scheda-' + scheda) ? scheda : 'piano');
+    mostraScheda(/^[a-z]+$/.test(scheda) && $('#scheda-' + scheda) && !(!variabile() && SCHEDE_VARIABILE.includes(scheda)) ? scheda : 'piano');
     for (const f of M.dopoAvvio) f();   // ad esempio lo scarico automatico dei tassi (tassi.js)
   };
   // Una variante della pagina può sostituire l'avvio con M.allAvvio (ad esempio per chiedere prima quali dati caricare).

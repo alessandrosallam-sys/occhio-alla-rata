@@ -1,4 +1,5 @@
-// Motore di calcolo del piano di un mutuo a tasso variabile, con le regole del contratto scelte nei parametri.
+// Motore di calcolo del piano di un prestito (mutuo a tasso variabile o fisso, finanziamento), con le regole del
+// contratto scelte nei parametri; costo totale e TAEG.
 // Usato sia dalla pagina (browser) sia dalle prove (Node).
 (function (radice, crea) {
   if (typeof module === 'object' && module.exports) module.exports = crea();
@@ -122,6 +123,8 @@
   // opzioni.festivita e opzioni.tassi: gli stessi dati già trasformati, per non rifarlo a ogni prova.
   function calcolaPiano(dati, opzioni = {}) {
     const p = dati.parametri;
+    // A tasso fisso (mutuo o finanziamento) non c'è un indice: il tasso è il TAN, uguale per tutte le rate.
+    const variabile = (p.tipo_prestito || 'variabile') === 'variabile';
     const festivita = opzioni.festivita || new Set(dati.festivita.map(isoInGiorno));
     const lavorativo = g => { const s = new Date(g * MS_GIORNO).getUTCDay(); return s !== 0 && s !== 6 && !festivita.has(g); };
     const tassi = opzioni.tassi || new Map(dati.euribor.map(t => [t.giorno, t.tasso_360]));
@@ -172,6 +175,13 @@
     for (let n = 1; n <= ultimaDaCalcolare; n++) {
       const inizio = inizioPeriodo(n), fine = inizioPeriodo(n + 1) - 1;
       const m = manuali.get(n) || {};
+      const date = { inizio: giornoInIso(inizio), fine: giornoInIso(fine), giorniMese: fine - inizio + 1,
+        giorniAnno: 365 + (new Date(fine * MS_GIORNO).getUTCFullYear() % 4 ? 0 : 1), rateResidue: numeroRate - n + 1 };
+      if (!variabile) {
+        righe.push({ n, riferimento: date.inizio, riferimentoAutomatico: date.inizio, riferimentoManuale: false, conteggio: [], rataRevisione: n, revisione: true,
+          eredita: false, mediaDi: 0, ...date, euribor: 0, origineEuribor: 'fisso', manuale: m });
+        continue;
+      }
       const rataRevisione = n - ((n - 1) % ogniMesi);   // rata in cui il tasso è stato rivisto l'ultima volta
       const ril = rilevazione(inizioPeriodo(rataRevisione));
       const riferimentoAutomatico = giornoInIso(ril.giorno);
@@ -187,11 +197,7 @@
       righe.push({
         n, riferimento: riferimentoIso, riferimentoAutomatico, riferimentoManuale: !!m.data_riferimento,
         conteggio: ril.contati.map(giornoInIso),   // giorni lavorativi contati all'indietro: l'ultimo è la data calcolata
-        rataRevisione, revisione: n === rataRevisione, eredita, mediaDi,
-        inizio: giornoInIso(inizio), fine: giornoInIso(fine),
-        giorniMese: fine - inizio + 1,
-        giorniAnno: 365 + (new Date(fine * MS_GIORNO).getUTCFullYear() % 4 ? 0 : 1),
-        rateResidue: numeroRate - n + 1,
+        rataRevisione, revisione: n === rataRevisione, eredita, mediaDi, ...date,
         euribor, origineEuribor, manuale: m,
       });
     }
@@ -206,8 +212,12 @@
     const tetto = p.euribor_massimo > 0 ? p.euribor_massimo : null;
     const rataIdeale = p.rata_obiettivo > 0 ? p.rata_obiettivo : null;
     const primaDelPiano = Number.isFinite(p.euribor_mese_precedente) ? p.euribor_mese_precedente : null;
-    const rataPiano = p.rata_piano > 0 ? p.rata_piano
-      : p.tasso_annuo_piano > 0 ? centesimi(rataFrancese(p.importo_iniziale, p.tasso_annuo_piano / 12, numeroRate)) : 0;
+    // Piano fissato all'inizio: le quote fisse del variabile, oppure la francese a tasso fisso, che ha la rata costante
+    // (la quota capitale è la rata meno gli interessi, come nel piano consegnato dalla banca).
+    const pianoFissato = p.tipo_piano === 'quote_fisse' && variabile || p.tipo_piano !== 'italiana' && !variabile;
+    const tassoPiano = variabile ? p.tasso_annuo_piano : (p.tasso_fisso || 0);
+    const rataPiano = variabile && p.rata_piano > 0 ? p.rata_piano
+      : !variabile || tassoPiano > 0 ? centesimi(rataFrancese(p.importo_iniziale, tassoPiano / 12, numeroRate)) : 0;
     const quotaItaliana = centesimi(p.importo_iniziale / numeroRate);
     let debitoPiano = p.importo_iniziale;
 
@@ -215,7 +225,8 @@
     let cumulato = 0, ultimoPunto = null;
     for (let i = 0; i < righe.length; i++) {
       const r = righe[i], prec = righe[i - 1], m = r.manuale;
-      if (r.eredita) {
+      if (!variabile) r.variazione = 0;
+      else if (r.eredita) {
         const base = righe[r.rataRevisione - 1];
         r.euribor = base.euribor; r.origineEuribor = base.origineEuribor; r.alTetto = base.alTetto; r.mediaDi = base.mediaDi;
         r.variazione = 0;
@@ -236,7 +247,8 @@
       }
       const reale = r.origineEuribor !== 'previsione';
 
-      r.spread = m.spread != null ? m.spread : p.spread;
+      // A tasso fisso il TAN prende il posto dello spread (e l'indice vale zero): una rata può averne uno suo, scritto a mano.
+      r.spread = m.spread != null ? m.spread : variabile ? p.spread : (p.tasso_fisso || 0);
       r.spreadManuale = m.spread != null;
       r.tassoTotale = r.spread + r.euribor;
       if (p.tasso_massimo > 0 && r.tassoTotale > p.tasso_massimo) { r.tassoTotale = p.tasso_massimo; r.tassoLimitato = true; }
@@ -245,10 +257,10 @@
       r.percRimanente = r.debito / (p.valore_riferimento > 0 ? p.valore_riferimento : p.importo_iniziale);
 
       // Quota capitale secondo il tipo di piano (l'ultima rata chiude il debito).
-      if (p.tipo_piano === 'quote_fisse') {
+      if (pianoFissato) {
         // Il piano è fissato all'inizio: segue la propria catena del debito, non le quote inserite a mano.
         r.quotaPiano = r.rateResidue === 1 ? debitoPiano
-          : Math.min(debitoPiano, centesimi(rataPiano - centesimi(debitoPiano * p.tasso_annuo_piano / 12)));
+          : Math.min(debitoPiano, centesimi(rataPiano - centesimi(debitoPiano * tassoPiano / 12)));
         debitoPiano = centesimi(debitoPiano - r.quotaPiano);
       } else if (p.tipo_piano === 'italiana') r.quotaPiano = quotaItaliana;
       else {
@@ -298,10 +310,43 @@
     return Math.round((basso + alto) / 2 * 12 * 1e5) / 1e5;
   }
 
+  // TAEG: il tasso annuo che rende uguali i soldi ricevuti e il valore attuale di tutto quello che si paga dopo
+  // (direttiva 2008/48/CE, allegato I). I pagamenti sono uno al mese, alla fine di ogni periodo, e un mese conta come
+  // un dodicesimo di anno. Null se non si può calcolare.
+  function taeg(ricevuto, pagamenti) {
+    if (!(ricevuto > 0) || !pagamenti.length) return null;
+    const differenza = x => pagamenti.reduce((s, c, i) => s + c * Math.pow(1 + x, -(i + 1) / 12), 0) - ricevuto;
+    let basso = -0.99, alto = 10;
+    if (differenza(basso) < 0 || differenza(alto) > 0) return null;
+    for (let i = 0; i < 100; i++) { const medio = (basso + alto) / 2; if (differenza(medio) > 0) basso = medio; else alto = medio; }
+    return (basso + alto) / 2;
+  }
+  // Quanto costa un prestito, dalle righe del piano: rate (vere dove ci sono, altrimenti calcolate; con "comeFirmato"
+  // solo calcolate), spese iniziali, assicurazioni e spese annue. "costoTotale" è il costo totale del credito: tutto
+  // quello che si paga oltre al capitale. "ricevuto" è il capitale meno quello che si paga all'inizio.
+  function costi(dati, righe, comeFirmato = false) {
+    const p = dati.parametri, quante = righe.length;
+    const rata = r => comeFirmato || r.rataVera == null ? r.rataCalcolata : r.rataVera;
+    let totaleRate = 0;
+    const pagamenti = righe.map((r, i) => {
+      totaleRate += rata(r);
+      return rata(r) + (p.assicurazione_rata || 0) + ((i + 1) % 12 === 0 ? p.spese_annue || 0 : 0);
+    });
+    const speseRate = quante * (p.spese_rata || 0), speseIniziali = p.spese_iniziali || 0, speseAnnue = Math.floor(quante / 12) * (p.spese_annue || 0);
+    const assicurazioni = (p.assicurazione_iniziale || 0) + quante * (p.assicurazione_rata || 0);
+    const interessi = totaleRate - p.importo_iniziale - speseRate;
+    const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue;
+    const ricevuto = p.importo_iniziale - speseIniziali - (p.assicurazione_iniziale || 0);
+    return { totaleRate, interessi, speseRate, speseIniziali, assicurazioni, speseAnnue, costoTotale, ricevuto,
+      totaleDaPagare: p.importo_iniziale + costoTotale, taeg: taeg(ricevuto, pagamenti) };
+  }
+
   // Taratura: prova le combinazioni di regole più comuni e conta quante rate vere (e quote capitale vere)
   // ciascuna riproduce al centesimo. Restituisce le migliori, dalla più aderente.
+  // A tasso fisso non ci sono regole sull'indice: si provano solo il conteggio dei giorni, il piano e le spese.
   function tara(dati) {
     const base = dati.parametri;
+    const variabile = (base.tipo_prestito || 'variabile') === 'variabile';
     const vere = dati.rate.filter(r => r.rata_vera != null);
     const quote = dati.rate.filter(r => r.quota_capitale != null).sort((a, b) => a.n - b.n);
     if (!vere.length) return [];
@@ -319,8 +364,8 @@
       if (tasso != null) for (const scarto of [0, -1, 1]) if (Math.round(tasso * 1e5) + scarto > 0) tassiPiano.add(Math.round(tasso * 1e5) + scarto);
     }
     const piani = [{ tipo_piano: 'francese' }, { tipo_piano: 'italiana' },
-      ...[...tassiPiano].map(t => ({ tipo_piano: 'quote_fisse', tasso_annuo_piano: t / 1e5, rata_piano: 0 }))];
-    const rilevazioni = [{ regola_rilevazione: 'ultimo_lavorativo' }, { regola_rilevazione: 'primo_lavorativo' }, { regola_rilevazione: 'media_mese' },
+      ...(variabile ? [...tassiPiano].map(t => ({ tipo_piano: 'quote_fisse', tasso_annuo_piano: t / 1e5, rata_piano: 0 })) : [])];
+    const rilevazioni = !variabile ? [{}] : [{ regola_rilevazione: 'ultimo_lavorativo' }, { regola_rilevazione: 'primo_lavorativo' }, { regola_rilevazione: 'media_mese' },
       ...[1, 2, 3, 4, 5, 6].map(n => ({ regola_rilevazione: 'lavorativi_prima', giorni_anticipo_euribor: n }))];
     const risultati = [], fino = Math.max(...vere.map(r => r.n), ...quote.map(r => r.n));
     const pronti = { fino, festivita: new Set(dati.festivita.map(isoInGiorno)), tassi: new Map(dati.euribor.map(t => [t.giorno, t.tasso_360])) };
@@ -350,8 +395,8 @@
       }
       return righe;
     }
-    for (const rilevazione of rilevazioni) for (const mesi_revisione of [1, 3, 6]) for (const [conteggio_giorni] of REGOLE.conteggio_giorni) {
-      const regole = { ...rilevazione, mesi_revisione, conteggio_giorni };
+    for (const rilevazione of rilevazioni) for (const mesi_revisione of variabile ? [1, 3, 6] : [base.mesi_revisione || 1]) for (const [conteggio_giorni] of REGOLE.conteggio_giorni) {
+      const regole = { ...rilevazione, ...(variabile ? { mesi_revisione } : {}), conteggio_giorni };
       const provati = new Set();
       let prima = null, primaFrancese = null;
       for (const piano of piani) {
@@ -363,6 +408,7 @@
       // di un eventuale piano a quote fisse: così la taratura lo trova anche senza conoscerlo.
       const quoteFisse = candidato => { provati.add(candidato); return prova({ tipo_piano: 'quote_fisse', tasso_annuo_piano: candidato / 1e5, rata_piano: 0, ...regole }); };
       let righePiano = null;   // righe di un piano a quote fisse vicino a quello vero: danno gli interessi di ogni rata
+      if (!variabile) continue;   // a tasso fisso le quote fissate all'inizio coincidono con la francese
       if (primaRata && prima && prima.origineEuribor !== 'previsione') {
         const tasso = tassoPianoDaQuota(base.importo_iniziale, base.numero_rate, 1, primaRata.rata_vera - centesimi(prima.interessi) - base.spese_rata);
         if (tasso != null) {
@@ -419,7 +465,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tara, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });

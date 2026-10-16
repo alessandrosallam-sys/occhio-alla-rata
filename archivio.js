@@ -12,39 +12,60 @@
   const PREFISSO_FILE = 'window.MutuoDatiSalvati = ';
   const scelte = nome => Calcolo.REGOLE[nome].map(([valore, etichetta, aiuto]) => ({ valore, etichetta, aiuto }));
 
-  // Parametri del mutuo: tipo, limiti, valore iniziale e testi per i moduli. "se" = quando il campo ha senso.
+  // Parametri di un prestito: tipo, limiti, valore iniziale e testi per i moduli. "se" = quando il campo ha senso
+  // (anche per una singola scelta di un elenco); un campo obbligatorio lo è solo quando ha senso.
+  const variabile = p => (p.tipo_prestito || 'variabile') === 'variabile';
   const CAMPI = {
-    nome: { tipo: 'testo', iniziale: 'Il mio mutuo', etichetta: 'Nome del mutuo', aiuto: 'Serve solo a riconoscerlo, ad esempio «Casa di via Roma».' },
-    importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del mutuo (€)', aiuto: 'Il capitale ricevuto dalla banca.' },
+    tipo_prestito: { tipo: 'scelta', iniziale: 'variabile', etichetta: 'Tipo di prestito', opzioni: [
+      { valore: 'variabile', etichetta: 'Mutuo a tasso variabile', aiuto: 'Il tasso segue un indice di mercato (di solito l\'Euribor) più uno spread fisso: la rata cambia nel tempo.' },
+      { valore: 'fisso', etichetta: 'Mutuo a tasso fisso', aiuto: 'Il tasso è scritto nel contratto e resta lo stesso fino all\'ultima rata.' },
+      { valore: 'finanziamento', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' }] },
+    nome: { tipo: 'testo', iniziale: 'Il mio prestito', etichetta: 'Nome del prestito', aiuto: 'Serve solo a riconoscerlo, ad esempio «Casa di via Roma» o «Auto».' },
+    importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del prestito (€)', aiuto: 'Il capitale prestato dalla banca o dalla finanziaria.' },
     data_prima_rata: { tipo: 'data', obbligatorio: true, etichetta: 'Inizio del primo periodo',
       aiuto: 'Il giorno da cui partono gli interessi della prima rata: di solito il 1° del mese a cui la rata si riferisce. Ogni periodo dura un mese a partire da questo giorno.' },
-    numero_rate: { tipo: 'intero', min: 1, max: 600, obbligatorio: true, etichetta: 'Numero di rate mensili', aiuto: 'Ad esempio 360 per 30 anni, 240 per 20.' },
+    numero_rate: { tipo: 'intero', min: 1, max: 600, obbligatorio: true, etichetta: 'Numero di rate mensili', aiuto: 'Ad esempio 360 per 30 anni, 240 per 20, 60 per 5.' },
+    valore_riferimento: { tipo: 'euro', min: 0, max: 1e9, iniziale: 0, etichetta: 'Valore della casa (€)', se: p => p.tipo_prestito !== 'finanziamento',
+      aiuto: 'Facoltativo: serve solo a mostrare quanta parte del valore resta da pagare. Lascia 0 per usare l\'importo del mutuo.' },
+
     spese_rata: { tipo: 'euro', min: 0, max: 1e4, iniziale: 0, etichetta: 'Spese per ogni rata (€)', aiuto: 'Spese di incasso addebitate insieme alla rata, se ci sono.' },
-    valore_riferimento: { tipo: 'euro', min: 0, max: 1e9, iniziale: 0, etichetta: 'Valore della casa (€)', aiuto: 'Facoltativo: serve solo a mostrare quanta parte del valore resta da pagare. Lascia 0 per usare l\'importo del mutuo.' },
+    spese_iniziali: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, etichetta: 'Spese iniziali (€)',
+      aiuto: 'Pagate una volta sola, all\'inizio: istruttoria, perizia, imposta sostitutiva o di bollo. Non cambiano le rate, ma entrano nel costo totale e nel TAEG.' },
+    assicurazione_iniziale: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, etichetta: 'Assicurazione pagata all\'inizio (€)',
+      aiuto: 'Il premio unico di un\'assicurazione legata al prestito, anche se è stato aggiunto all\'importo prestato.' },
+    assicurazione_rata: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, etichetta: 'Assicurazione a ogni rata (€)',
+      aiuto: 'Il premio mensile, se lo paghi a parte. Se è già dentro la rata addebitata, scrivilo nelle spese per rata.' },
+    spese_annue: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, avanzato: true, etichetta: 'Spese ogni anno (€)', aiuto: 'Ad esempio l\'imposta di bollo sul rendiconto annuale.' },
 
-    indice_nome: { tipo: 'testo', iniziale: 'Euribor 3 mesi', etichetta: 'Indice del contratto', suggerimenti: ['Euribor 1 mese', 'Euribor 3 mesi', 'Euribor 6 mesi', 'Euribor 12 mesi', 'Tasso BCE'],
+    tasso_fisso: { tipo: 'percento', min: 0, max: 0.5, obbligatorio: true, etichetta: 'Tasso annuo nominale, TAN (%)', se: p => !variabile(p),
+      aiuto: 'Il tasso scritto nel contratto: «TAN» o «tasso annuo nominale». Per un finanziamento «a tasso zero» scrivi 0.' },
+    indice_nome: { tipo: 'testo', iniziale: 'Euribor 3 mesi', etichetta: 'Indice del contratto', suggerimenti: ['Euribor 1 mese', 'Euribor 3 mesi', 'Euribor 6 mesi', 'Euribor 12 mesi', 'Tasso BCE'], se: variabile,
       aiuto: 'Il tasso di riferimento scritto nel contratto. I suoi valori li inserirai nella pagina «Tassi».' },
-    spread: { tipo: 'percento', min: -0.05, max: 0.2, obbligatorio: true, etichetta: 'Spread (%)', aiuto: 'La maggiorazione fissa che la banca somma all\'indice.' },
-    mesi_revisione: { tipo: 'scelta', iniziale: 1, etichetta: 'Ogni quanto si aggiorna il tasso',
+    spread: { tipo: 'percento', min: -0.05, max: 0.2, obbligatorio: true, etichetta: 'Spread (%)', se: variabile, aiuto: 'La maggiorazione fissa che la banca somma all\'indice.' },
+    taeg_dichiarato: { tipo: 'percento', min: 0, max: 1, iniziale: 0, etichetta: 'TAEG del contratto (%)',
+      aiuto: 'Il «tasso annuo effettivo globale» scritto nel contratto o nel foglio informativo (SECCI per i finanziamenti, PIES per i mutui). Facoltativo: serve a controllare quello che calcola il programma.' },
+    mesi_revisione: { tipo: 'scelta', iniziale: 1, etichetta: 'Ogni quanto si aggiorna il tasso', se: variabile,
       opzioni: [1, 3, 6, 12].map(n => ({ valore: n, etichetta: n === 1 ? 'Ogni mese' : `Ogni ${n} mesi`, aiuto: n === 1 ? 'Ogni rata ha il suo valore dell\'indice.' : `Il valore dell'indice resta lo stesso per ${n} rate di fila.` })) },
-    regola_rilevazione: { tipo: 'scelta', iniziale: 'lavorativi_prima', etichetta: 'Quando si legge l\'indice', opzioni: scelte('regola_rilevazione') },
-    giorni_anticipo_euribor: { tipo: 'intero', min: 1, max: 30, iniziale: 2, etichetta: 'Quanti giorni lavorativi prima', se: p => p.regola_rilevazione === 'lavorativi_prima' },
-    giorno_rilevazione: { tipo: 'intero', min: 1, max: 31, iniziale: 1, etichetta: 'Giorno del mese', se: p => p.regola_rilevazione === 'giorno_fisso' },
+    regola_rilevazione: { tipo: 'scelta', iniziale: 'lavorativi_prima', etichetta: 'Quando si legge l\'indice', opzioni: scelte('regola_rilevazione'), se: variabile },
+    giorni_anticipo_euribor: { tipo: 'intero', min: 1, max: 30, iniziale: 2, etichetta: 'Quanti giorni lavorativi prima', se: p => variabile(p) && p.regola_rilevazione === 'lavorativi_prima' },
+    giorno_rilevazione: { tipo: 'intero', min: 1, max: 31, iniziale: 1, etichetta: 'Giorno del mese', se: p => variabile(p) && p.regola_rilevazione === 'giorno_fisso' },
     conteggio_giorni: { tipo: 'scelta', iniziale: 'mese_12', etichetta: 'Come si contano i giorni per gli interessi', opzioni: scelte('conteggio_giorni') },
-    arrotonda_indice: { tipo: 'percento', min: 0, max: 0.01, iniziale: 0, avanzato: true, etichetta: 'Arrotondamento dell\'indice (punti %)', aiuto: 'Ad esempio 0,05 se il contratto arrotonda ai 5 centesimi di punto. Lascia 0 se non arrotonda.' },
-    arrotonda_indice_modo: { tipo: 'scelta', iniziale: 'vicino', avanzato: true, etichetta: 'Arrotondamento', opzioni: scelte('arrotonda_indice_modo'), se: p => p.arrotonda_indice > 0 },
-    floor_attivo: { tipo: 'scelta', iniziale: 0, avanzato: true, etichetta: 'Indice minimo (clausola «floor»)',
+    arrotonda_indice: { tipo: 'percento', min: 0, max: 0.01, iniziale: 0, avanzato: true, etichetta: 'Arrotondamento dell\'indice (punti %)', se: variabile, aiuto: 'Ad esempio 0,05 se il contratto arrotonda ai 5 centesimi di punto. Lascia 0 se non arrotonda.' },
+    arrotonda_indice_modo: { tipo: 'scelta', iniziale: 'vicino', avanzato: true, etichetta: 'Arrotondamento', opzioni: scelte('arrotonda_indice_modo'), se: p => variabile(p) && p.arrotonda_indice > 0 },
+    floor_attivo: { tipo: 'scelta', iniziale: 0, avanzato: true, etichetta: 'Indice minimo (clausola «floor»)', se: variabile,
       opzioni: [{ valore: 0, etichetta: 'Non previsto' }, { valore: 1, etichetta: 'Previsto', aiuto: 'L\'indice non può scendere sotto un valore minimo.' }] },
-    indice_minimo: { tipo: 'percento', min: -0.05, max: 0.2, iniziale: 0, avanzato: true, etichetta: 'Valore minimo dell\'indice (%)', se: p => p.floor_attivo > 0 },
-    tasso_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0, avanzato: true, etichetta: 'Tasso massimo del contratto (%)', aiuto: 'Il «cap», se il contratto lo prevede. Lascia 0 se non c\'è.' },
+    indice_minimo: { tipo: 'percento', min: -0.05, max: 0.2, iniziale: 0, avanzato: true, etichetta: 'Valore minimo dell\'indice (%)', se: p => variabile(p) && p.floor_attivo > 0 },
+    tasso_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0, avanzato: true, etichetta: 'Tasso massimo del contratto (%)', se: variabile, aiuto: 'Il «cap», se il contratto lo prevede. Lascia 0 se non c\'è.' },
 
-    tipo_piano: { tipo: 'scelta', iniziale: 'francese', etichetta: 'Come si rimborsa il capitale', opzioni: scelte('tipo_piano') },
-    tasso_annuo_piano: { tipo: 'percento', min: 0, max: 1, iniziale: 0, etichetta: 'Tasso iniziale del piano (%)', se: p => p.tipo_piano === 'quote_fisse',
+    // Le quote capitale fissate all'inizio hanno senso solo quando il tasso cambia: a tasso fisso coincidono con la francese.
+    tipo_piano: { tipo: 'scelta', iniziale: 'francese', etichetta: 'Come si rimborsa il capitale',
+      opzioni: scelte('tipo_piano').map(o => o.valore === 'quote_fisse' ? { ...o, se: variabile } : o) },
+    tasso_annuo_piano: { tipo: 'percento', min: 0, max: 1, iniziale: 0, etichetta: 'Tasso iniziale del piano (%)', se: p => variabile(p) && p.tipo_piano === 'quote_fisse',
       aiuto: 'Il tasso annuo con cui la banca ha calcolato le quote capitale alla firma. Se non lo conosci, la taratura automatica lo ricava dalle quote vere.' },
-    rata_piano: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, avanzato: true, etichetta: 'Rata del piano (€)', se: p => p.tipo_piano === 'quote_fisse',
+    rata_piano: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, avanzato: true, etichetta: 'Rata del piano (€)', se: p => variabile(p) && p.tipo_piano === 'quote_fisse',
       aiuto: 'La rata capitale + interessi del piano iniziale. Lascia 0 per calcolarla dal tasso.' },
 
-    euribor_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0.05, etichetta: 'Tetto alla previsione dell\'indice (%)', aiuto: 'Per i mesi futuri l\'indice stimato non supera questo valore. Lascia 0 per non mettere un tetto.' },
+    euribor_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0.05, etichetta: 'Tetto alla previsione dell\'indice (%)', se: variabile, aiuto: 'Per i mesi futuri l\'indice stimato non supera questo valore. Lascia 0 per non mettere un tetto.' },
     rata_obiettivo: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, nascosto: true },
     // Come il piano stima l'indice delle rate future: si sceglie nella scheda «Previsioni» (previsioni.js).
     previsione_modello: { tipo: 'scelta', iniziale: 'media', nascosto: true, opzioni: ['media', 'arima', 'var', 'garch', 'vasicek'].map(valore => ({ valore })) },
@@ -83,7 +104,10 @@
         puliti[chiave] = valore;
       }
     }
-    if (completi) for (const [chiave, campo] of Object.entries(CAMPI)) if (campo.obbligatorio) richiedi(puliti[chiave] != null && puliti[chiave] !== '', `Manca: ${campo.etichetta}`);
+    if (completi) {
+      const tutti = { ...predefiniti(), ...puliti };
+      for (const [chiave, campo] of Object.entries(CAMPI)) if (campo.obbligatorio && (!campo.se || campo.se(tutti))) richiedi(puliti[chiave] != null && puliti[chiave] !== '', `Manca: ${campo.etichetta}`);
+    }
     return puliti;
   }
   const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));

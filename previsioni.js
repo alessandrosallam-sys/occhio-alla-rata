@@ -73,7 +73,7 @@
   const cachePiano = new Map();
   M.perPiano = function perPiano(dati) {
     const modello = dati.parametri.previsione_modello || 'media';
-    if (modello === 'media' || !Mod.MODELLI[modello]) return null;
+    if (modello === 'media' || !Mod.MODELLI[modello] || (dati.parametri.tipo_prestito || 'variabile') !== 'variabile') return null;
     let opzioni = {};
     try { opzioni = JSON.parse(dati.parametri.previsione_opzioni || '{}'); } catch { opzioni = {}; }
     const propria = Internet.riconosci(dati.parametri.indice_nome), codice = propria ? propria.codice : 'contratto', scenario = scenarioDi(dati);

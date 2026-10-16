@@ -8,8 +8,11 @@
 
   // ---------- Campi dei moduli, costruiti dalla descrizione in archivio.js ----------
   // "esteso": le scelte diventano un elenco con la spiegazione di ogni voce (guida); altrimenti un menu a tendina (pannello).
-  function creaCampo(chiave, valore, esteso) {
-    const campo = CAMPI[chiave];
+  // "p": i parametri di adesso, per mostrare solo le scelte che hanno senso (ad esempio niente quote fisse a tasso fisso).
+  const opzioniPer = (campo, p) => campo.opzioni.filter(o => !o.se || o.se(p) || o.valore === p[campo.chiave]);
+  function creaCampo(chiave, valore, esteso, p = {}) {
+    const campo = { ...CAMPI[chiave], chiave };
+    if (campo.opzioni) campo.opzioni = opzioniPer(campo, p);
     const aiuto = campo.aiuto ? [crea('small', {}, campo.aiuto)] : [];
     if (campo.tipo === 'scelta' && esteso) {
       return crea('fieldset', { className: 'campo scelte', 'data-campo': chiave }, crea('legend', {}, campo.etichetta),
@@ -74,11 +77,12 @@
 
   // Descrizione in parole di un insieme di regole.
   const nomeScelta = (chiave, valore) => (CAMPI[chiave].opzioni.find(o => o.valore === valore) || {}).etichetta || String(valore);
+  const variabile = p => (p.tipo_prestito || 'variabile') === 'variabile';
   function descriviRegole(p) {
     const rilevazione = p.regola_rilevazione === 'lavorativi_prima' ? `${p.giorni_anticipo_euribor} giorni lavorativi prima dell'inizio del periodo`
       : p.regola_rilevazione === 'giorno_fisso' ? `il giorno ${p.giorno_rilevazione} del mese precedente` : nomeScelta('regola_rilevazione', p.regola_rilevazione).toLowerCase();
-    const piano = nomeScelta('tipo_piano', p.tipo_piano) + (p.tipo_piano === 'quote_fisse' && p.tasso_annuo_piano > 0 ? ` al ${perc(p.tasso_annuo_piano, 3)}` : '');
-    return [['Capitale', piano], ['Indice letto', rilevazione], ['Tasso aggiornato', nomeScelta('mesi_revisione', p.mesi_revisione || 1).toLowerCase()],
+    const piano = nomeScelta('tipo_piano', p.tipo_piano) + (variabile(p) && p.tipo_piano === 'quote_fisse' && p.tasso_annuo_piano > 0 ? ` al ${perc(p.tasso_annuo_piano, 3)}` : '');
+    return [['Capitale', piano], ...(variabile(p) ? [['Indice letto', rilevazione], ['Tasso aggiornato', nomeScelta('mesi_revisione', p.mesi_revisione || 1).toLowerCase()]] : []),
       ['Interessi', nomeScelta('conteggio_giorni', p.conteggio_giorni)], ['Spese per rata', p.spese_rata > 0 ? euro(p.spese_rata) : 'nessuna']];
   }
 
@@ -93,15 +97,37 @@
   // È pensata per chi non conosce la materia: un argomento per schermata e, per ogni domanda, che cosa si chiede,
   // dove trovarlo e che cosa fare se non lo si sa. "nonSo": il programma può ricavare la risposta dalle rate già pagate.
   const DOMANDE = {
-    nome: { domanda: 'Come vuoi chiamare questo mutuo?', cosa: 'Un nome a piacere: serve solo a riconoscerlo.', esempio: 'Casa di via Roma' },
-    importo_iniziale: { domanda: 'Quanto ti ha prestato la banca?',
-      cosa: 'La somma che la banca ti ha dato all\'inizio, detta «capitale». Non è il prezzo della casa e non è quello che ti resta da pagare oggi.',
-      dove: 'Nel contratto di mutuo cerca «importo del mutuo», «capitale erogato» o «somma mutuata». La trovi anche in cima al piano di ammortamento, come debito iniziale.',
-      esempio: '150.000' },
+    tipo_prestito: { domanda: 'Che prestito è?',
+      cosa: 'Il programma segue sia i mutui sia i finanziamenti. Cambia soprattutto il tasso: se segue un indice di mercato (variabile) o se è scritto nel contratto e non cambia (fisso).',
+      dove: 'Nel contratto, nella parte sul tasso di interesse: «tasso variabile» con un indice come l\'Euribor, oppure «tasso fisso» con il TAN.' },
+    nome: { domanda: 'Come vuoi chiamare questo prestito?', cosa: 'Un nome a piacere: serve solo a riconoscerlo, soprattutto se ne segui più di uno.', esempio: 'Casa di via Roma, Auto, Cucina' },
+    importo_iniziale: { domanda: 'Quanto ti hanno prestato?',
+      cosa: 'La somma prestata dalla banca o dalla finanziaria, detta «capitale». Non è il prezzo della casa o dell\'auto e non è quello che ti resta da pagare oggi.',
+      dove: 'Nel contratto cerca «importo del mutuo», «importo totale del credito», «capitale erogato» o «somma mutuata». La trovi anche in cima al piano di ammortamento, come debito iniziale.',
+      esempio: '150.000 per un mutuo, 15.000 per un finanziamento' },
     numero_rate: { domanda: 'In quante rate mensili lo restituisci?',
       cosa: 'Il numero totale di rate previste dal contratto, comprese quelle che hai già pagato.',
       dove: 'Nel contratto alla voce «durata» o «numero di rate». Nel piano di ammortamento è il numero dell\'ultima riga.',
-      esempio: '20 anni sono 240 rate, 25 anni sono 300, 30 anni sono 360' },
+      esempio: '20 anni sono 240 rate, 30 anni sono 360; un finanziamento di 5 anni sono 60 rate' },
+    spese_iniziali: { domanda: 'Quanto hai pagato all\'inizio, una volta sola?',
+      cosa: 'Le spese pagate alla firma o trattenute dalla somma prestata: istruttoria, perizia della casa, imposta sostitutiva (nei mutui) o imposta di bollo (nei finanziamenti). Non cambiano le rate, ma fanno parte del costo del prestito.',
+      dove: 'Nel contratto o nel foglio informativo (PIES per i mutui, SECCI per i finanziamenti), alla voce «spese» o «costi». Se la somma accreditata sul conto era più bassa di quella prestata, la differenza sono queste spese.',
+      seNonSai: 'Lascia 0: le rate restano giuste, solo il costo totale e il TAEG saranno un po\' più bassi del vero.' },
+    assicurazione_iniziale: { domanda: 'Hai pagato un\'assicurazione tutta all\'inizio?',
+      cosa: 'Alcuni prestiti hanno un\'assicurazione (sulla vita, sull\'impiego, sulla casa) pagata con un premio unico all\'inizio, a volte aggiunto alla somma prestata.',
+      dove: 'Nel contratto o nel modulo dell\'assicurazione, alla voce «premio unico».', seNonSai: 'Lascia 0.' },
+    assicurazione_rata: { domanda: 'Paghi un\'assicurazione ogni mese?',
+      cosa: 'Il premio mensile di un\'assicurazione legata al prestito, se lo paghi a parte. Se la banca lo addebita dentro la rata, scrivilo invece fra le spese per rata, così la rata calcolata torna con quella addebitata.',
+      dove: 'Nell\'estratto conto o nel modulo dell\'assicurazione.', seNonSai: 'Lascia 0.' },
+    spese_annue: { domanda: 'Ci sono spese una volta all\'anno?', cosa: 'Ad esempio l\'imposta di bollo sul rendiconto annuale, di solito 2 euro. Lascia 0 se non ci sono.' },
+    tasso_fisso: { domanda: 'Qual è il tasso del prestito?',
+      cosa: 'Il tasso annuo nominale, cioè il tasso usato per calcolare gli interessi di ogni rata. Non è il TAEG, che è più alto perché conta anche spese e assicurazioni.',
+      dove: 'Nel contratto o nel foglio informativo, alla voce «TAN» o «tasso annuo nominale». Nei mutui a tasso fisso è il «tasso di interesse» del contratto.',
+      esempio: '3,2 per un mutuo, 7,9 per un finanziamento, 0 per un «tasso zero» (senza il segno %)' },
+    taeg_dichiarato: { domanda: 'Qual è il TAEG scritto nel contratto? (facoltativo)',
+      cosa: 'Il «tasso annuo effettivo globale»: misura il costo totale del prestito, compresi interessi, spese e assicurazioni obbligatorie, in percentuale all\'anno. Serve a confrontare prestiti diversi. Il programma lo calcola da solo e, se lo scrivi, ti dice se il suo calcolo coincide con quello della banca.',
+      dove: 'Nel contratto, nel foglio informativo (SECCI per i finanziamenti, PIES per i mutui) o nella pubblicità del prestito, sempre vicino al TAN.',
+      seNonSai: 'Lascia 0. Per un mutuo variabile il TAEG della banca è calcolato con l\'indice del giorno della firma, quindi può essere diverso da quello del programma, che usa le previsioni.' },
     data_prima_rata: { domanda: 'Da che giorno partono gli interessi della prima rata?',
       cosa: 'Ogni rata paga gli interessi di un mese. Qui serve il primo giorno del mese coperto dalla prima rata: non il giorno in cui l\'hai pagata.',
       dove: 'Nel piano di ammortamento, alla riga della rata numero 1: cerca «periodo dal … al …» o «decorrenza». Oppure nella ricevuta della prima rata.',
@@ -152,15 +178,18 @@
       seNonSai: 'Lascialo vuoto e usa la casella qui sotto: basta la quota capitale della prima rata.' },
     rata_piano: { domanda: 'Rata del piano iniziale', cosa: 'La rata (capitale + interessi) scritta nel piano iniziale. Lascia 0: il programma la calcola dal tasso.' },
   };
+  // "se": il passo serve solo per alcuni prestiti (ad esempio gli aggiornamenti del tasso solo per il variabile).
   const PASSI = [
     { titolo: 'Prima di iniziare', tipo: 'benvenuto', campi: [] },
-    { titolo: 'Il prestito', campi: ['nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata'],
+    { titolo: 'Il prestito', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'valore_riferimento'],
       testo: 'Cominciamo dai dati di base. Li trovi tutti nella prima pagina del contratto o nel piano di ammortamento.' },
-    { titolo: 'Spese e casa', campi: ['spese_rata', 'valore_riferimento'],
-      testo: 'Due informazioni in più. Se non le hai sotto mano puoi lasciare 0 e andare avanti.' },
-    { titolo: 'Il tasso', campi: ['indice_nome', 'spread'],
+    { titolo: 'Spese e assicurazioni', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata'], avanzati: ['spese_annue'],
+      testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
+    { titolo: 'Il tasso', se: variabile, campi: ['indice_nome', 'spread', 'taeg_dichiarato'],
       testo: 'In un mutuo a tasso variabile il tasso di ogni rata è la somma di due numeri: un indice di mercato, che cambia nel tempo, e lo spread, che è fisso.' },
-    { titolo: 'Gli aggiornamenti', campi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'],
+    { titolo: 'Il tasso', se: b => !variabile(b), campi: ['tasso_fisso', 'taeg_dichiarato'],
+      testo: 'A tasso fisso il tasso è scritto nel contratto e non cambia mai. Nel contratto ne trovi due: il TAN, che serve a calcolare le rate, e il TAEG, che misura il costo totale.' },
+    { titolo: 'Gli aggiornamenti', se: variabile, campi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'],
       testo: 'Ora due dettagli su quando la banca rilegge l\'indice. Se non li trovi nel contratto scegli «Non lo so»: il programma li ricava dalle rate che hai già pagato.' },
     { titolo: 'Gli interessi', campi: ['conteggio_giorni'], avanzati: ['arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
       testo: 'Un dettaglio tecnico che serve a far tornare i conti al centesimo. Anche qui, se non lo sai, lascia fare al programma.' },
@@ -186,6 +215,11 @@
     return [...tassi.values()].sort((x, y) => x.giorno.localeCompare(y.giorno));
   }
   const campiDelPasso = passo => [...passo.campi, ...(passo.avanzati || [])];
+  // Passi da percorrere con le risposte date finora (il tipo di prestito decide quali servono).
+  const passoServe = i => !PASSI[i].se || PASSI[i].se(guida.bozza);
+  const passiUtili = () => PASSI.map((_, i) => i).filter(passoServe);
+  const passoDopo = i => passiUtili().find(j => j > i) ?? i;
+  const passoPrima = i => [...passiUtili()].reverse().find(j => j < i) ?? i;
   const mostraErrore = testo => { $('#errore-passo').textContent = testo; $('#errore-passo').hidden = false; $('#errore-passo').scrollIntoView({ block: 'nearest' }); return false; };
   const titoloDomanda = chiave => (DOMANDE[chiave] || {}).domanda || CAMPI[chiave].etichetta;
 
@@ -197,7 +231,7 @@
       crea('span', {}, crea('strong', {}, titolo), ...(aiuto ? [crea('small', {}, aiuto)] : []), ...(extra ? [extra] : [])));
     let controllo;
     if (campo.tipo === 'scelta') {
-      controllo = crea('div', { className: 'scelte' }, ...campo.opzioni.map(o => voce(String(o.valore), o.etichetta, o.aiuto, !nonSo && o.valore === valore)),
+      controllo = crea('div', { className: 'scelte' }, ...campo.opzioni.filter(o => !o.se || o.se(guida.bozza)).map(o => voce(String(o.valore), o.etichetta, o.aiuto, !nonSo && o.valore === valore)),
         ...(d.nonSo ? [voce(NON_SO, 'Non lo so', d.nonSo, nonSo)] : []));
     } else if (campo.suggerimenti) {
       const noto = campo.suggerimenti.includes(valore);
@@ -252,6 +286,9 @@
     }
     const aiuto = $('#aiuto-quota');
     if (aiuto) aiuto.hidden = $('#campi-passo [data-campo="tasso_annuo_piano"]').hidden;
+    // I casi particolari che non riguardano questo prestito (ad esempio quelli sull'indice, a tasso fisso) spariscono del tutto.
+    const avanzate = $('#campi-passo details.avanzate');
+    if (avanzate) avanzate.hidden = ![...avanzate.querySelectorAll('.domanda')].some(d => !d.hidden);
     // Valori dell'indice già disponibili: casella per caricarli, visibile solo se l'indice scelto è fra quelli noti.
     const riga = $('#riga-precaricati');
     if (riga) {
@@ -305,7 +342,7 @@
     const festivita = new Set(esistenti.festivita), primoAnno = +b.data_prima_rata.slice(0, 4) - 1;
     for (let anno = primoAnno; anno <= primoAnno + Math.ceil(b.numero_rate / 12) + 2; anno++) for (const g of Calcolo.festivitaTarget(anno)) festivita.add(g);
     const tassi = new Map(esistenti.euribor.map(t => [t.giorno, t]));
-    for (const t of tassiPronti(b)) if (!tassi.has(t.giorno)) tassi.set(t.giorno, t);
+    for (const t of variabile(b) ? tassiPronti(b) : []) if (!tassi.has(t.giorno)) tassi.set(t.giorno, t);
     const rate = new Map(esistenti.rate.map(r => [r.n, { ...r }]));
     for (const riga of rateInserite()) {
       const r = rate.get(riga.n) || { n: riga.n, data_riferimento: null, tasso_applicato: null, euribor: null, spread: null };
@@ -344,10 +381,10 @@
     contenitore.replaceChildren(
       crea('p', {}, guida.riapertura ? `Stai rivedendo la configurazione di «${guida.bozza.nome || 'Il mio mutuo'}». Le risposte già date sono compilate: cambia solo quello che ti serve. Rate e tassi inseriti restano dove sono.`
         : guida.nuovo ? 'Aggiungi un altro prestito: le stesse domande della prima volta. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».'
-          : 'Questo programma ricostruisce, rata per rata, il tuo mutuo a tasso variabile: ti dice se la banca ti addebita la cifra giusta, quanto hai pagato finora di interessi e come potrebbero cambiare le rate future.'),
+          : 'Questo programma ricostruisce, rata per rata, il tuo mutuo o il tuo finanziamento, a tasso variabile o fisso: ti dice se la banca ti addebita la cifra giusta, quanto costa davvero il prestito, quanto hai pagato finora di interessi e, per il variabile, come potrebbero cambiare le rate future.'),
       crea('h3', {}, 'Tieni a portata di mano'),
       crea('ul', { className: 'documenti' },
-        documento('Il contratto di mutuo', '(o il «documento di sintesi» che lo accompagna): servono importo, durata, indice e spread.'),
+        documento('Il contratto', '(o il foglio informativo che lo accompagna: PIES per i mutui, SECCI per i finanziamenti): servono importo, durata, tasso e spese.'),
         documento('Il piano di ammortamento,', 'se la banca te l\'ha consegnato: è la tabella con tutte le rate previste.'),
         documento('Le ricevute o l\'estratto conto', 'di alcune rate già pagate: servono gli importi addebitati.')),
       crea('h3', {}, 'Come funziona'),
@@ -360,11 +397,11 @@
   function disegnaRate(contenitore) {
     const periodi = periodiIniziati();
     const dove = crea('div', { className: 'spiegazione' },
-      crea('p', {}, crea('b', {}, 'Dove le trovi. '), 'Nell\'estratto conto (sono gli addebiti del mutuo), nelle ricevute o quietanze che la banca ti manda, oppure nell\'area clienti del sito della banca, alla sezione mutui.'),
+      crea('p', {}, crea('b', {}, 'Dove le trovi. '), 'Nell\'estratto conto (sono gli addebiti del prestito), nelle ricevute o quietanze che la banca ti manda, oppure nell\'area clienti del sito della banca o della finanziaria.'),
       crea('p', {}, crea('b', {}, 'Rata addebitata. '), 'La cifra totale uscita dal conto per quella rata, spese comprese.'),
       crea('p', {}, crea('b', {}, 'Quota capitale (facoltativa). '), 'La parte della rata che riduce il debito: è una voce del dettaglio della ricevuta. Se la scrivi, il programma riconosce con più sicurezza il tipo di piano.'),
       crea('p', {}, crea('b', {}, 'Un trucco. '), 'Puoi incollare una colonna intera copiata da un foglio di calcolo: clic sulla prima casella e incolla.'));
-    if (!periodi.length) { contenitore.replaceChildren(crea('p', { className: 'nota' }, 'Il mutuo non è ancora partito: non ci sono rate da inserire. Vai avanti.')); return; }
+    if (!periodi.length) { contenitore.replaceChildren(crea('p', { className: 'nota' }, 'Il prestito non è ancora partito: non ci sono rate da inserire. Vai avanti.')); return; }
     const casella = (n, tipo, segnaposto) => crea('input', { type: 'text', inputMode: 'decimal', 'data-rata': n, 'data-tipo': tipo, value: (guida.rate[n] || {})[tipo] || '',
       placeholder: segnaposto, 'aria-label': `${tipo === 'rata' ? 'Rata addebitata' : 'Quota capitale'}, rata ${n}` });
     const righe = periodi.slice(0, guida.righeRate).map(({ n, inizio }) => crea('tr', {}, crea('td', {}, String(n)), crea('td', { className: 'testo' }, M.meseAnno(inizio)),
@@ -423,15 +460,20 @@
       }
       if (esito.vere < 3 && tutte) blocchi.push(crea('p', { className: 'nota' }, 'Con così poche rate il controllo è poco affidabile: quando ne aggiungi altre, verifica che le righe del piano restino verdi.'));
     }
-    const pronti = tassiPronti(b), scaricati = tassiScaricati(b).length, scaricabile = !!TassiInternet.riconosci(b.indice_nome);
-    const voci = [['Mutuo', `${b.nome || 'Il mio mutuo'}: ${euro(b.importo_iniziale)} in ${b.numero_rate} rate dal ${data(b.data_prima_rata)}`],
-      ['Tasso', `${b.indice_nome || 'indice'} + ${perc(b.spread, 3, 1)}`], ...descriviRegole(b),
-      ['Valori dell\'indice', pronti.length ? `${pronti.length} pronti${scaricati ? ` (${scaricati} scaricati da internet)` : ''}, dal ${data(pronti[0].giorno)} al ${data(pronti[pronti.length - 1].giorno)}` : scaricabile ? 'da scaricare da internet nella pagina «Tassi»' : 'da inserire nella pagina «Tassi»'],
+    const conIndice = variabile(b), pronti = conIndice ? tassiPronti(b) : [], scaricati = conIndice ? tassiScaricati(b).length : 0, scaricabile = conIndice && !!TassiInternet.riconosci(b.indice_nome);
+    const spese = [[b.spese_iniziali, 'iniziali'], [b.assicurazione_iniziale, 'di assicurazione all\'inizio'], [b.assicurazione_rata, 'di assicurazione al mese'], [b.spese_annue, 'all\'anno']]
+      .filter(([v]) => v > 0).map(([v, cosa]) => `${euro(v)} ${cosa}`);
+    const voci = [[nomeScelta('tipo_prestito', b.tipo_prestito || 'variabile'), `${b.nome || 'Il mio prestito'}: ${euro(b.importo_iniziale)} in ${b.numero_rate} rate dal ${data(b.data_prima_rata)}`],
+      ['Tasso', conIndice ? `${b.indice_nome || 'indice'} + ${perc(b.spread, 3, 1)}` : `fisso al ${perc(b.tasso_fisso || 0, 3, 1)} (TAN)`], ...descriviRegole(b),
+      ['Altre spese', spese.length ? spese.join(', ') : 'nessuna'],
+      ...(b.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(b.taeg_dichiarato, 3, 1)]] : []),
+      ...(conIndice ? [['Valori dell\'indice', pronti.length ? `${pronti.length} pronti${scaricati ? ` (${scaricati} scaricati da internet)` : ''}, dal ${data(pronti[0].giorno)} al ${data(pronti[pronti.length - 1].giorno)}` : scaricabile ? 'da scaricare da internet nella pagina «Tassi»' : 'da inserire nella pagina «Tassi»']] : []),
       ['Rate già pagate', inserite ? `${inserite} inserite` : 'nessuna inserita']];
     const dopo = [];
-    if (!pronti.length) dopo.push(scaricabile ? 'Nella pagina «Tassi» premi «Scarica gli ultimi valori»: i valori dell\'indice arrivano da internet, senza scriverli a mano.'
+    if (conIndice && !pronti.length) dopo.push(scaricabile ? 'Nella pagina «Tassi» premi «Scarica gli ultimi valori»: i valori dell\'indice arrivano da internet, senza scriverli a mano.'
       : 'Nella pagina «Tassi» inserisci o incolla i valori dell\'indice: bastano quelli dei giorni di rilevazione, che il programma ti indica.');
     else if (scaricabile) dopo.push('I valori nuovi dell\'indice arrivano da soli: a ogni apertura la pagina «Tassi» scarica quelli che mancano (se c\'è la connessione).');
+    if (!conIndice) dopo.push('Nel «Pannello di controllo» trovi quanto costa davvero il prestito: interessi, spese, assicurazioni e TAEG' + (b.taeg_dichiarato > 0 ? ', confrontato con quello del contratto.' : '.'));
     dopo.push(inserite ? 'Nella pagina «Piano» aggiungi le altre rate già addebitate (colonna «Rata vera») e, ogni mese, quella nuova: le righe diventano verdi se i conti tornano.'
       : 'Nella pagina «Piano» scrivi le rate che la banca ti ha già addebitato (colonna «Rata vera»): le righe diventano verdi se i conti tornano.');
     dopo.push('Se una riga diventa rossa, nel «Pannello di controllo» c\'è la taratura automatica, che cerca le regole che riproducono le tue rate.');
@@ -441,11 +483,11 @@
   }
 
   function disegnaPasso() {
-    const passo = PASSI[guida.passo], ultimo = guida.passo === PASSI.length - 1;
+    const passo = PASSI[guida.passo], ultimo = guida.passo === PASSI.length - 1, utili = passiUtili();
     guida.massimo = Math.max(guida.massimo, guida.passo);
-    $('#passi-guida').replaceChildren(...PASSI.map((p, i) => crea('li', { className: (i === guida.passo ? 'attivo' : i < guida.passo ? 'fatto' : '') + (i <= guida.massimo ? ' raggiunto' : ''),
-      'data-passo': i, title: p.titolo }, crea('span', {}, p.titolo))));
-    $('#conta-passi').textContent = `Passo ${guida.passo + 1} di ${PASSI.length}`;
+    $('#passi-guida').replaceChildren(...utili.map(i => crea('li', { className: (i === guida.passo ? 'attivo' : i < guida.passo ? 'fatto' : '') + (i <= guida.massimo ? ' raggiunto' : ''),
+      'data-passo': i, title: PASSI[i].titolo }, crea('span', {}, PASSI[i].titolo))));
+    $('#conta-passi').textContent = `Passo ${utili.indexOf(guida.passo) + 1} di ${utili.length}`;
     $('#titolo-passo').textContent = passo.titolo;
     $('#testo-passo').textContent = passo.testo || '';
     $('#testo-passo').hidden = !passo.testo;
@@ -475,7 +517,7 @@
       aggiornaDomande();
     }
     $('#guida-indietro').hidden = guida.passo === 0;
-    $('#guida-avanti').textContent = ultimo ? (guida.riapertura ? 'Salva la configurazione' : 'Crea il mio mutuo') : passo.tipo === 'benvenuto' ? 'Cominciamo' : 'Avanti';
+    $('#guida-avanti').textContent = ultimo ? (guida.riapertura ? 'Salva la configurazione' : 'Crea il prestito') : passo.tipo === 'benvenuto' ? 'Cominciamo' : 'Avanti';
     $('#guida-annulla').hidden = !guida.riapertura && !guida.nuovo;
     $('#guida-carica').hidden = guida.riapertura || guida.nuovo || guida.passo !== 0;
     $('#configurazione').scrollTop = 0;
@@ -570,17 +612,17 @@
   $('#passi-guida').addEventListener('click', evento => {
     const voce = evento.target.closest('li[data-passo]');
     const destinazione = voce ? +voce.dataset.passo : guida.passo;
-    if (destinazione === guida.passo || destinazione > guida.massimo || !raccogliPasso(destinazione > guida.passo)) return;
+    if (destinazione === guida.passo || destinazione > guida.massimo || !raccogliPasso(destinazione > guida.passo) || !passoServe(destinazione)) return;
     guida.passo = destinazione;
     disegnaPasso();
   });
-  $('#guida-indietro').addEventListener('click', () => { raccogliPasso(false); guida.passo--; disegnaPasso(); });
+  $('#guida-indietro').addEventListener('click', () => { raccogliPasso(false); guida.passo = passoPrima(guida.passo); disegnaPasso(); });
   $('#guida-annulla').addEventListener('click', () => M.avvia());
   $('#form-guida').addEventListener('submit', async evento => {
     evento.preventDefault();
     if (!raccogliPasso(true)) return;
-    if (guida.passo < PASSI.length - 1) { guida.passo++; return disegnaPasso(); }
-    const rate = rateInserite(), tassi = tassiPronti(guida.bozza);
+    if (guida.passo < PASSI.length - 1) { guida.passo = passoDopo(guida.passo); return disegnaPasso(); }
+    const rate = rateInserite(), tassi = variabile(guida.bozza) ? tassiPronti(guida.bozza) : [];
     try {
       await Archivio.richiesta('POST', 'configura', { parametri: guida.bozza, tassi, rate, nuovo: guida.nuovo });
     } catch (errore) {
@@ -589,8 +631,8 @@
     const prima = !guida.riapertura;
     await M.avvia();
     if (!prima) return avvisa('Configurazione salvata');
-    if (tassi.length || rate.length) { M.mostraScheda('piano'); avvisa('Mutuo creato. Nel piano le rate verdi tornano con i conti della banca.'); }
-    else { M.mostraScheda('tassi'); avvisa(TassiInternet.riconosci(guida.bozza.indice_nome) ? 'Mutuo creato. Ora scarica da internet i valori dell\'indice, con il pulsante qui sotto.' : 'Mutuo creato. Ora inserisci i valori dell\'indice: le date che servono sono elencate qui.'); }
+    if (tassi.length || rate.length || !variabile(guida.bozza)) { M.mostraScheda('piano'); avvisa('Prestito creato. Nel piano le rate verdi tornano con i conti della banca.'); }
+    else { M.mostraScheda('tassi'); avvisa(TassiInternet.riconosci(guida.bozza.indice_nome) ? 'Prestito creato. Ora scarica da internet i valori dell\'indice, con il pulsante qui sotto.' : 'Prestito creato. Ora inserisci i valori dell\'indice: le date che servono sono elencate qui.'); }
   });
 
   // ---------- Regole del contratto nel pannello ----------
@@ -598,7 +640,7 @@
   function disegnaRegole() {
     const contenitore = $('#campi-regole'), p = stato.dati.parametri;
     if (contenitore.contains(document.activeElement)) return;   // non si riscrive il modulo mentre lo si compila
-    contenitore.replaceChildren(...CHIAVI_REGOLE.map(c => creaCampo(c, p[c], false)));
+    contenitore.replaceChildren(...CHIAVI_REGOLE.map(c => creaCampo(c, p[c], false, p)));
     aggiornaVisibili(contenitore, CHIAVI_REGOLE, p);
   }
   $('#campi-regole').addEventListener('change', () => aggiornaVisibili($('#campi-regole'), CHIAVI_REGOLE, stato.dati.parametri));

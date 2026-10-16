@@ -23,8 +23,13 @@
       rateRestanti: restanti.length,
     };
   }
-  // Che prestito è, in poche parole.
-  const descriviTipo = p => `Mutuo a tasso variabile · ${p.indice_nome || 'indice'} + ${perc(p.spread, 3, 1)}`;
+  // Che prestito è, in poche parole (a tasso fisso anche il TAEG, che dice quanto costa davvero).
+  function descriviTipo(r) {
+    const p = r.d.parametri;
+    if ((p.tipo_prestito || 'variabile') === 'variabile') return `Mutuo a tasso variabile · ${p.indice_nome || 'indice'} + ${perc(p.spread, 3, 1)}`;
+    const taeg = Calcolo.costi(r.d, r.righe, true).taeg;
+    return `${p.tipo_prestito === 'fisso' ? 'Mutuo a tasso fisso' : 'Finanziamento'} · TAN ${perc(p.tasso_fisso || 0, 3, 1)}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
+  }
 
   function cartaPrestito(r, aperto) {
     const p = r.d.parametri;
@@ -36,7 +41,7 @@
     const apri = crea('button', { type: 'button', className: aperto ? 'secondario' : '', 'data-apri': r.d.id }, aperto ? 'Vai al piano' : 'Apri');
     const elimina = crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina': r.d.id }, 'Elimina');
     return crea('article', { className: 'carta carta-prestito' + (aperto ? ' aperto' : '') },
-      crea('header', {}, crea('div', {}, crea('h3', {}, p.nome || 'Prestito senza nome'), crea('p', { className: 'nota' }, descriviTipo(p))),
+      crea('header', {}, crea('div', {}, crea('h3', {}, p.nome || 'Prestito senza nome'), crea('p', { className: 'nota' }, descriviTipo(r))),
         ...(aperto ? [crea('span', { className: 'etichetta-aperto' }, 'Aperto ora')] : [])),
       crea('div', { className: 'numeri-prestito' },
         voce(r.meseRata ? `Rata di ${meseAnno(r.meseRata)}` : 'Rata', r.stato === 'finito' ? '—' : euro(r.rata), r.stato === 'futuro' ? 'la prima' : null),

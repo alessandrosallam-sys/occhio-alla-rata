@@ -107,8 +107,8 @@
           <li><button type="button" class="voce-stato" data-stato="corso" title="Vai alla riga"><span class="campione riga-corso">●</span>in corso <b id="conta-corso"></b></button></li>
           <li id="legenda-copiata" hidden><span class="campione copiata">=</span>rata presa dal calcolo</li>
           <li><span class="campione manuale"></span>inserito a mano</li>
-          <li><span class="campione previsione">1,23</span>valore stimato</li>
-          <li><span class="freccia su">▲</span><span class="freccia giu">▼</span>costo al giorno in aumento / in calo</li>
+          <li data-solo-variabile><span class="campione previsione">1,23</span>valore stimato</li>
+          <li data-solo-variabile><span class="freccia su">▲</span><span class="freccia giu">▼</span>costo al giorno in aumento / in calo</li>
           <li id="legenda-target" hidden><span class="freccia giu grande">↓</span>entro il target<span class="freccia medio grande">→</span>fino al +10%<span class="freccia su grande">↑</span>oltre</li>
         </ul>
       </div>
@@ -364,6 +364,9 @@
           </div>
         </div>
 
+        <!-- Costo totale, spese, assicurazioni e TAEG del prestito aperto (costi.js) -->
+        <div class="carta carta-costo" id="costo-prestito"></div>
+
         <section class="gruppo-pannello" aria-labelledby="titolo-gruppo-regole">
           <h2 class="titolo-gruppo" id="titolo-gruppo-regole">Le regole del contratto</h2>
           <p class="nota">Se nel piano restano righe rosse anche dove hai scritto la rata vera, di solito è una regola scelta male: la taratura la trova da sola.</p>
@@ -391,7 +394,7 @@
             <div class="intestazione-carta">
               <div>
                 <h3>Regole del contratto</h3>
-                <p class="nota">Le stesse della configurazione iniziale. Se non sei sicuro di una regola, usa la taratura automatica.</p>
+                <p class="nota">Le stesse della configurazione iniziale, comprese spese e assicurazioni. Se non sei sicuro di una regola, usa la taratura automatica.</p>
               </div>
               <button type="button" class="secondario" id="riapri-guida">Apri la configurazione guidata</button>
             </div>
@@ -471,6 +474,7 @@
   <script src="previsioni.js"></script>
   <script src="configura.js"></script>
   <script src="prestiti.js"></script>
+  <script src="costi.js"></script>
   <script src="file-collegato.js"></script>
 </body>
 </html>

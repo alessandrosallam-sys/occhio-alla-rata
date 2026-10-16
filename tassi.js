@@ -425,7 +425,7 @@
     return d.toISOString().slice(0, 10);
   }
   async function aggiornaAutomatico() {
-    if (!automatico() || !stato.dati) return;
+    if (!automatico() || !stato.dati || !M.variabile()) return;   // a tasso fisso non c'è un indice da scaricare
     const serie = Internet.riconosci(M.indice());
     if (!serie) return;
     const presenti = stato.dati.euribor, ultimo = presenti.length ? presenti[presenti.length - 1].giorno : '';
