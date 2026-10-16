@@ -1275,6 +1275,12 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .tabella-costi th small { display: block; color: var(--tenue); font-weight: 400; font-size: 12.5px; }
 .tabella-costi td { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--carattere-numeri); }
 .tabella-costi tr.totale th, .tabella-costi tr.totale td { font-weight: 700; }
+#form-estinzione { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s3) var(--s4); align-items: start; max-width: 960px; }
+.scelte-in-linea { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin: 0; padding: 0; border: 0; min-width: 0; }
+.scelte-in-linea legend { width: 100%; padding: 0; margin-bottom: var(--s1); font-size: 14px; font-weight: 600; }
+.scelte-in-linea input[type="text"] { width: 100%; }
+.scelte-in-linea label.spunta { flex-direction: row; align-items: center; padding: 8px var(--s3); }
+.scelte-in-linea label.spunta input { width: 18px; margin: 0; }
 
 /* File collegato (file-collegato.js): avviso in alto quando serve il permesso di scrivere nel file, o una scelta */
 .barra-file { max-width: var(--larghezza-pagina); margin: 0 auto; padding: var(--s4) var(--s5) 0; }
