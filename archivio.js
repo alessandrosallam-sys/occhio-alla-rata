@@ -15,17 +15,24 @@
   // Parametri di un prestito: tipo, limiti, valore iniziale e testi per i moduli. "se" = quando il campo ha senso
   // (anche per una singola scelta di un elenco); un campo obbligatorio lo è solo quando ha senso.
   const variabile = p => (p.tipo_prestito || 'variabile') === 'variabile';
+  const maxirata = p => p.tipo_prestito === 'maxirata';
   const CAMPI = {
     tipo_prestito: { tipo: 'scelta', iniziale: 'variabile', etichetta: 'Tipo di prestito', opzioni: [
       { valore: 'variabile', etichetta: 'Mutuo a tasso variabile', aiuto: 'Il tasso segue un indice di mercato (di solito l\'Euribor) più uno spread fisso: la rata cambia nel tempo.' },
       { valore: 'fisso', etichetta: 'Mutuo a tasso fisso', aiuto: 'Il tasso è scritto nel contratto e resta lo stesso fino all\'ultima rata.' },
-      { valore: 'finanziamento', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' }] },
+      { valore: 'finanziamento', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' },
+      { valore: 'maxirata', etichetta: 'Finanziamento con maxirata finale', aiuto: 'Tipico delle auto: di solito un anticipo, rate mensili basse e alla fine una rata molto più grande (maxirata, rata finale o «valore futuro garantito»).' }] },
     nome: { tipo: 'testo', iniziale: 'Il mio prestito', etichetta: 'Nome del prestito', aiuto: 'Serve solo a riconoscerlo, ad esempio «Casa di via Roma» o «Auto».' },
     importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del prestito (€)', aiuto: 'Il capitale prestato dalla banca o dalla finanziaria.' },
     data_prima_rata: { tipo: 'data', obbligatorio: true, etichetta: 'Inizio del primo periodo',
       aiuto: 'Il giorno da cui partono gli interessi della prima rata: di solito il 1° del mese a cui la rata si riferisce. Ogni periodo dura un mese a partire da questo giorno.' },
-    numero_rate: { tipo: 'intero', min: 1, max: 600, obbligatorio: true, etichetta: 'Numero di rate mensili', aiuto: 'Ad esempio 360 per 30 anni, 240 per 20, 60 per 5.' },
-    valore_riferimento: { tipo: 'euro', min: 0, max: 1e9, iniziale: 0, etichetta: 'Valore della casa (€)', se: p => p.tipo_prestito !== 'finanziamento',
+    numero_rate: { tipo: 'intero', min: 1, max: 600, obbligatorio: true, etichetta: 'Numero di rate mensili', aiuto: 'Ad esempio 360 per 30 anni, 240 per 20, 60 per 5. Con la maxirata, solo le rate normali che vengono prima.' },
+    // Con la maxirata le rate normali sono "numero_rate"; la maxirata è una rata in più, il mese dopo l'ultima.
+    maxirata: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Maxirata finale (€)', se: maxirata,
+      aiuto: 'L\'ultima rata, molto più grande delle altre, da pagare il mese dopo l\'ultima rata normale.' },
+    anticipo: { tipo: 'euro', min: 0, max: 1e9, iniziale: 0, etichetta: 'Anticipo (€)', se: p => p.tipo_prestito === 'finanziamento' || maxirata(p),
+      aiuto: 'Facoltativo: quello che hai pagato subito al venditore. Non è un prestito, quindi non cambia rate né TAEG: serve a mostrare quanto paghi in tutto.' },
+    valore_riferimento: { tipo: 'euro', min: 0, max: 1e9, iniziale: 0, etichetta: 'Valore della casa (€)', se: p => p.tipo_prestito !== 'finanziamento' && !maxirata(p),
       aiuto: 'Facoltativo: serve solo a mostrare quanta parte del valore resta da pagare. Lascia 0 per usare l\'importo del mutuo.' },
 
     spese_rata: { tipo: 'euro', min: 0, max: 1e4, iniziale: 0, etichetta: 'Spese per ogni rata (€)', aiuto: 'Spese di incasso addebitate insieme alla rata, se ci sono.' },
@@ -59,7 +66,7 @@
 
     // Le quote capitale fissate all'inizio hanno senso solo quando il tasso cambia: a tasso fisso coincidono con la francese.
     tipo_piano: { tipo: 'scelta', iniziale: 'francese', etichetta: 'Come si rimborsa il capitale',
-      opzioni: scelte('tipo_piano').map(o => o.valore === 'quote_fisse' ? { ...o, se: variabile } : o) },
+      opzioni: scelte('tipo_piano').map(o => o.valore === 'quote_fisse' ? { ...o, se: variabile } : o.valore === 'italiana' ? { ...o, se: p => !maxirata(p) } : o) },
     tasso_annuo_piano: { tipo: 'percento', min: 0, max: 1, iniziale: 0, etichetta: 'Tasso iniziale del piano (%)', se: p => variabile(p) && p.tipo_piano === 'quote_fisse',
       aiuto: 'Il tasso annuo con cui la banca ha calcolato le quote capitale alla firma. Se non lo conosci, la taratura automatica lo ricava dalle quote vere.' },
     rata_piano: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, avanzato: true, etichetta: 'Rata del piano (€)', se: p => variabile(p) && p.tipo_piano === 'quote_fisse',
@@ -107,8 +114,13 @@
     if (completi) {
       const tutti = { ...predefiniti(), ...puliti };
       for (const [chiave, campo] of Object.entries(CAMPI)) if (campo.obbligatorio && (!campo.se || campo.se(tutti))) richiedi(puliti[chiave] != null && puliti[chiave] !== '', `Manca: ${campo.etichetta}`);
+      controllaInsieme(tutti);
     }
     return puliti;
+  }
+  // Controlli che riguardano più parametri insieme.
+  function controllaInsieme(p) {
+    if (maxirata(p) && p.maxirata > 0 && p.importo_iniziale > 0) richiedi(p.maxirata < p.importo_iniziale, 'La maxirata deve essere più bassa dell\'importo prestato');
   }
   const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));
 
@@ -272,7 +284,7 @@
       else if (metodo === 'POST' && risorsa === 'offerte') archivio.offerte.push({ id: nuovoId(), parametri: controllaParametri(corpo.parametri || {}, false) });
       else if (metodo === 'PUT' && risorsa === 'offerte') { const o = offerta(chiave); o.parametri = { ...o.parametri, ...controllaParametri(corpo, false) }; }
       else if (metodo === 'DELETE' && risorsa === 'offerte') { offerta(chiave); archivio.offerte = archivio.offerte.filter(o => o.id !== chiave); }
-      else if (metodo === 'PUT' && risorsa === 'parametri') dati.parametri = { ...dati.parametri, ...controllaParametri(corpo, false) };
+      else if (metodo === 'PUT' && risorsa === 'parametri') { dati.parametri = { ...dati.parametri, ...controllaParametri(corpo, false) }; controllaInsieme({ ...predefiniti(), ...dati.parametri }); }
       else if (metodo === 'PUT' && risorsa === 'rate') salvaRata(Number(chiave), corpo);
       // Più rate in una volta: righe = [{ n, ...campi }].
       else if (metodo === 'POST' && risorsa === 'rate') {

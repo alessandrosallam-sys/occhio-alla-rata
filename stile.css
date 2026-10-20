@@ -1285,6 +1285,9 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .carta-offerta .campi { margin: 0; }
 .carta-offerta .azioni .pericoloso { margin-left: auto; }
 
+/* La maxirata nel piano: l'ultima riga di un finanziamento con maxirata finale */
+.etichetta-maxirata { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--accento-tenue); color: var(--accento); font-size: 11.5px; font-weight: 650; vertical-align: 1px; }
+
 /* Quanto costa il prestito (costi.js), nel pannello di controllo */
 .carta-costo { display: flex; flex-direction: column; gap: var(--s3); }
 .carta-costo h3 { margin: 0; }

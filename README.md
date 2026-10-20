@@ -28,7 +28,7 @@ Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il 
 
 ## Cosa sa calcolare
 
-Il tipo di prestito: **mutuo a tasso variabile** (indice + spread), **mutuo a tasso fisso** o **finanziamento** (prestito personale, auto, acquisti a rate). A tasso fisso le pagine dell'indice (Tassi, Calendario, Festività) non compaiono. Per ogni prestito: spese per rata, spese iniziali, assicurazioni (all'inizio o a ogni rata), spese annuali, e il **TAEG** calcolato come prevede la direttiva europea sul credito ai consumatori (2008/48/CE), da confrontare con quello del contratto.
+Il tipo di prestito: **mutuo a tasso variabile** (indice + spread), **mutuo a tasso fisso**, **finanziamento** (prestito personale, auto, acquisti a rate) o **finanziamento con maxirata finale** (tipico delle auto: anticipo, rate basse e una rata finale molto più grande; il programma lo confronta con un finanziamento normale della stessa durata). A tasso fisso le pagine dell'indice (Tassi, Calendario, Festività) non compaiono. Per ogni prestito: spese per rata, spese iniziali, assicurazioni (all'inizio o a ogni rata), spese annuali, e il **TAEG** calcolato come prevede la direttiva europea sul credito ai consumatori (2008/48/CE), da confrontare con quello del contratto.
 
 Le regole del contratto si scelgono nella configurazione (o le trova la taratura):
 

@@ -15,8 +15,11 @@
     const c = Calcolo.costi(stato.dati, stato.piano.righe, !variabile);
     const riga = (etichetta, valore, spiegazione, classe = '') => crea('tr', { className: classe },
       crea('th', { scope: 'row' }, etichetta, ...(spiegazione ? [crea('small', {}, spiegazione)] : [])), crea('td', {}, valore));
+    const ultima = stato.piano.righe[stato.piano.righe.length - 1], conMaxirata = !!ultima.maxirata;
     const righe = [
+      ...(p.anticipo > 0 ? [riga('Anticipo', euro(p.anticipo), 'pagato subito al venditore: non è un prestito')] : []),
       riga('Importo prestato', euro(p.importo_iniziale)),
+      ...(conMaxirata ? [riga('Maxirata finale', euro(ultima.rataCalcolata), `l'ultima rata, a ${M.meseAnno(ultima.inizio)}`)] : []),
       ...(c.ricevuto !== p.importo_iniziale ? [riga('Soldi ricevuti davvero', euro(c.ricevuto), 'il prestito meno quello che hai pagato all\'inizio')] : []),
       riga('Interessi', euro(c.interessi), variabile ? 'su tutte le rate: quelle future sono una stima' : 'su tutte le rate'),
       ...(c.speseRate > 0 ? [riga('Spese per rata', euro(c.speseRate), `${euro(p.spese_rata)} × ${stato.piano.righe.length} rate`)] : []),
@@ -25,6 +28,7 @@
       ...(c.speseAnnue > 0 ? [riga('Spese annuali', euro(c.speseAnnue))] : []),
       riga('Costo totale del prestito', euro(c.costoTotale), 'tutto quello che paghi oltre al capitale', 'totale'),
       riga('Totale da pagare', euro(c.totaleDaPagare), 'capitale + costo totale', 'totale'),
+      ...(p.anticipo > 0 ? [riga('In tutto, con l\'anticipo', euro(p.anticipo + c.totaleDaPagare), 'quanto paghi per l\'acquisto, dal primo all\'ultimo euro', 'totale')] : []),
     ];
     const tassi = [
       ...(variabile ? [] : [riga('TAN', perc(p.tasso_fisso, 3, 1), 'il tasso usato per gli interessi')]),
@@ -34,7 +38,25 @@
     const contenuto = [crea('h3', {}, 'Quanto costa questo prestito'),
       crea('table', { className: 'tabella-costi' }, crea('tbody', {}, ...righe, ...tassi))];
     contenuto.push(...giudizio(c, p, variabile));
+    if (conMaxirata) contenuto.push(...spiegaMaxirata(c, p));
     carta.replaceChildren(...contenuto);
+  }
+
+  // Con la maxirata: il confronto con un finanziamento normale della stessa durata, e le strade alla fine.
+  function spiegaMaxirata(c, p) {
+    const nota = testo => crea('p', { className: 'nota' }, testo);
+    const durata = p.numero_rate + 1;
+    const dati = { ...stato.dati, parametri: { ...p, tipo_prestito: 'finanziamento', numero_rate: durata }, rate: [] };
+    const righe = Calcolo.calcolaPiano(dati).righe, normale = Calcolo.costi(dati, righe, true);
+    const rata = stato.piano.righe[0].rataCalcolata, inPiu = c.interessi - normale.interessi;
+    return [
+      nota(`Senza maxirata, con un finanziamento normale della stessa durata (${durata} rate) e allo stesso tasso, la rata sarebbe di ${euro(righe[0].rataCalcolata)} invece di ${euro(rata)}, `
+        + `ma gli interessi sarebbero ${euro(normale.interessi)} invece di ${euro(c.interessi)}: ${euro(inPiu)} in meno. `
+        + 'Con la maxirata la rata è più bassa perché una parte del debito la restituisci alla fine, ma su quella parte paghi gli interessi per tutta la durata.'),
+      nota('Alla fine di solito le strade sono tre: pagare la maxirata; chiedere di rifinanziarla, cioè un nuovo prestito con nuovi interessi; '
+        + 'oppure, se il contratto prevede il «valore futuro garantito», restituire l\'auto al venditore al posto della maxirata, rispettando i chilometri massimi e le condizioni dell\'auto scritte nel contratto. '
+        + 'Conviene sapere prima di firmare quale strada è realistica per te.'),
+    ];
   }
 
   // Che cosa dice il confronto fra il TAEG calcolato e quello del contratto, e cosa fare se non tornano.
@@ -50,7 +72,7 @@
     frasi.push(nota(differenza < 0
       ? 'Di solito vuol dire che mancano dei costi: spese di istruttoria o di incasso, imposta di bollo, un\'assicurazione obbligatoria. Controlla il foglio informativo e aggiungili nelle regole del contratto.'
       : 'Forse hai inserito un costo che la banca non conta nel TAEG, come un\'assicurazione facoltativa, oppure le date o la durata non sono quelle del contratto. Se i dati sono giusti, il TAEG del contratto è più basso del vero: chiedi spiegazioni alla banca.'));
-    if (differenza > 0 && p.tipo_prestito === 'finanziamento') frasi.push(nota('Nei finanziamenti ai consumatori la legge (articolo 125-bis del Testo unico bancario) considera nulle le clausole sui costi che non sono stati inclusi, o sono stati inclusi male, nel TAEG indicato. '
+    if (differenza > 0 && (p.tipo_prestito === 'finanziamento' || p.tipo_prestito === 'maxirata')) frasi.push(nota('Nei finanziamenti ai consumatori la legge (articolo 125-bis del Testo unico bancario) considera nulle le clausole sui costi che non sono stati inclusi, o sono stati inclusi male, nel TAEG indicato. '
       + 'Se la differenza resta anche con i dati giusti, può valere la pena di chiedere un parere a un\'associazione dei consumatori.'));
     return frasi;
   }
@@ -95,7 +117,7 @@
       }
     }
     // Penale o indennizzo.
-    const finanziamento = p.tipo_prestito === 'finanziamento';
+    const finanziamento = p.tipo_prestito === 'finanziamento' || p.tipo_prestito === 'maxirata';
     let percentuale, motivo;
     if (!finanziamento) { percentuale = 0; motivo = 'Per i mutui per la casa o per un\'attività di una persona fisica la legge vieta la penale (art. 120-ter del Testo unico bancario, contratti dal 2007). Se il tuo mutuo è di altro tipo, scrivi la penale del contratto.'; }
     else if (tutto && importo <= 10000) { percentuale = 0; motivo = 'Nessun indennizzo: rimborsi tutto il debito e non supera 10.000 € (art. 125-sexies del Testo unico bancario).'; }
@@ -174,7 +196,8 @@
       ...(e.speseTolte > 0.004 ? [riga('Spese e assicurazioni che non paghi più', euro(e.speseTolte))] : []),
       riga('Risparmio', euro(e.risparmio), 'interessi e spese che non paghi, più i costi restituiti, meno la penale', 'totale'),
     ];
-    const dopo = e.tutto ? 'Il prestito è chiuso: non paghi più nessuna rata.'
+    const dopo = e.tutto ? 'Il prestito è chiuso: non paghi più nessuna rata' + (p.tipo_prestito === 'maxirata' ? ', né la maxirata.' : '.')
+      : p.tipo_prestito === 'maxirata' && e.rataNuova != null ? `Dopo il rimborso la rata passa da ${euro(e.primaRata.rataCalcolata)} a circa ${euro(e.rataNuova)}, e anche la maxirata scende nella stessa proporzione.`
       : e.rataNuova != null ? `Dopo il rimborso la rata passa da ${euro(e.primaRata.rataCalcolata)} a circa ${euro(e.rataNuova)}, fino alla stessa ultima rata.`
         : `Dopo il rimborso la rata resta di circa ${euro(e.primaRata.rataCalcolata)}, ma finisci ${e.rateTolte === 1 ? 'una rata' : e.rateTolte + ' rate'} prima: l'ultima è a ${M.meseAnno(e.fineNuova)}.`;
     blocco.replaceChildren(crea('table', { className: 'tabella-costi' }, crea('tbody', {}, ...righe)),

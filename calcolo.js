@@ -15,6 +15,10 @@
   const giornoInIso = n => new Date(n * MS_GIORNO).toISOString().slice(0, 10);
   // Rata costante di un piano alla francese (capitale + interessi) al tasso di periodo t.
   const rataFrancese = (debito, t, rate) => t > 1e-12 ? debito * t / (1 - Math.pow(1 + t, -rate)) : debito / rate;
+  // Rata costante di "rate" rate normali seguite, il mese dopo, da una maxirata: il debito è uguale al valore attuale
+  // delle rate normali più quello della maxirata. Senza maxirata è la rata alla francese.
+  const rataConMaxirata = (debito, t, rate, maxirata) => t > 1e-12
+    ? (debito - maxirata * Math.pow(1 + t, -(rate + 1))) * t / (1 - Math.pow(1 + t, -rate)) : (debito - maxirata) / rate;
 
   // Giorni lavorativi contati spostandosi di n giorni da "partenza" (escluso), saltando weekend e festività.
   function giorniLavorativiContati(partenza, n, festivita) {
@@ -130,7 +134,9 @@
     const tassi = opzioni.tassi || new Map(dati.euribor.map(t => [t.giorno, t.tasso_360]));
     const manuali = new Map(dati.rate.map(r => [r.n, r]));
     const [anno0, mese0, giorno0] = p.data_prima_rata.split('-').map(Number);
-    const numeroRate = p.numero_rate;
+    // Finanziamento con maxirata: dopo le rate normali c'è una rata in più, molto più grande, che chiude il debito.
+    const maxirata = !variabile && p.tipo_prestito === 'maxirata' && p.maxirata > 0 && p.maxirata < p.importo_iniziale ? p.maxirata : 0;
+    const numeroRate = p.numero_rate + (maxirata ? 1 : 0);
     const ogniMesi = Math.max(1, Math.round(p.mesi_revisione || 1));
     const inizioPeriodo = n => Date.UTC(anno0, mese0 - 1 + (n - 1), giorno0) / MS_GIORNO;   // n = numeroRate + 1: fine piano
 
@@ -214,10 +220,11 @@
     const primaDelPiano = Number.isFinite(p.euribor_mese_precedente) ? p.euribor_mese_precedente : null;
     // Piano fissato all'inizio: le quote fisse del variabile, oppure la francese a tasso fisso, che ha la rata costante
     // (la quota capitale è la rata meno gli interessi, come nel piano consegnato dalla banca).
-    const pianoFissato = p.tipo_piano === 'quote_fisse' && variabile || p.tipo_piano !== 'italiana' && !variabile;
+    const pianoFissato = p.tipo_piano === 'quote_fisse' && variabile || (p.tipo_piano !== 'italiana' || maxirata > 0) && !variabile;
     const tassoPiano = variabile ? p.tasso_annuo_piano : (p.tasso_fisso || 0);
     const rataPiano = variabile && p.rata_piano > 0 ? p.rata_piano
-      : !variabile || tassoPiano > 0 ? centesimi(rataFrancese(p.importo_iniziale, tassoPiano / 12, numeroRate)) : 0;
+      : !variabile ? centesimi(rataConMaxirata(p.importo_iniziale, tassoPiano / 12, p.numero_rate, maxirata))
+        : tassoPiano > 0 ? centesimi(rataFrancese(p.importo_iniziale, tassoPiano / 12, numeroRate)) : 0;
     const quotaItaliana = centesimi(p.importo_iniziale / numeroRate);
     let debitoPiano = p.importo_iniziale;
 
@@ -259,14 +266,17 @@
       // Quota capitale secondo il tipo di piano (l'ultima rata chiude il debito).
       if (pianoFissato) {
         // Il piano è fissato all'inizio: segue la propria catena del debito, non le quote inserite a mano.
+        // Con la maxirata l'ultima rata normale assorbe i centesimi degli arrotondamenti: la maxirata resta quella del contratto.
         r.quotaPiano = r.rateResidue === 1 ? debitoPiano
-          : Math.min(debitoPiano, centesimi(rataPiano - centesimi(debitoPiano * tassoPiano / 12)));
+          : maxirata && r.rateResidue === 2 ? Math.max(0, centesimi(debitoPiano - centesimi(maxirata / (1 + tassoPiano / 12))))
+            : Math.min(debitoPiano, centesimi(rataPiano - centesimi(debitoPiano * tassoPiano / 12)));
         debitoPiano = centesimi(debitoPiano - r.quotaPiano);
       } else if (p.tipo_piano === 'italiana') r.quotaPiano = quotaItaliana;
       else {
         const t = r.tassoTotale / 12;
         r.quotaPiano = centesimi(t > 1e-12 ? r.debito * t / (Math.pow(1 + t, r.rateResidue) - 1) : r.debito / r.rateResidue);
       }
+      if (maxirata > 0 && r.rateResidue === 1) r.maxirata = true;   // l'ultima rata è la maxirata
       r.quotaCapitaleManuale = m.quota_capitale != null;
       r.quotaCapitale = r.quotaCapitaleManuale ? m.quota_capitale : r.rateResidue === 1 ? r.debito : Math.min(r.debito, r.quotaPiano);
       r.percQuota = r.quotaCapitale / r.debito;
@@ -465,7 +475,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });

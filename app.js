@@ -167,7 +167,8 @@
     const taeg = variabile() ? null : Calcolo.costi(stato.dati, righe, true).taeg;
     const tassi = variabile()
       ? [[indice(), perc(corrente.euribor, 3), dettaglioEuribor], ['Tasso totale', perc(corrente.tassoTotale, 3), `indice + spread ${perc(corrente.spread, 3, 1)}`]]
-      : [['Tasso fisso (TAN)', perc(p.tasso_fisso, 3, 1), 'uguale fino all\'ultima rata'], ['TAEG', taeg == null ? '—' : perc(taeg, 2), 'il costo vero, con spese e assicurazioni']];
+      : [['Tasso fisso (TAN)', perc(p.tasso_fisso, 3, 1), ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}` : 'uguale fino all\'ultima rata'],
+        ['TAEG', taeg == null ? '—' : perc(taeg, 2), 'il costo vero, con spese e assicurazioni']];
     // La rata del mese è la tessera principale (classe "principale": più grande e in testa, vedi stile.css).
     const voci = [
       ['Debito residuo', euro(corrente.debito), `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato],
@@ -202,7 +203,8 @@
   const esito = contenuto => `<span class="esito">${contenuto}</span>`;
   const freccia = (simbolo, verso) => `<span class="freccia ${verso}">${simbolo}</span>`;
   const barretta = quota => `<span class="barretta"><i style="width:${(Math.max(0, Math.min(1, quota)) * 100).toFixed(1)}%"></i></span>`;
-  const etichettaRata = (r, s) => `<span class="segno">${s.segno}</span><span class="numero">${r.n}</span>${MESI[+r.inizio.slice(5, 7) - 1].slice(0, 3)} ${r.inizio.slice(0, 4)}`;
+  const etichettaRata = (r, s) => `<span class="segno">${s.segno}</span><span class="numero">${r.n}</span>${MESI[+r.inizio.slice(5, 7) - 1].slice(0, 3)} ${r.inizio.slice(0, 4)}`
+    + (r.maxirata ? ' <span class="etichetta-maxirata">maxirata</span>' : '');
   const minore = () => 'minore';
 
   // Stato di una riga, che ne decide il colore: pagata senza problemi (verde), da controllare perché

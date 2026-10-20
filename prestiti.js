@@ -28,7 +28,8 @@
     const p = r.d.parametri;
     if ((p.tipo_prestito || 'variabile') === 'variabile') return `Mutuo a tasso variabile · ${p.indice_nome || 'indice'} + ${perc(p.spread, 3, 1)}`;
     const taeg = Calcolo.costi(r.d, r.righe, true).taeg;
-    return `${p.tipo_prestito === 'fisso' ? 'Mutuo a tasso fisso' : 'Finanziamento'} · TAN ${perc(p.tasso_fisso || 0, 3, 1)}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
+    const tipo = { fisso: 'Mutuo a tasso fisso', maxirata: `Finanziamento con maxirata di ${M.euro(p.maxirata || 0)}` }[p.tipo_prestito] || 'Finanziamento';
+    return `${tipo} · TAN ${perc(p.tasso_fisso || 0, 3, 1)}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
   }
 
   function cartaPrestito(r, aperto) {

@@ -5,14 +5,17 @@
 (function () {
   'use strict';
   const M = window.Mutuo, { stato, $, crea, euro, perc, avvisa } = M;
-  const CAMPI_OFFERTA = ['nome', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'tasso_fisso', 'indice_nome', 'spread',
+  const CAMPI_OFFERTA = ['nome', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'indice_nome', 'spread',
     'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'assicurazione_rata', 'taeg_dichiarato'];
   // Modelli per l'indice futuro (la media delle variazioni non c'è: sul lungo periodo porta l'indice troppo lontano).
   const MODELLI = [['vasicek', 'Vasicek: torna piano piano verso la media storica'], ['curva', 'Attese del mercato (curva degli Euribor di oggi)'],
     ['garch', 'GARCH: segue la variabilità recente'], ['costante', 'Nessun cambiamento: resta com\'è oggi']];
   const variabile = p => p.tipo_prestito === 'variabile';
-  const durata = n => n % 12 === 0 ? `${n / 12} ${n === 12 ? 'anno' : 'anni'} (${n} rate)` : `${n} rate`;
-  const nomeTipo = p => ({ variabile: 'Mutuo variabile', fisso: 'Mutuo fisso', finanziamento: 'Finanziamento' })[p.tipo_prestito] || 'Prestito';
+  const conMaxirata = p => p.tipo_prestito === 'maxirata';
+  const durata = p => conMaxirata(p) ? `${p.numero_rate} rate + maxirata` : p.numero_rate % 12 === 0 ? `${p.numero_rate / 12} ${p.numero_rate === 12 ? 'anno' : 'anni'} (${p.numero_rate} rate)` : `${p.numero_rate} rate`;
+  // Durata in mesi, maxirata compresa: serve a capire se due offerte si possono confrontare.
+  const mesi = p => p.numero_rate + (conMaxirata(p) ? 1 : 0);
+  const nomeTipo = p => ({ variabile: 'Mutuo variabile', fisso: 'Mutuo fisso', finanziamento: 'Finanziamento', maxirata: 'Finanziamento con maxirata' })[p.tipo_prestito] || 'Prestito';
   const modelloScelto = () => { const o = Archivio.offerte().find(x => variabile(x.parametri)); const m = o && o.parametri.previsione_modello; return MODELLI.some(([c]) => c === m) ? m : 'vasicek'; };
 
   // ---------- Calcolo di un'offerta ----------
@@ -25,6 +28,7 @@
     if (!(p.importo_iniziale > 0) || !(p.numero_rate > 0)) return { manca: 'Scrivi l\'importo e il numero di rate.' };
     if (!variabile(p) && p.tasso_fisso == null) return { manca: 'Scrivi il tasso (TAN).' };
     if (variabile(p) && p.spread == null) return { manca: 'Scrivi lo spread.' };
+    if (conMaxirata(p) && !(p.maxirata > 0 && p.maxirata < p.importo_iniziale)) return { manca: 'Scrivi la maxirata finale: deve essere più bassa dell\'importo prestato.' };
     const inizio = inizioProssimoMese(), primoAnno = +inizio.slice(0, 4) - 1, festivita = [];
     for (let anno = primoAnno; anno <= primoAnno + Math.ceil(p.numero_rate / 12) + 2; anno++) festivita.push(...Calcolo.festivitaTarget(anno));
     const dati = { parametri: { ...p, data_prima_rata: inizio, rata_obiettivo: 0 }, rate: [], euribor: [], festivita };
@@ -52,7 +56,9 @@
     const forbice = (e, campo) => piccolo(`fra ${euro(e.basso.c[campo])} e ${euro(e.alto.c[campo])}`);
     const righe = [
       riga('Tipo', null, (e, p) => [nomeTipo(p), piccolo(variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 1)}` : `TAN ${perc(p.tasso_fisso, 3, 1)}`)]),
-      riga('Importo e durata', null, (e, p) => [euro(p.importo_iniziale), piccolo(durata(p.numero_rate))]),
+      ...(offerte.some(o => o.parametri.anticipo > 0 && !variabile(o.parametri)) ? [riga('Anticipo', 'pagato subito, senza prestito', (e, p) => [p.anticipo > 0 ? euro(p.anticipo) : '—'])] : []),
+      riga('Importo e durata', null, (e, p) => [euro(p.importo_iniziale), piccolo(durata(p))]),
+      ...(offerte.some(o => conMaxirata(o.parametri)) ? [riga('Maxirata finale', 'l\'ultima rata', (e, p) => [conMaxirata(p) ? euro(e.atteso.righe[e.atteso.righe.length - 1].rataCalcolata) : '—'])] : []),
       riga('Prima rata', 'spese per rata comprese', e => [euro(e.atteso.prima)]),
       // A tasso fisso la rata è sempre quella (solo l'ultima, che chiude il debito, può cambiare di pochi euro).
       riga('Rata più alta prevista', 'per il variabile: se l\'indice sale (fascia alta dell\'80% dei casi)', e => e.fisso ? [euro(e.atteso.prima), piccolo('sempre uguale')] : [euro(e.alto.massima)]),
@@ -60,6 +66,7 @@
       riga('Spese e assicurazioni', null, e => [euro(e.atteso.c.costoTotale - e.atteso.c.interessi)]),
       riga('Costo totale', 'tutto quello che paghi oltre al capitale', e => e.fisso ? [crea('strong', {}, euro(e.atteso.c.costoTotale))] : [crea('strong', {}, euro(e.atteso.c.costoTotale)), forbice(e, 'costoTotale')]),
       riga('Totale da pagare', 'capitale + costo totale', e => [euro(e.atteso.c.totaleDaPagare)]),
+      ...(offerte.some(o => o.parametri.anticipo > 0 && !variabile(o.parametri)) ? [riga('In tutto, con l\'anticipo', 'quanto paghi per l\'acquisto', (e, p) => [euro((variabile(p) ? 0 : p.anticipo || 0) + e.atteso.c.totaleDaPagare)])] : []),
       riga('TAEG', 'il costo totale in percentuale all\'anno', e => e.fisso ? [perc(e.atteso.c.taeg, 2)]
         : [perc(e.oggi.c.taeg, 2), piccolo(`con l'indice di oggi, come lo calcola la banca; con le previsioni ${perc(e.atteso.c.taeg, 2)}`)]),
       ...(offerte.some(o => o.parametri.taeg_dichiarato > 0) ? [riga('TAEG dell\'offerta', 'quello scritto dalla banca', (e, p) => {
@@ -71,7 +78,7 @@
     const testa = crea('tr', {}, crea('td', {}), ...esiti.map(x => crea('th', { scope: 'col', className: x === migliore ? 'migliore' : '' },
       x.o.parametri.nome || 'Offerta', ...(x === migliore ? [crea('span', { className: 'etichetta-aperto' }, 'costa meno')] : []))));
     const note = [];
-    const diverse = calcolate.length > 1 && new Set(calcolate.map(x => `${x.o.parametri.importo_iniziale}|${x.o.parametri.numero_rate}`)).size > 1;
+    const diverse = calcolate.length > 1 && new Set(calcolate.map(x => `${x.o.parametri.importo_iniziale}|${mesi(x.o.parametri)}`)).size > 1;
     if (diverse) note.push(crea('p', { className: 'nota evidenza' }, 'Le offerte hanno importi o durate diversi: il costo totale non si può confrontare direttamente. Confronta il TAEG, oppure metti lo stesso importo e la stessa durata.'));
     else if (migliore) note.push(crea('p', { className: 'nota' }, `A parità di importo e durata costa meno «${migliore.o.parametri.nome || 'Offerta'}»${migliore.e.fisso ? '' : ' (con le previsioni sull\'indice: è una stima)'}. Guarda anche la rata più alta prevista: è quella che devi poterti permettere.`));
     if (esiti.some(x => !x.e.manca && !x.e.fisso)) {

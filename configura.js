@@ -108,7 +108,14 @@
     numero_rate: { domanda: 'In quante rate mensili lo restituisci?',
       cosa: 'Il numero totale di rate previste dal contratto, comprese quelle che hai già pagato.',
       dove: 'Nel contratto alla voce «durata» o «numero di rate». Nel piano di ammortamento è il numero dell\'ultima riga.',
-      esempio: '20 anni sono 240 rate, 30 anni sono 360; un finanziamento di 5 anni sono 60 rate' },
+      esempio: '20 anni sono 240 rate, 30 anni sono 360; un finanziamento di 5 anni sono 60 rate. Con la maxirata conta solo le rate normali: per «35 rate da 199 € + maxirata» scrivi 35' },
+    maxirata: { domanda: 'Quanto vale la maxirata finale?',
+      cosa: 'L\'ultima rata, molto più grande delle altre: la paghi il mese dopo l\'ultima rata normale. Si chiama anche «rata finale», «rata residua» o «valore futuro garantito». Le rate normali sono più basse proprio perché una parte del debito la restituisci con la maxirata, ma su quella parte paghi gli interessi per tutta la durata.',
+      dove: 'Nel contratto o nel SECCI, vicino al numero di rate: «35 rate da … € e una rata finale di … €». Anche nella pubblicità dell\'offerta.',
+      esempio: '10.000' },
+    anticipo: { domanda: 'Quanto hai pagato di anticipo? (facoltativo)',
+      cosa: 'La somma pagata subito al venditore, senza prestito. Non cambia rate né TAEG: serve a mostrarti quanto paghi in tutto, anticipo compreso.',
+      dove: 'Nel contratto di acquisto o nella pubblicità dell\'offerta: «anticipo», «primo versamento» o «acconto».', seNonSai: 'Lascia 0.' },
     spese_iniziali: { domanda: 'Quanto hai pagato all\'inizio, una volta sola?',
       cosa: 'Le spese pagate alla firma o trattenute dalla somma prestata: istruttoria, perizia della casa, imposta sostitutiva (nei mutui) o imposta di bollo (nei finanziamenti). Non cambiano le rate, ma fanno parte del costo del prestito.',
       dove: 'Nel contratto o nel foglio informativo (PIES per i mutui, SECCI per i finanziamenti), alla voce «spese» o «costi». Se la somma accreditata sul conto era più bassa di quella prestata, la differenza sono queste spese.',
@@ -181,7 +188,7 @@
   // "se": il passo serve solo per alcuni prestiti (ad esempio gli aggiornamenti del tasso solo per il variabile).
   const PASSI = [
     { titolo: 'Prima di iniziare', tipo: 'benvenuto', campi: [] },
-    { titolo: 'Il prestito', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'valore_riferimento'],
+    { titolo: 'Il prestito', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'valore_riferimento'],
       testo: 'Cominciamo dai dati di base. Li trovi tutti nella prima pagina del contratto o nel piano di ammortamento.' },
     { titolo: 'Spese e assicurazioni', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata'], avanzati: ['spese_annue'],
       testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
@@ -193,7 +200,8 @@
       testo: 'Ora due dettagli su quando la banca rilegge l\'indice. Se non li trovi nel contratto scegli «Non lo so»: il programma li ricava dalle rate che hai già pagato.' },
     { titolo: 'Gli interessi', campi: ['conteggio_giorni'], avanzati: ['arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
       testo: 'Un dettaglio tecnico che serve a far tornare i conti al centesimo. Anche qui, se non lo sai, lascia fare al programma.' },
-    { titolo: 'Il capitale', campi: ['tipo_piano', 'tasso_annuo_piano'], avanzati: ['rata_piano'],
+    // Con la maxirata il piano è per forza a rata costante: la domanda non serve.
+    { titolo: 'Il capitale', se: b => b.tipo_prestito !== 'maxirata', campi: ['tipo_piano', 'tasso_annuo_piano'], avanzati: ['rata_piano'],
       testo: 'L\'ultima domanda sul contratto riguarda il modo in cui restituisci il capitale.' },
     { titolo: 'Le rate già pagate', tipo: 'rate', campi: [],
       testo: 'Se hai già pagato delle rate, scrivile qui: il programma le usa per controllare le risposte date finora e per ricavare quelle che hai lasciato in sospeso. Bastano le prime tre o quattro; più ne metti, più il controllo è sicuro.' },
@@ -467,7 +475,9 @@
     const conIndice = variabile(b), pronti = conIndice ? tassiPronti(b) : [], scaricati = conIndice ? tassiScaricati(b).length : 0, scaricabile = conIndice && !!TassiInternet.riconosci(b.indice_nome);
     const spese = [[b.spese_iniziali, 'iniziali'], [b.assicurazione_iniziale, 'di assicurazione all\'inizio'], [b.assicurazione_rata, 'di assicurazione al mese'], [b.spese_annue, 'all\'anno']]
       .filter(([v]) => v > 0).map(([v, cosa]) => `${euro(v)} ${cosa}`);
-    const voci = [[nomeScelta('tipo_prestito', b.tipo_prestito || 'variabile'), `${b.nome || 'Il mio prestito'}: ${euro(b.importo_iniziale)} in ${b.numero_rate} rate dal ${data(b.data_prima_rata)}`],
+    const conMaxirata = b.tipo_prestito === 'maxirata' && b.maxirata > 0;
+    const voci = [[nomeScelta('tipo_prestito', b.tipo_prestito || 'variabile'), `${b.nome || 'Il mio prestito'}: ${euro(b.importo_iniziale)} in ${b.numero_rate} rate${conMaxirata ? ` più una maxirata di ${euro(b.maxirata)}` : ''} dal ${data(b.data_prima_rata)}`],
+      ...(b.anticipo > 0 ? [['Anticipo', euro(b.anticipo)]] : []),
       ['Tasso', conIndice ? `${b.indice_nome || 'indice'} + ${perc(b.spread, 3, 1)}` : `fisso al ${perc(b.tasso_fisso || 0, 3, 1)} (TAN)`], ...descriviRegole(b),
       ['Altre spese', spese.length ? spese.join(', ') : 'nessuna'],
       ...(b.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(b.taeg_dichiarato, 3, 1)]] : []),
