@@ -27,7 +27,8 @@
       ...(c.assicurazioni > 0 ? [riga('Assicurazioni', euro(c.assicurazioni))] : []),
       ...(c.speseAnnue > 0 ? [riga('Spese annuali', euro(c.speseAnnue))] : []),
       riga('Costo totale del prestito', euro(c.costoTotale), 'tutto quello che paghi oltre al capitale', 'totale'),
-      riga('Totale da pagare', euro(c.totaleDaPagare), 'capitale + costo totale', 'totale'),
+      riga('Totale da pagare', euro(c.totaleDaPagare), p.spese_nel_prestito && c.ricevuto !== p.importo_iniziale
+        ? 'soldi ricevuti + costo totale: le spese iniziali sono già dentro le rate' : 'capitale + costo totale', 'totale'),
       ...(p.anticipo > 0 ? [riga('In tutto, con l\'anticipo', euro(p.anticipo + c.totaleDaPagare), 'quanto paghi per l\'acquisto, dal primo all\'ultimo euro', 'totale')] : []),
     ];
     const tassi = [

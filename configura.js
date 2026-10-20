@@ -82,7 +82,8 @@
     const rilevazione = p.regola_rilevazione === 'lavorativi_prima' ? `${p.giorni_anticipo_euribor} giorni lavorativi prima dell'inizio del periodo`
       : p.regola_rilevazione === 'giorno_fisso' ? `il giorno ${p.giorno_rilevazione} del mese precedente` : nomeScelta('regola_rilevazione', p.regola_rilevazione).toLowerCase();
     const piano = nomeScelta('tipo_piano', p.tipo_piano) + (variabile(p) && p.tipo_piano === 'quote_fisse' && p.tasso_annuo_piano > 0 ? ` al ${perc(p.tasso_annuo_piano, 3)}` : '');
-    return [['Capitale', piano], ...(variabile(p) ? [['Indice letto', rilevazione], ['Tasso aggiornato', nomeScelta('mesi_revisione', p.mesi_revisione || 1).toLowerCase()]] : []),
+    return [['Capitale', piano], ...(!variabile(p) && p.arrotonda_rata && p.arrotonda_rata !== 'centesimo' ? [['Rata arrotondata', nomeScelta('arrotonda_rata', p.arrotonda_rata).toLowerCase()]] : []),
+      ...(variabile(p) ? [['Indice letto', rilevazione], ['Tasso aggiornato', nomeScelta('mesi_revisione', p.mesi_revisione || 1).toLowerCase()]] : []),
       ['Interessi', nomeScelta('conteggio_giorni', p.conteggio_giorni)], ['Spese per rata', p.spese_rata > 0 ? euro(p.spese_rata) : 'nessuna']];
   }
 
@@ -127,6 +128,14 @@
       cosa: 'Il premio mensile di un\'assicurazione legata al prestito, se lo paghi a parte. Se la banca lo addebita dentro la rata, scrivilo invece fra le spese per rata, così la rata calcolata torna con quella addebitata.',
       dove: 'Nell\'estratto conto o nel modulo dell\'assicurazione.', seNonSai: 'Lascia 0.' },
     spese_annue: { domanda: 'Ci sono spese una volta all\'anno?', cosa: 'Ad esempio l\'imposta di bollo sul rendiconto annuale, di solito 2 euro. Lascia 0 se non ci sono.' },
+    spese_nel_prestito: { domanda: 'Come hai pagato le spese iniziali e l\'assicurazione?',
+      cosa: 'Ci sono due modi. O le paghi a parte, con soldi tuoi, e ricevi tutta la somma prestata; oppure la banca le toglie dalla somma che ti accredita, o le aggiunge al prestito, e le restituisci con le rate. Il TAEG non cambia; cambia quanto paghi in tutto, perché nel secondo caso le spese sono già dentro le rate.',
+      dove: 'Confronta la somma che hai ricevuto con l\'importo del contratto: se è più bassa, o se l\'importo è più alto del prezzo di quello che hai comprato, le spese sono dentro il prestito. Nel SECCI l\'«importo totale del credito» è la somma che ricevi davvero.',
+      seNonSai: 'Lascia «A parte»: cambia solo il totale da pagare, non le rate.' },
+    arrotonda_rata: { domanda: 'La banca arrotonda la rata?',
+      cosa: 'A tasso fisso la rata esatta ha tanti decimali. Quasi sempre viene arrotondata al centesimo, ma alcune banche e finanziarie la arrotondano ai 10 centesimi o all\'euro (ad esempio 209,09 diventa 209,10). In quel caso l\'ultima rata è un po\' più bassa e chiude il debito.',
+      dove: 'Confronta la rata del contratto con quella che calcola il programma: se differiscono di pochi centesimi è un arrotondamento.',
+      nonSo: 'Lo ricava il programma dalle rate che inserirai più avanti.' },
     tasso_fisso: { domanda: 'Qual è il tasso del prestito?',
       cosa: 'Il tasso annuo nominale, cioè il tasso usato per calcolare gli interessi di ogni rata. Non è il TAEG, che è più alto perché conta anche spese e assicurazioni.',
       dove: 'Nel contratto o nel foglio informativo, alla voce «TAN» o «tasso annuo nominale». Nei mutui a tasso fisso è il «tasso di interesse» del contratto.',
@@ -190,7 +199,7 @@
     { titolo: 'Prima di iniziare', tipo: 'benvenuto', campi: [] },
     { titolo: 'Il prestito', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'valore_riferimento'],
       testo: 'Cominciamo dai dati di base. Li trovi tutti nella prima pagina del contratto o nel piano di ammortamento.' },
-    { titolo: 'Spese e assicurazioni', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata'], avanzati: ['spese_annue'],
+    { titolo: 'Spese e assicurazioni', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata'], avanzati: ['spese_annue'],
       testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
     { titolo: 'Il tasso', se: variabile, campi: ['indice_nome', 'spread', 'taeg_dichiarato'],
       testo: 'In un mutuo a tasso variabile il tasso di ogni rata è la somma di due numeri: un indice di mercato, che cambia nel tempo, e lo spread, che è fisso.' },
@@ -198,7 +207,7 @@
       testo: 'A tasso fisso il tasso è scritto nel contratto e non cambia mai. Nel contratto ne trovi due: il TAN, che serve a calcolare le rate, e il TAEG, che misura il costo totale.' },
     { titolo: 'Gli aggiornamenti', se: variabile, campi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'],
       testo: 'Ora due dettagli su quando la banca rilegge l\'indice. Se non li trovi nel contratto scegli «Non lo so»: il programma li ricava dalle rate che hai già pagato.' },
-    { titolo: 'Gli interessi', campi: ['conteggio_giorni'], avanzati: ['arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
+    { titolo: 'Gli interessi', campi: ['conteggio_giorni'], avanzati: ['arrotonda_rata', 'arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
       testo: 'Un dettaglio tecnico che serve a far tornare i conti al centesimo. Anche qui, se non lo sai, lascia fare al programma.' },
     // Con la maxirata il piano è per forza a rata costante: la domanda non serve.
     { titolo: 'Il capitale', se: b => b.tipo_prestito !== 'maxirata', campi: ['tipo_piano', 'tasso_annuo_piano'], avanzati: ['rata_piano'],

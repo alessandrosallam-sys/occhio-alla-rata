@@ -6,7 +6,7 @@
   'use strict';
   const M = window.Mutuo, { stato, $, crea, euro, perc, avvisa } = M;
   const CAMPI_OFFERTA = ['nome', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'indice_nome', 'spread',
-    'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'assicurazione_rata', 'taeg_dichiarato'];
+    'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'arrotonda_rata', 'taeg_dichiarato'];
   // Modelli per l'indice futuro (la media delle variazioni non c'è: sul lungo periodo porta l'indice troppo lontano).
   const MODELLI = [['vasicek', 'Vasicek: torna piano piano verso la media storica'], ['curva', 'Attese del mercato (curva degli Euribor di oggi)'],
     ['garch', 'GARCH: segue la variabilità recente'], ['costante', 'Nessun cambiamento: resta com\'è oggi']];
@@ -65,7 +65,7 @@
       riga('Interessi', 'su tutto il prestito', e => e.fisso ? [euro(e.atteso.c.interessi)] : [euro(e.atteso.c.interessi), forbice(e, 'interessi')]),
       riga('Spese e assicurazioni', null, e => [euro(e.atteso.c.costoTotale - e.atteso.c.interessi)]),
       riga('Costo totale', 'tutto quello che paghi oltre al capitale', e => e.fisso ? [crea('strong', {}, euro(e.atteso.c.costoTotale))] : [crea('strong', {}, euro(e.atteso.c.costoTotale)), forbice(e, 'costoTotale')]),
-      riga('Totale da pagare', 'capitale + costo totale', e => [euro(e.atteso.c.totaleDaPagare)]),
+      riga('Totale da pagare', 'tutto quello che esce di tasca, spese comprese', e => [euro(e.atteso.c.totaleDaPagare)]),
       ...(offerte.some(o => o.parametri.anticipo > 0 && !variabile(o.parametri)) ? [riga('In tutto, con l\'anticipo', 'quanto paghi per l\'acquisto', (e, p) => [euro((variabile(p) ? 0 : p.anticipo || 0) + e.atteso.c.totaleDaPagare)])] : []),
       riga('TAEG', 'il costo totale in percentuale all\'anno', e => e.fisso ? [perc(e.atteso.c.taeg, 2)]
         : [perc(e.oggi.c.taeg, 2), piccolo(`con l'indice di oggi, come lo calcola la banca; con le previsioni ${perc(e.atteso.c.taeg, 2)}`)]),

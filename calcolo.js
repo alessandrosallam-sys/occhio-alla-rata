@@ -15,6 +15,13 @@
   const giornoInIso = n => new Date(n * MS_GIORNO).toISOString().slice(0, 10);
   // Rata costante di un piano alla francese (capitale + interessi) al tasso di periodo t.
   const rataFrancese = (debito, t, rate) => t > 1e-12 ? debito * t / (1 - Math.pow(1 + t, -rate)) : debito / rate;
+  // Arrotondamento della rata a tasso fisso secondo il contratto (REGOLE.arrotonda_rata).
+  function arrotondaRata(v, modo) {
+    if (modo === 'dieci_su') return Math.round(Math.ceil(v * 10 - 1e-6) * 10) / 100;
+    if (modo === 'dieci') return Math.round(Math.round(v * 10 + 1e-9) * 10) / 100;
+    if (modo === 'euro_su') return Math.ceil(v - 1e-6);
+    return centesimi(v);
+  }
   // Rata costante di "rate" rate normali seguite, il mese dopo, da una maxirata: il debito è uguale al valore attuale
   // delle rate normali più quello della maxirata. Senza maxirata è la rata alla francese.
   const rataConMaxirata = (debito, t, rate, maxirata) => t > 1e-12
@@ -120,6 +127,13 @@
       ['italiana', 'All\'italiana (quota capitale costante)', 'Ogni rata rimborsa la stessa quota di capitale: importo diviso per il numero di rate.'],
     ],
     arrotonda_indice_modo: [['vicino', 'al valore più vicino'], ['eccesso', 'sempre per eccesso']],
+    // A tasso fisso alcune banche arrotondano la rata (ad esempio 209,09 → 209,10): l'ultima rata chiude il debito.
+    arrotonda_rata: [
+      ['centesimo', 'Al centesimo', 'La rata è quella esatta, arrotondata al centesimo: il caso più comune.'],
+      ['dieci_su', 'Ai 10 centesimi, per eccesso', 'Ad esempio 209,03 diventa 209,10.'],
+      ['dieci', 'Ai 10 centesimi, al più vicino', 'Ad esempio 209,03 diventa 209,00 e 209,06 diventa 209,10.'],
+      ['euro_su', 'All\'euro, per eccesso', 'Ad esempio 209,03 diventa 210,00.'],
+    ],
   };
 
   // dati = { parametri, rate, euribor, festivita } così come escono dall'archivio.
@@ -223,7 +237,7 @@
     const pianoFissato = p.tipo_piano === 'quote_fisse' && variabile || (p.tipo_piano !== 'italiana' || maxirata > 0) && !variabile;
     const tassoPiano = variabile ? p.tasso_annuo_piano : (p.tasso_fisso || 0);
     const rataPiano = variabile && p.rata_piano > 0 ? p.rata_piano
-      : !variabile ? centesimi(rataConMaxirata(p.importo_iniziale, tassoPiano / 12, p.numero_rate, maxirata))
+      : !variabile ? arrotondaRata(rataConMaxirata(p.importo_iniziale, tassoPiano / 12, p.numero_rate, maxirata), p.arrotonda_rata)
         : tassoPiano > 0 ? centesimi(rataFrancese(p.importo_iniziale, tassoPiano / 12, numeroRate)) : 0;
     const quotaItaliana = centesimi(p.importo_iniziale / numeroRate);
     let debitoPiano = p.importo_iniziale;
@@ -334,6 +348,8 @@
   // Quanto costa un prestito, dalle righe del piano: rate (vere dove ci sono, altrimenti calcolate; con "comeFirmato"
   // solo calcolate), spese iniziali, assicurazioni e spese annue. "costoTotale" è il costo totale del credito: tutto
   // quello che si paga oltre al capitale. "ricevuto" è il capitale meno quello che si paga all'inizio.
+  // "totaleDaPagare" è tutto quello che esce di tasca: se le spese iniziali sono tolte dalla somma ricevuta o aggiunte
+  // al prestito (spese_nel_prestito), le rate le comprendono già e non si contano una seconda volta.
   function costi(dati, righe, comeFirmato = false) {
     const p = dati.parametri, quante = righe.length;
     const rata = r => comeFirmato || r.rataVera == null ? r.rataCalcolata : r.rataVera;
@@ -348,7 +364,7 @@
     const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue;
     const ricevuto = p.importo_iniziale - speseIniziali - (p.assicurazione_iniziale || 0);
     return { totaleRate, interessi, speseRate, speseIniziali, assicurazioni, speseAnnue, costoTotale, ricevuto,
-      totaleDaPagare: p.importo_iniziale + costoTotale, taeg: taeg(ricevuto, pagamenti) };
+      totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale, taeg: taeg(ricevuto, pagamenti) };
   }
 
   // Taratura: prova le combinazioni di regole più comuni e conta quante rate vere (e quote capitale vere)
@@ -373,7 +389,9 @@
       const tasso = tassoPianoDaQuota(base.importo_iniziale, base.numero_rate, q.n, q.quota_capitale);
       if (tasso != null) for (const scarto of [0, -1, 1]) if (Math.round(tasso * 1e5) + scarto > 0) tassiPiano.add(Math.round(tasso * 1e5) + scarto);
     }
-    const piani = [{ tipo_piano: 'francese' }, { tipo_piano: 'italiana' },
+    // A tasso fisso la francese si prova con tutti gli arrotondamenti della rata.
+    const piani = [...(variabile ? [{ tipo_piano: 'francese' }] : REGOLE.arrotonda_rata.map(([arrotonda_rata]) => ({ tipo_piano: 'francese', arrotonda_rata }))),
+      ...(base.tipo_prestito === 'maxirata' ? [] : [{ tipo_piano: 'italiana' }]),
       ...(variabile ? [...tassiPiano].map(t => ({ tipo_piano: 'quote_fisse', tasso_annuo_piano: t / 1e5, rata_piano: 0 })) : [])];
     const rilevazioni = !variabile ? [{}] : [{ regola_rilevazione: 'ultimo_lavorativo' }, { regola_rilevazione: 'primo_lavorativo' }, { regola_rilevazione: 'media_mese' },
       ...[1, 2, 3, 4, 5, 6].map(n => ({ regola_rilevazione: 'lavorativi_prima', giorni_anticipo_euribor: n }))];

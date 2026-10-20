@@ -43,6 +43,11 @@
     assicurazione_rata: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, etichetta: 'Assicurazione a ogni rata (€)',
       aiuto: 'Il premio mensile, se lo paghi a parte. Se è già dentro la rata addebitata, scrivilo nelle spese per rata.' },
     spese_annue: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, avanzato: true, etichetta: 'Spese ogni anno (€)', aiuto: 'Ad esempio l\'imposta di bollo sul rendiconto annuale.' },
+    // Spese iniziali pagate di tasca propria, oppure tolte dalla somma ricevuta (o aggiunte al prestito): il TAEG è lo
+    // stesso, cambia solo quanto si paga in tutto, perché nel secondo caso le spese sono già dentro le rate.
+    spese_nel_prestito: { tipo: 'scelta', iniziale: 0, etichetta: 'Come hai pagato le spese iniziali', se: p => p.spese_iniziali > 0 || p.assicurazione_iniziale > 0,
+      opzioni: [{ valore: 0, etichetta: 'A parte, con soldi miei', aiuto: 'Le hai pagate alla firma: hai ricevuto tutto l\'importo del prestito.' },
+        { valore: 1, etichetta: 'Dentro il prestito', aiuto: 'Sono state tolte dalla somma che hai ricevuto, oppure aggiunte all\'importo prestato: le restituisci con le rate.' }] },
 
     tasso_fisso: { tipo: 'percento', min: 0, max: 0.5, obbligatorio: true, etichetta: 'Tasso annuo nominale, TAN (%)', se: p => !variabile(p),
       aiuto: 'Il tasso scritto nel contratto: «TAN» o «tasso annuo nominale». Per un finanziamento «a tasso zero» scrivi 0.' },
@@ -65,6 +70,7 @@
     tasso_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0, avanzato: true, etichetta: 'Tasso massimo del contratto (%)', se: variabile, aiuto: 'Il «cap», se il contratto lo prevede. Lascia 0 se non c\'è.' },
 
     // Le quote capitale fissate all'inizio hanno senso solo quando il tasso cambia: a tasso fisso coincidono con la francese.
+    arrotonda_rata: { tipo: 'scelta', iniziale: 'centesimo', avanzato: true, etichetta: 'Arrotondamento della rata', opzioni: scelte('arrotonda_rata'), se: p => !variabile(p) },
     tipo_piano: { tipo: 'scelta', iniziale: 'francese', etichetta: 'Come si rimborsa il capitale',
       opzioni: scelte('tipo_piano').map(o => o.valore === 'quote_fisse' ? { ...o, se: variabile } : o.valore === 'italiana' ? { ...o, se: p => !maxirata(p) } : o) },
     tasso_annuo_piano: { tipo: 'percento', min: 0, max: 1, iniziale: 0, etichetta: 'Tasso iniziale del piano (%)', se: p => variabile(p) && p.tipo_piano === 'quote_fisse',
