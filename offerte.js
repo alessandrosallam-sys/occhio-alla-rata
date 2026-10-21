@@ -76,7 +76,7 @@
       })] : []),
     ];
     const testa = crea('tr', {}, crea('td', {}), ...esiti.map(x => crea('th', { scope: 'col', className: x === migliore ? 'migliore' : '' },
-      x.o.parametri.nome || 'Offerta', ...(x === migliore ? [crea('span', { className: 'etichetta-aperto' }, 'costa meno')] : []))));
+      x.o.parametri.nome || 'Offerta', ...(x === migliore ? [crea('span', { className: 'etichetta-aperto' }, Icone.crea('stella', 'icona icona-mini'), 'costa meno')] : []))));
     const note = [];
     const diverse = calcolate.length > 1 && new Set(calcolate.map(x => `${x.o.parametri.importo_iniziale}|${mesi(x.o.parametri)}`)).size > 1;
     if (diverse) note.push(crea('p', { className: 'nota evidenza' }, 'Le offerte hanno importi o durate diversi: il costo totale non si può confrontare direttamente. Confronta il TAEG, oppure metti lo stesso importo e la stessa durata.'));
@@ -101,7 +101,7 @@
     // Le spiegazioni lunghe dei campi restano come suggerimento al passaggio del mouse: la carta resta compatta.
     for (const aiuto of campi.querySelectorAll('label > small')) { aiuto.parentElement.title = aiuto.textContent; aiuto.remove(); }
     const modulo = crea('form', { className: 'carta carta-offerta', 'data-offerta': o.id },
-      crea('h3', {}, p.nome || 'Offerta'), campi,
+      crea('h3', {}, Icone.distintivo(M.iconaTipo(p)), crea('span', { className: 'nome-offerta' }, p.nome || 'Offerta')), campi,
       crea('p', { className: 'nota evidenza errore-offerta', hidden: true }),
       crea('div', { className: 'azioni' },
         crea('button', { type: 'button', className: 'secondario', 'data-segui': o.id }, 'Segui questo prestito'),
@@ -116,6 +116,7 @@
     $('#segui-prestito-offerte').hidden = Archivio.configurato();
     if (!offerte.length) {
       contenuto.replaceChildren(crea('div', { className: 'carta' },
+        Icone.distintivo('offerte', 'grande'),
         crea('h3', {}, 'Come funziona'),
         crea('ol', { className: 'dopo' },
           crea('li', {}, 'Prima di firmare, la banca o la finanziaria ti deve consegnare un foglio informativo: il PIES per i mutui, il SECCI per i finanziamenti. Lì trovi importo, durata, tasso, spese e TAEG.'),
@@ -154,7 +155,8 @@
       errore.hidden = false;
       return;
     }
-    $('h3', modulo).textContent = letti.valori.nome || 'Offerta';
+    $('.nome-offerta', modulo).textContent = letti.valori.nome || 'Offerta';
+    $('h3 .distintivo-icona', modulo).replaceWith(Icone.distintivo(M.iconaTipo({ ...o.parametri, ...letti.valori })));
     disegnaTabella($('#confronto-offerte'));
   });
   $('#contenuto-offerte').addEventListener('click', async evento => {

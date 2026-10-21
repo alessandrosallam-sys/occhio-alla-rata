@@ -53,6 +53,7 @@
         file.riferimento = testo;
       } while (file.ancora);   // modifiche arrivate mentre si scriveva
       file.salvatoAlle = new Date();
+      setTimeout(() => M.rianima(indicatore.querySelector('svg'), 'appena-salvato'));
     } finally {
       file.inScrittura = false;
       disegna();
@@ -281,7 +282,7 @@
     disegnaIndicatore();
     // Pannello
     pulsanteCollega.hidden = file.stato === 'attivo';
-    pulsanteCollega.textContent = file.stato === 'nessuno' ? 'Collega un file' : 'Riprendi il file';
+    pulsanteCollega.replaceChildren(Icone.crea(file.stato === 'nessuno' ? 'collega' : 'freccia', 'icona icona-aggiunta'), file.stato === 'nessuno' ? 'Collega un file' : 'Riprendi il file');
     pulsanteScollega.hidden = file.stato === 'nessuno';
     notaDati.classList.toggle('evidenza', file.stato === 'fermo');
     notaDati.textContent = file.stato === 'attivo'

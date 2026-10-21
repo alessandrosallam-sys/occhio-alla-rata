@@ -196,25 +196,25 @@
   };
   // "se": il passo serve solo per alcuni prestiti (ad esempio gli aggiornamenti del tasso solo per il variabile).
   const PASSI = [
-    { titolo: 'Prima di iniziare', tipo: 'benvenuto', campi: [] },
-    { titolo: 'Il prestito', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'valore_riferimento'],
+    { titolo: 'Prima di iniziare', tipo: 'benvenuto', icona: 'bussola', campi: [] },
+    { titolo: 'Il prestito', icona: 'documento', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'valore_riferimento'],
       testo: 'Cominciamo dai dati di base. Li trovi tutti nella prima pagina del contratto o nel piano di ammortamento.' },
-    { titolo: 'Spese e assicurazioni', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata'], avanzati: ['spese_annue'],
+    { titolo: 'Spese e assicurazioni', icona: 'scudo', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata'], avanzati: ['spese_annue'],
       testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
-    { titolo: 'Il tasso', se: variabile, campi: ['indice_nome', 'spread', 'taeg_dichiarato'],
+    { titolo: 'Il tasso', se: variabile, icona: 'grafico', campi: ['indice_nome', 'spread', 'taeg_dichiarato'],
       testo: 'In un mutuo a tasso variabile il tasso di ogni rata è la somma di due numeri: un indice di mercato, che cambia nel tempo, e lo spread, che è fisso.' },
-    { titolo: 'Il tasso', se: b => !variabile(b), campi: ['tasso_fisso', 'taeg_dichiarato'],
+    { titolo: 'Il tasso', se: b => !variabile(b), icona: 'percento', campi: ['tasso_fisso', 'taeg_dichiarato'],
       testo: 'A tasso fisso il tasso è scritto nel contratto e non cambia mai. Nel contratto ne trovi due: il TAN, che serve a calcolare le rate, e il TAEG, che misura il costo totale.' },
-    { titolo: 'Gli aggiornamenti', se: variabile, campi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'],
+    { titolo: 'Gli aggiornamenti', se: variabile, icona: 'orologio', campi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'],
       testo: 'Ora due dettagli su quando la banca rilegge l\'indice. Se non li trovi nel contratto scegli «Non lo so»: il programma li ricava dalle rate che hai già pagato.' },
-    { titolo: 'Gli interessi', campi: ['conteggio_giorni'], avanzati: ['arrotonda_rata', 'arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
+    { titolo: 'Gli interessi', icona: 'calcolatrice', campi: ['conteggio_giorni'], avanzati: ['arrotonda_rata', 'arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
       testo: 'Un dettaglio tecnico che serve a far tornare i conti al centesimo. Anche qui, se non lo sai, lascia fare al programma.' },
     // Con la maxirata il piano è per forza a rata costante: la domanda non serve.
-    { titolo: 'Il capitale', se: b => b.tipo_prestito !== 'maxirata', campi: ['tipo_piano', 'tasso_annuo_piano'], avanzati: ['rata_piano'],
+    { titolo: 'Il capitale', icona: 'colonne', se: b => b.tipo_prestito !== 'maxirata', campi: ['tipo_piano', 'tasso_annuo_piano'], avanzati: ['rata_piano'],
       testo: 'L\'ultima domanda sul contratto riguarda il modo in cui restituisci il capitale.' },
-    { titolo: 'Le rate già pagate', tipo: 'rate', campi: [],
+    { titolo: 'Le rate già pagate', tipo: 'rate', icona: 'calendario', campi: [],
       testo: 'Se hai già pagato delle rate, scrivile qui: il programma le usa per controllare le risposte date finora e per ricavare quelle che hai lasciato in sospeso. Bastano le prime tre o quattro; più ne metti, più il controllo è sicuro.' },
-    { titolo: 'Riepilogo', tipo: 'riepilogo', campi: [], testo: 'Controlla i dati e conferma. Potrai rifare la configurazione quando vuoi con il pulsante «Configurazione» in alto.' },
+    { titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', campi: [], testo: 'Controlla i dati e conferma. Potrai rifare la configurazione quando vuoi con il pulsante «Configurazione» in alto.' },
   ];
   const NON_SO = '?';
   // rate: importi scritti, per numero di rata; nonSo: domande lasciate al programma; massimo: ultimo passo raggiunto
@@ -243,12 +243,13 @@
   // Una domanda della guida: titolo, casella o elenco di risposte, e la spiegazione sotto.
   function creaDomanda(chiave) {
     const campo = CAMPI[chiave], d = DOMANDE[chiave] || {}, valore = guida.bozza[chiave], nonSo = guida.nonSo.has(chiave);
-    const voce = (valoreVoce, titolo, aiuto, scelta, extra) => crea('label', { className: 'scelta' },
-      crea('input', { type: 'radio', name: chiave, value: valoreVoce, checked: scelta }),
+    // "icona": alcune scelte (il tipo di prestito) hanno un disegno accanto al titolo.
+    const voce = (valoreVoce, titolo, aiuto, scelta, extra, icona) => crea('label', { className: 'scelta' + (icona ? ' con-icona' : '') },
+      crea('input', { type: 'radio', name: chiave, value: valoreVoce, checked: scelta }), ...(icona ? [Icone.distintivo(icona, 'piccolo')] : []),
       crea('span', {}, crea('strong', {}, titolo), ...(aiuto ? [crea('small', {}, aiuto)] : []), ...(extra ? [extra] : [])));
     let controllo;
     if (campo.tipo === 'scelta') {
-      controllo = crea('div', { className: 'scelte' }, ...campo.opzioni.filter(o => !o.se || o.se(guida.bozza)).map(o => voce(String(o.valore), o.etichetta, o.aiuto, !nonSo && o.valore === valore)),
+      controllo = crea('div', { className: 'scelte' }, ...campo.opzioni.filter(o => !o.se || o.se(guida.bozza)).map(o => voce(String(o.valore), o.etichetta, o.aiuto, !nonSo && o.valore === valore, null, o.icona)),
         ...(d.nonSo ? [voce(NON_SO, 'Non lo so', d.nonSo, nonSo)] : []));
     } else if (campo.suggerimenti) {
       const noto = campo.suggerimenti.includes(valore);
@@ -511,7 +512,12 @@
     $('#passi-guida').replaceChildren(...utili.map(i => crea('li', { className: (i === guida.passo ? 'attivo' : i < guida.passo ? 'fatto' : '') + (i <= guida.massimo ? ' raggiunto' : ''),
       'data-passo': i, title: PASSI[i].titolo }, crea('span', {}, PASSI[i].titolo))));
     $('#conta-passi').textContent = `Passo ${utili.indexOf(guida.passo) + 1} di ${utili.length}`;
-    $('#titolo-passo').textContent = passo.titolo;
+    $('#titolo-passo').replaceChildren(Icone.distintivo(passo.icona || 'info', 'piccolo'), passo.titolo);
+    // Il passo nuovo entra dal lato giusto: da destra andando avanti, da sinistra tornando indietro.
+    const modulo = $('#form-guida');
+    modulo.classList.remove('passo-avanti', 'passo-indietro');
+    M.rianima(modulo, guida.passo >= (guida.disegnato ?? 0) ? 'passo-avanti' : 'passo-indietro');
+    guida.disegnato = guida.passo;
     $('#testo-passo').textContent = passo.testo || '';
     $('#testo-passo').hidden = !passo.testo;
     $('#errore-passo').hidden = true;
@@ -606,7 +612,7 @@
     raccogliPasso(false);
     const b = guida.bozza, serie = TassiInternet.riconosci(b.indice_nome);
     if (!serie) return;
-    pulsante.disabled = true;
+    pulsante.disabled = true; pulsante.setAttribute('aria-busy', 'true');
     pulsante.textContent = 'Scarico…';
     try {
       const { valori } = await TassiInternet.scarica(serie, TassiInternet.inizioScarico(b.data_prima_rata), stato.oggi);
@@ -616,7 +622,7 @@
     } catch (errore) {
       mostraErrore(errore.message);
     } finally {
-      pulsante.disabled = false;
+      pulsante.disabled = false; pulsante.removeAttribute('aria-busy');
       aggiornaDomande();
     }
   }
@@ -709,13 +715,13 @@
   }
   $('#avvia-taratura').addEventListener('click', evento => {
     const pulsante = evento.currentTarget;
-    pulsante.disabled = true;
+    pulsante.disabled = true; pulsante.setAttribute('aria-busy', 'true');
     pulsante.textContent = 'Sto provando le combinazioni…';
     // Il calcolo prova alcune centinaia di combinazioni: parte dopo aver aggiornato la scritta sul pulsante.
     setTimeout(() => {
       esiti = Calcolo.tara(stato.dati);
       if (!esiti.length) esiti = [];
-      pulsante.disabled = false;
+      pulsante.disabled = false; pulsante.removeAttribute('aria-busy');
       pulsante.textContent = 'Trova le regole giuste';
       disegnaTaratura();
     }, 30);

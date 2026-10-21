@@ -19,7 +19,7 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 
 Nella pagina Tassi il modulo della proiezione sta richiuso in una riga sotto il grafico («Cambia» lo apre). Sul telefono le pagine si scelgono dalla barra in basso e la tabella del piano scorre in orizzontale tenendo ferma la colonna delle rate. Il tema chiaro o scuro segue quello del sistema.
 
-**Aspetto**: dal pulsante «Aspetto» (o dal pannello di controllo) si sceglie fra otto temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia e Contrasto alto. Cambia solo l'aspetto; la scelta resta nel browser.
+**Aspetto**: dal pulsante «Aspetto» (o dal pannello di controllo) si sceglie fra otto temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia e Contrasto alto. Cambia solo l'aspetto; la scelta resta nel browser. Le icone sono disegnate apposta per la pagina e le animazioni (pagine che entrano, cifre che contano, carte che si sollevano) si spengono da sole se nelle impostazioni del sistema è attivo «riduci movimento».
 
 **Dove stanno i dati.** I dati stanno nel browser (`localStorage`): se cancelli i dati di navigazione li perdi. Per non perderli:
 
@@ -85,6 +85,7 @@ configura.js          configurazione guidata, regole nel pannello, taratura
 prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali
 costi.js              quanto costa il prestito aperto: costo totale e TAEG, estinzione anticipata (pannello di controllo)
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
+icone.js              le icone della pagina, disegnate a mano
 file-collegato.js     il file collegato: i dati scritti da soli in un file scelto dall'utente (Edge e Chrome)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina

@@ -36,7 +36,7 @@
       riga(variabile ? 'TAEG stimato' : 'TAEG calcolato', c.taeg == null ? '—' : perc(c.taeg, 2), 'il costo totale in percentuale all\'anno: serve a confrontare prestiti diversi'),
       ...(p.taeg_dichiarato > 0 ? [riga('TAEG del contratto', perc(p.taeg_dichiarato, 3, 2))] : []),
     ];
-    const contenuto = [crea('h3', {}, 'Quanto costa questo prestito'),
+    const contenuto = [crea('h3', {}, Icone.crea('calcolatrice', 'icona icona-titolo'), 'Quanto costa questo prestito'),
       crea('table', { className: 'tabella-costi' }, crea('tbody', {}, ...righe, ...tassi))];
     contenuto.push(...giudizio(c, p, variabile));
     if (conMaxirata) contenuto.push(...spiegaMaxirata(c, p));
@@ -164,7 +164,7 @@
       const opzioni = righe.slice(prima - 1, -1).map(r => crea('option', { value: r.n, selected: r.n === scelta.dopo }, `dopo la rata ${r.n}, di ${M.meseAnno(r.inizio)}`));
       const radio = (nome, valore, testo, attivo) => crea('label', { className: 'spunta' }, crea('input', { type: 'radio', name: nome, value: valore, checked: attivo }), crea('span', {}, testo));
       carta.replaceChildren(
-        crea('h3', {}, 'Estinzione anticipata: quanto risparmi'),
+        crea('h3', {}, Icone.crea('fulmine', 'icona icona-titolo'), 'Estinzione anticipata: quanto risparmi'),
         crea('p', { className: 'nota' }, 'Se ti avanza una somma, puoi restituire alla banca tutto il debito o una parte, prima della fine. Risparmi gli interessi che avresti pagato su quella somma, e se è un finanziamento ti restituiscono una parte dei costi. Qui vedi i conti prima di chiederlo alla banca.'),
         crea('form', { id: 'form-estinzione', className: 'campi' },
           crea('label', {}, 'Quando', crea('select', { name: 'dopo' }, ...opzioni), crea('small', {}, 'Si rimborsa subito dopo aver pagato quella rata.')),

@@ -1278,7 +1278,7 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .tabella-offerte td.manca { color: var(--tenue); }
 #confronto-offerte { display: flex; flex-direction: column; gap: var(--s3); }
 #confronto-offerte .nota { margin: 0; }
-#confronto-offerte .campo-in-linea { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); font-size: 14px; font-weight: 600; }
+#confronto-offerte .campo-in-linea { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); font-size: 14px; font-weight: 600; }
 #modello-offerte { width: auto; max-width: 100%; }
 .carta-offerta { display: flex; flex-direction: column; gap: var(--s3); }
 .carta-offerta h3 { margin: 0; }
@@ -1603,4 +1603,124 @@ button.tessera-tema[aria-pressed="true"] .nome-tema::after { content: "✓"; col
 /* Sui dispositivi touch il pulsante × delle festività ha un bersaglio di almeno 40 px. */
 @media (pointer: coarse) {
   button[data-giorno][title="Elimina"] { min-width: 40px; min-height: 40px; }
+}
+
+
+/* ---------- 10. Icone e movimento ---------- */
+/* Icone (icone.js): nei titoli prendono il colore d'accento del tema, nei pulsanti quello del testo. */
+h2 > .icona-aggiunta, h3 > .icona-aggiunta, h2 > .icona-titolo, h3 > .icona-titolo {
+  width: 1.15em; height: 1.15em; margin-right: 0.45em; vertical-align: -0.2em; color: var(--accento);
+}
+button > .icona-aggiunta, .carica-file > .icona-aggiunta { width: 18px; height: 18px; margin-left: -3px; }
+button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
+.icona-dato { width: 15px; height: 15px; margin-right: 6px; vertical-align: -2px; color: var(--accento); }
+.riepilogo .dato.principale .icona-dato { color: inherit; opacity: 0.85; }
+.icona-mini { width: 13px; height: 13px; margin-right: 3px; vertical-align: -2px; }
+.riquadro-statistica h3 { display: flex; align-items: center; }
+/* Icona in un riquadro morbido: tipo di prestito, passi della guida, stati vuoti */
+.distintivo-icona {
+  display: inline-grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 13px;
+  background: var(--accento-tenue); color: var(--accento);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accento) 14%, transparent);
+}
+.distintivo-icona .icona { width: 22px; height: 22px; }
+.distintivo-icona.piccolo { width: 36px; height: 36px; border-radius: 11px; margin-right: 12px; }
+.distintivo-icona.piccolo .icona { width: 19px; height: 19px; }
+.distintivo-icona.grande { width: 64px; height: 64px; border-radius: 20px; margin-bottom: var(--s3); }
+.distintivo-icona.grande .icona { width: 32px; height: 32px; stroke-width: 1.6; }
+#titolo-passo { display: flex; align-items: center; }
+/* Scelte con un'icona (il tipo di prestito nella guida) */
+.scelta.con-icona { align-items: center; }
+.scelta.con-icona .distintivo-icona.piccolo { display: inline-grid; margin-right: 2px; }
+.scelta.con-icona:has(input:checked) .distintivo-icona { background: var(--accento); color: var(--su-accento); }
+.carta-prestito header { align-items: center; }
+.carta-prestito .testa-prestito { flex: 1; min-width: 0; }
+.carta-offerta h3 { display: flex; align-items: center; gap: 12px; }
+.tabella-offerte thead .etichetta-aperto { display: inline-flex; align-items: center; }
+/* Il marchio: una casa con il segno di percentuale */
+.logo svg.icona { width: 20px; height: 20px; stroke-width: 2.1; }
+.notifica { display: flex; align-items: center; gap: 10px; }
+.notifica .icona { width: 18px; height: 18px; flex: none; }
+/* Un pulsante al lavoro (scarico, taratura, proiezione): una rotella accanto al testo */
+button[aria-busy="true"]::after {
+  content: ""; width: 14px; height: 14px; flex: none; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; opacity: 0.8;
+}
+
+@keyframes sale { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes appare { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cresce { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes da-destra { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes da-sinistra { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes avviso-entra { from { opacity: 0; transform: translate(-50%, 16px) scale(0.97); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes menu-entra { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes menu-sale { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+@keyframes respiro { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
+@keyframes battito { 0% { transform: scale(1); } 35% { transform: scale(1.25); } 70% { transform: scale(0.95); } 100% { transform: scale(1); } }
+@keyframes gira { to { transform: rotate(360deg); } }
+@keyframes deriva { from { transform: translate(0, 0) scale(1); } to { transform: translate(-26px, 14px) scale(1.1); } }
+@keyframes alza-distintivo { from { opacity: 0; transform: scale(0.6) rotate(-8deg); } to { opacity: 1; transform: none; } }
+
+/* Tutto il movimento sta qui dentro: con «riduci movimento» nelle impostazioni del sistema la pagina resta ferma. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Una scheda nuova: i blocchi salgono uno dopo l'altro (la classe «entra» la mette app.js) */
+  .scheda.entra > :not(.colonna), .scheda.entra > .colonna > * { animation: sale 0.45s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+  .scheda.entra > :nth-child(2), .scheda.entra > .colonna > :nth-child(2) { animation-delay: 0.05s; }
+  .scheda.entra > :nth-child(3), .scheda.entra > .colonna > :nth-child(3) { animation-delay: 0.1s; }
+  .scheda.entra > :nth-child(4), .scheda.entra > .colonna > :nth-child(4) { animation-delay: 0.15s; }
+  .scheda.entra > :nth-child(5), .scheda.entra > .colonna > :nth-child(5) { animation-delay: 0.2s; }
+  .scheda.entra > :nth-child(n+6), .scheda.entra > .colonna > :nth-child(n+6) { animation-delay: 0.25s; }
+  .scheda.entra .elenco-prestiti > * { animation: sale 0.45s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+  .scheda.entra .elenco-prestiti > :nth-child(2) { animation-delay: 0.12s; }
+  .scheda.entra .elenco-prestiti > :nth-child(3) { animation-delay: 0.18s; }
+  .scheda.entra .elenco-prestiti > :nth-child(n+4) { animation-delay: 0.24s; }
+  .scheda.entra .distintivo-icona { animation: alza-distintivo 0.5s 0.15s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+
+  /* I numeri del mese: le tessere arrivano in fila, la barra del rimborsato cresce */
+  .riepilogo.entra > .dato { animation: sale 0.45s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+  .riepilogo.entra > :nth-child(2) { animation-delay: 0.05s; }
+  .riepilogo.entra > :nth-child(3) { animation-delay: 0.1s; }
+  .riepilogo.entra > :nth-child(4) { animation-delay: 0.15s; }
+  .riepilogo.entra > :nth-child(5) { animation-delay: 0.2s; }
+  .entra .avanzamento span { transform-origin: left center; animation: cresce 0.9s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .riepilogo .dato.principale::after { animation: deriva 14s ease-in-out infinite alternate; }
+  .statistiche-mutuo.entra > * { animation: sale 0.4s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+  .statistiche-mutuo.entra > :nth-child(2) { animation-delay: 0.05s; }
+  .statistiche-mutuo.entra > :nth-child(3) { animation-delay: 0.1s; }
+  .statistiche-mutuo.entra > :nth-child(n+4) { animation-delay: 0.15s; }
+
+  /* Carte che si possono aprire: si sollevano un poco sotto il puntatore */
+  .carta-prestito, .riepilogo .dato, .riquadro-statistica { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+  .carta-prestito:hover { transform: translateY(-3px); box-shadow: var(--ombra-alta); }
+  .riepilogo .dato:hover, .riquadro-statistica:hover { transform: translateY(-2px); }
+
+  /* Pulsanti: rispondono al clic, i principali si illuminano */
+  button { transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.2s, transform 0.12s; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  .azioni > button:not(.secondario):not(.pericoloso):hover, #guida-avanti:hover, #aggiungi-prestito:hover, #aggiungi-offerta:hover {
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accento) 70%, transparent);
+  }
+  button > .icona-aggiunta { transition: transform 0.2s ease; }
+  button:hover > .icona-aggiunta { transform: translateX(1px) scale(1.08); }
+  button[aria-busy="true"]::after { animation: gira 0.8s linear infinite; }
+
+  /* Avviso in basso, menu dei temi, pannelli che si aprono */
+  .notifica.compare { animation: avviso-entra 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .menu-temi:not([hidden]) { animation: menu-entra 0.2s ease-out both; }
+  details[open] > :not(summary) { animation: appare 0.25s ease-out both; }
+
+  /* Guida: il passo nuovo arriva dal lato verso cui si va */
+  .passo-avanti :is(#titolo-passo, #testo-passo, #campi-passo) { animation: da-destra 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .passo-indietro :is(#titolo-passo, #testo-passo, #campi-passo) { animation: da-sinistra 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .passo-avanti #campi-passo, .passo-indietro #campi-passo { animation-delay: 0.04s; }
+
+  /* Il mese in corso nel piano respira piano; l'icona del file batte a ogni salvataggio */
+  #tabella-piano tr.corrente .segno { animation: respiro 2.4s ease-in-out infinite; }
+  .appena-salvato { animation: battito 0.6s ease-out; }
+
+  /* Cambio di tema: i colori sfumano invece di saltare */
+  body, .testata, .carta, .dato, .riquadro-statistica { transition-property: background-color, color, border-color, box-shadow, transform; transition-duration: 0.3s, 0.3s, 0.3s, 0.2s, 0.2s; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .menu-temi:not([hidden]) { animation: menu-sale 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 }

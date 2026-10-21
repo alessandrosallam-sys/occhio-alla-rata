@@ -449,7 +449,7 @@
     const serie = Internet.perCodice(moduloInternet.serie.value);
     if (!serie) return avvisa('Scegli quale Euribor scaricare', true);
     const pulsante = $('#scarica-internet');
-    pulsante.disabled = true;
+    pulsante.disabled = true; pulsante.setAttribute('aria-busy', 'true');
     pulsante.textContent = 'Scarico…';
     try {
       const { valori, aggiornato } = await Internet.scarica(serie, Internet.inizioScarico(stato.dati.parametri.data_prima_rata), stato.oggi);
@@ -460,7 +460,7 @@
     } catch (errore) {
       avvisa(errore.message, true);
     } finally {
-      pulsante.disabled = false;
+      pulsante.disabled = false; pulsante.removeAttribute('aria-busy');
       pulsante.textContent = 'Scarica gli ultimi valori';
     }
   });

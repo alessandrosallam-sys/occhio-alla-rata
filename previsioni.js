@@ -280,7 +280,7 @@
     const pulsante = $('button[type="submit"]', modulo), codice = modulo.serie.value, modello = modulo.modello.value;
     const avviso = $('#avviso-previsione');
     avviso.hidden = true;
-    pulsante.disabled = true;
+    pulsante.disabled = true; pulsante.setAttribute('aria-busy', 'true');
     try {
       await assicuraSerie(codice);
       if (modello === 'var') for (const s of Internet.SERIE) await assicuraSerie(s.codice);
@@ -296,7 +296,7 @@
       avviso.textContent = errore.message;
       avviso.hidden = false;
     } finally {
-      pulsante.disabled = false;
+      pulsante.disabled = false; pulsante.removeAttribute('aria-busy');
     }
   }
   modulo.addEventListener('submit', evento => { evento.preventDefault(); salvaScelte(); eseguiCalcolo(); });
@@ -324,7 +324,7 @@
     const codice = modulo.serie.value, anni = +moduloConfronto.anni.value, orizzonte = +moduloConfronto.orizzonte.value;
     const pulsante = $('button[type="submit"]', moduloConfronto), avviso = $('#avviso-confronto');
     avviso.hidden = true;
-    pulsante.disabled = true;
+    pulsante.disabled = true; pulsante.setAttribute('aria-busy', 'true');
     pulsante.textContent = 'Confronto in corso…';
     await new Promise(r => setTimeout(r, 30));   // lascia disegnare il pulsante
     try {
@@ -352,7 +352,7 @@
       avviso.textContent = errore.message;
       avviso.hidden = false;
     } finally {
-      pulsante.disabled = false;
+      pulsante.disabled = false; pulsante.removeAttribute('aria-busy');
       pulsante.textContent = 'Confronta i modelli';
     }
   }

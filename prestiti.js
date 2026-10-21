@@ -23,6 +23,9 @@
       rateRestanti: restanti.length,
     };
   }
+  // Un'icona per tipo: la casa per i mutui, il portafoglio per i finanziamenti, l'auto per quelli con la maxirata.
+  const iconaTipo = p => ({ finanziamento: 'portafoglio', maxirata: 'auto' })[p.tipo_prestito] || 'casa';
+  M.iconaTipo = iconaTipo;
   // Che prestito è, in poche parole (a tasso fisso anche il TAEG, che dice quanto costa davvero).
   function descriviTipo(r) {
     const p = r.d.parametri;
@@ -42,7 +45,7 @@
     const apri = crea('button', { type: 'button', className: aperto ? 'secondario' : '', 'data-apri': r.d.id }, aperto ? 'Vai al piano' : 'Apri');
     const elimina = crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina': r.d.id }, 'Elimina');
     return crea('article', { className: 'carta carta-prestito' + (aperto ? ' aperto' : '') },
-      crea('header', {}, crea('div', {}, crea('h3', {}, p.nome || 'Prestito senza nome'), crea('p', { className: 'nota' }, descriviTipo(r))),
+      crea('header', {}, Icone.distintivo(iconaTipo(p)), crea('div', { className: 'testa-prestito' }, crea('h3', {}, p.nome || 'Prestito senza nome'), crea('p', { className: 'nota' }, descriviTipo(r))),
         ...(aperto ? [crea('span', { className: 'etichetta-aperto' }, 'Aperto ora')] : [])),
       crea('div', { className: 'numeri-prestito' },
         voce(r.meseRata ? `Rata di ${meseAnno(r.meseRata)}` : 'Rata', r.stato === 'finito' ? '—' : euro(r.rata), r.stato === 'futuro' ? 'la prima' : null),
@@ -60,7 +63,7 @@
       const somma = valore => tutti.reduce((s, r) => s + valore(r), 0);
       const inCorso = tutti.filter(r => r.stato !== 'finito');
       contenuto.unshift(crea('div', { className: 'carta totali-prestiti' },
-        crea('h2', {}, 'Tutti i prestiti'),
+        crea('h2', {}, Icone.crea('somma', 'icona icona-titolo'), 'Tutti i prestiti'),
         crea('div', { className: 'numeri-prestito' },
           crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, 'Rate di questo mese'), crea('span', { className: 'valore' }, euro(somma(r => r.stato === 'corso' ? r.rata : 0))),
             crea('span', { className: 'dettaglio' }, `${inCorso.length === 1 ? '1 prestito in corso' : inCorso.length + ' prestiti in corso'}`)),

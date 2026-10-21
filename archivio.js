@@ -18,10 +18,10 @@
   const maxirata = p => p.tipo_prestito === 'maxirata';
   const CAMPI = {
     tipo_prestito: { tipo: 'scelta', iniziale: 'variabile', etichetta: 'Tipo di prestito', opzioni: [
-      { valore: 'variabile', etichetta: 'Mutuo a tasso variabile', aiuto: 'Il tasso segue un indice di mercato (di solito l\'Euribor) più uno spread fisso: la rata cambia nel tempo.' },
-      { valore: 'fisso', etichetta: 'Mutuo a tasso fisso', aiuto: 'Il tasso è scritto nel contratto e resta lo stesso fino all\'ultima rata.' },
-      { valore: 'finanziamento', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' },
-      { valore: 'maxirata', etichetta: 'Finanziamento con maxirata finale', aiuto: 'Tipico delle auto: di solito un anticipo, rate mensili basse e alla fine una rata molto più grande (maxirata, rata finale o «valore futuro garantito»).' }] },
+      { valore: 'variabile', icona: 'grafico', etichetta: 'Mutuo a tasso variabile', aiuto: 'Il tasso segue un indice di mercato (di solito l\'Euribor) più uno spread fisso: la rata cambia nel tempo.' },
+      { valore: 'fisso', icona: 'casa', etichetta: 'Mutuo a tasso fisso', aiuto: 'Il tasso è scritto nel contratto e resta lo stesso fino all\'ultima rata.' },
+      { valore: 'finanziamento', icona: 'portafoglio', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' },
+      { valore: 'maxirata', icona: 'auto', etichetta: 'Finanziamento con maxirata finale', aiuto: 'Tipico delle auto: di solito un anticipo, rate mensili basse e alla fine una rata molto più grande (maxirata, rata finale o «valore futuro garantito»).' }] },
     nome: { tipo: 'testo', iniziale: 'Il mio prestito', etichetta: 'Nome del prestito', aiuto: 'Serve solo a riconoscerlo, ad esempio «Casa di via Roma» o «Auto».' },
     importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del prestito (€)', aiuto: 'Il capitale prestato dalla banca o dalla finanziaria.' },
     data_prima_rata: { tipo: 'data', obbligatorio: true, etichetta: 'Inizio del primo periodo',

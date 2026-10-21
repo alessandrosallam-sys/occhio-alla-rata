@@ -82,11 +82,38 @@
   let timerAvviso;
   function avvisa(testo, errore = false) {
     const el = $('#avviso');
-    el.textContent = testo;
+    el.replaceChildren(Icone.crea(errore ? 'attenzione' : 'spunta'), crea('span', {}, testo));
     el.classList.toggle('errore', errore);
     el.hidden = false;
+    rianima(el, 'compare');   // un avviso nuovo, anche se il precedente è ancora lì, rientra da sotto
     clearTimeout(timerAvviso);
     timerAvviso = setTimeout(() => { el.hidden = true; }, errore ? 7000 : 4000);
+  }
+
+  // ---------- Movimento ----------
+  // Le animazioni stanno in stile.css; qui solo quelle che vanno fatte partire. Con «riduci movimento» del sistema niente.
+  const movimentoRidotto = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const movimento = () => !(movimentoRidotto && movimentoRidotto.matches);
+  // Rifà partire un'animazione CSS legata a una classe (togliendola e rimettendola).
+  function rianima(el, classe) {
+    if (!el) return;
+    el.classList.remove(classe);
+    if (!movimento()) return;
+    void el.offsetWidth;
+    el.classList.add(classe);
+  }
+  // Una cifra che conta dal valore di prima a quello nuovo; "formato" la scrive come le altre cifre della pagina.
+  function contaFino(el, da, a, formato, durata = 650) {
+    if (!movimento() || da === a || !Number.isFinite(da) || !Number.isFinite(a)) { el.textContent = formato(a); return; }
+    const partenza = performance.now();
+    const passo = adesso => {
+      if (!el.isConnected) return;
+      const t = Math.min(1, (adesso - partenza) / durata), k = 1 - Math.pow(1 - t, 3);
+      el.textContent = formato(t >= 1 ? a : da + (a - da) * k);
+      if (t < 1) requestAnimationFrame(passo);
+    };
+    el.textContent = formato(da);
+    requestAnimationFrame(passo);
   }
 
   // Piccolo aiuto per creare elementi senza passare da innerHTML.
@@ -141,7 +168,7 @@
   // Le altre pagine (tassi.js, calendario.js) usano questi strumenti e si agganciano qui:
   // "viste" = funzioni da richiamare a ogni aggiornamento dei dati, "allApertura" = funzioni per scheda.
   const M = window.Mutuo = {
-    stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI,
+    stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI, rianima, contaFino, movimento,
     data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice, variabile,
     viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], ricordo,
   };
@@ -165,20 +192,28 @@
       : corrente.origineEuribor === 'manuale' ? 'inserito a mano' : `previsione: manca il valore del ${data(corrente.riferimento)}`;
     // A tasso fisso al posto di indice e tasso totale ci sono il TAN e il TAEG (che conta anche spese e assicurazioni).
     const taeg = variabile() ? null : Calcolo.costi(stato.dati, righe, true).taeg;
+    // Ogni tessera: [etichetta, cifra, come scriverla, dettaglio, avanzamento, classe, icona].
+    const euroV = v => euro(v), perc3 = v => perc(v, 3), perc31 = v => perc(v, 3, 1), perc2 = v => perc(v, 2);
     const tassi = variabile()
-      ? [[indice(), perc(corrente.euribor, 3), dettaglioEuribor], ['Tasso totale', perc(corrente.tassoTotale, 3), `indice + spread ${perc(corrente.spread, 3, 1)}`]]
-      : [['Tasso fisso (TAN)', perc(p.tasso_fisso, 3, 1), ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}` : 'uguale fino all\'ultima rata'],
-        ['TAEG', taeg == null ? '—' : perc(taeg, 2), 'il costo vero, con spese e assicurazioni']];
+      ? [[indice(), corrente.euribor, perc3, dettaglioEuribor, null, '', 'grafico'], ['Tasso totale', corrente.tassoTotale, perc3, `indice + spread ${perc(corrente.spread, 3, 1)}`, null, '', 'percento']]
+      : [['Tasso fisso (TAN)', p.tasso_fisso, perc31, ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}` : 'uguale fino all\'ultima rata', null, '', 'percento'],
+        ['TAEG', taeg, perc2, 'il costo vero, con spese e assicurazioni', null, '', 'calcolatrice']];
     // La rata del mese è la tessera principale (classe "principale": più grande e in testa, vedi stile.css).
     const voci = [
-      ['Debito residuo', euro(corrente.debito), `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato],
-      [nonPartito ? `Prima rata, ${meseAnno(corrente.inizio)}` : `Rata di ${meseAnno(corrente.inizio)}`, euro(rata(corrente)), nonPartito ? 'il prestito non è ancora partito' : dettaglioRata, null, 'principale'],
+      ['Debito residuo', corrente.debito, euroV, `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato, '', 'discesa'],
+      [nonPartito ? `Prima rata, ${meseAnno(corrente.inizio)}` : `Rata di ${meseAnno(corrente.inizio)}`, rata(corrente), euroV, nonPartito ? 'il prestito non è ancora partito' : dettaglioRata, null, 'principale', 'calendario'],
       ...tassi,
-      ['Totale rate a fine piano', euro(ultima.cumulato), `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}`],
+      ['Totale rate a fine piano', ultima.cumulato, euroV, `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}`, null, '', 'somma'],
     ];
-    $('#riepilogo').replaceChildren(...voci.map(([etichetta, valore, dettaglio, quota, classe]) => {
-      const tessera = crea('div', { className: 'dato' + (classe ? ' ' + classe : '') }, crea('span', { className: 'etichetta' }, etichetta),
-        crea('span', { className: 'valore' }, valore), crea('span', { className: 'dettaglio', title: dettaglio }, dettaglio));
+    // Le cifre contano fino al valore nuovo: da zero quando si apre un prestito, da quello di prima quando cambia.
+    const altroPrestito = memoriaRiepilogo.prestito !== stato.dati.id, prima = memoriaRiepilogo.valori;
+    const contenitore = $('#riepilogo');
+    contenitore.replaceChildren(...voci.map(([etichetta, numero, formato, dettaglio, quota, classe, icona], i) => {
+      const valore = crea('span', { className: 'valore' });
+      const tessera = crea('div', { className: 'dato' + (classe ? ' ' + classe : '') }, crea('span', { className: 'etichetta' }, Icone.crea(icona, 'icona icona-dato'), etichetta),
+        valore, crea('span', { className: 'dettaglio', title: dettaglio }, dettaglio));
+      if (numero == null) valore.textContent = '—';
+      else contaFino(valore, altroPrestito ? 0 : prima[i] != null ? prima[i] : numero, numero, formato);
       if (quota != null) {
         const riempimento = crea('span');
         riempimento.style.width = (quota * 100).toFixed(1) + '%';
@@ -186,7 +221,10 @@
       }
       return tessera;
     }));
+    if (altroPrestito) rianima(contenitore, 'entra');
+    Object.assign(memoriaRiepilogo, { prestito: stato.dati.id, valori: voci.map(v => v[1]) });
   }
+  const memoriaRiepilogo = { prestito: null, valori: [] };
 
   // ---------- Piano ----------
   const previsione = r => r.origineEuribor === 'previsione' ? 'previsione' : '';
@@ -544,8 +582,9 @@
     const voce = ([etichetta, valore, dettaglio, pallino]) => crea('div', {},
       crea('dt', {}, ...(pallino ? [crea('i', { className: 'pallino ' + pallino })] : []), etichetta),
       crea('dd', {}, valore, ...(dettaglio ? [crea('small', {}, dettaglio)] : [])));
+    const ICONE_STATISTICHE = { 'Quanto hai pagato': 'euro', 'Le tue rate': 'calendario', 'Andamento mese per mese': 'grafico', 'Tassi applicati': 'percento', 'Da qui alla fine': 'traguardo' };
     const riquadro = (titolo, cifra, didascalia, voci, extra) => crea('section', { className: 'riquadro-statistica' },
-      crea('h3', {}, titolo), crea('p', { className: 'cifra' }, cifra), crea('p', { className: 'didascalia' }, didascalia),
+      crea('h3', {}, Icone.crea(ICONE_STATISTICHE[titolo] || 'info', 'icona icona-titolo'), titolo), crea('p', { className: 'cifra' }, cifra), crea('p', { className: 'didascalia' }, didascalia),
       ...(extra ? [extra] : []), crea('dl', {}, ...voci.map(voce)));
 
     // Quanto hai pagato: totale e composizione
@@ -595,6 +634,7 @@
     $('#mostra-statistiche').setAttribute('aria-expanded', aperte);
     $('#mostra-statistiche').textContent = aperte ? 'Nascondi statistiche' : 'Mostra statistiche';
     if (ricorda) ricordo.scrivi('statistiche', aperte ? 'aperte' : 'chiuse');
+    if (aperte && ricorda) rianima($('#statistiche-mutuo'), 'entra');
   }
   $('#mostra-statistiche').addEventListener('click', () => mostraStatistiche($('#statistiche-mutuo').hidden, true));
   {
@@ -708,7 +748,7 @@
   // ---------- Schede ----------
   function mostraScheda(nome) {
     const nuova = $('#scheda-' + nome);
-    if (nuova && nuova.hidden) window.scrollTo(0, 0);   // la pagina scorre tutta insieme: una scheda nuova parte dall'alto
+    if (nuova && nuova.hidden) { window.scrollTo(0, 0); rianima(nuova, 'entra'); }   // la pagina scorre tutta insieme: una scheda nuova parte dall'alto
     for (const pulsante of document.querySelectorAll('.schede button')) {
       const attiva = pulsante.dataset.scheda === nome;
       pulsante.setAttribute('aria-selected', attiva);
