@@ -208,7 +208,7 @@
     { fase: 0, titolo: 'Prima di iniziare', tipo: 'benvenuto', icona: 'bussola' },
     { fase: 1, tipo: 'domanda', chiave: 'tipo_breve', titolo: 'Che prestito è?', icona: 'documento' },
     { fase: 1, tipo: 'domanda', chiave: 'importo_iniziale', icona: 'euro' },
-    { fase: 1, tipo: 'domanda', chiave: 'numero_rate', icona: 'calendario' },
+    { fase: 1, tipo: 'domanda', chiave: 'numero_rate', titolo: 'Quanto dura il prestito?', icona: 'calendario' },
     { fase: 1, tipo: 'domanda', chiave: 'maxirata', icona: 'auto', se: () => guida.tipoBreve === 'maxirata' },
     { fase: 1, tipo: 'domanda', chiave: 'data_addebito', icona: 'calendario',
       titolo: () => guida.modoData === 'ultima' ? 'Quando pagherai l\'ultima rata?' : 'Quando ti è stata addebitata la prima rata?' },
@@ -252,13 +252,14 @@
   // percorso: 'breve' o 'completo'; rate: importi scritti, per numero di rata; nonSo: domande lasciate al programma
   // (percorso completo); massimo: ultimo passo raggiunto; nuovo: si aggiunge un prestito accanto a quelli che ci sono già
   // (dalla scheda «Prestiti»). Per il percorso breve: tipoBreve (il tipo scelto, anche «mutuo, non so se fisso o
-  // variabile»), dataAddebito e modoData (la data della prima rata, o dell'ultima), ordineRate e rataCorrente (le rate
+  // variabile»), dataAddebito e modoData (la data della prima rata, o dell'ultima), durataIn (la durata scritta in anni
+  // o in rate), ordineRate e rataCorrente (le rate
   // una alla volta: dalle più recenti o dalla prima, e quella sullo schermo), noti (dati scritti dall'utente nel passo
   // «Ci penso io»), chiusi (dubbi risolti), nonSoDubbio e nonSoDato (dubbi e dati sostitutivi a cui ha risposto «Non lo
   // trovo»), saltate (risposte lasciate al programma), modoDomande (le rate quasi tornano e l'utente risponde a domande
   // sul contratto), analisi (l'ultima deduzione), serieScaricate (Euribor scaricati da internet nella guida, per
   // codice), conDettagli (spese e assicurazioni), daRiempire e riempi (le rate passate che il calcolo può riempire).
-  const STATO_BREVE = () => ({ tipoBreve: null, dataAddebito: null, modoData: 'prima', ordineRate: null, rataCorrente: 0, noti: {}, chiusi: new Set(), nonSoDubbio: new Set(), nonSoDato: new Set(),
+  const STATO_BREVE = () => ({ tipoBreve: null, dataAddebito: null, modoData: 'prima', durataIn: 'anni', ordineRate: null, rataCorrente: 0, noti: {}, chiusi: new Set(), nonSoDubbio: new Set(), nonSoDato: new Set(),
     saltate: new Set(), modoDomande: false, analisi: null, serieScaricate: {}, serieProvate: false, serieErrore: null, conDettagli: false, daRiempire: [], riempi: null });
   const guida = { percorso: 'breve', passo: 0, massimo: 0, bozza: {}, riapertura: false, nuovo: false, rate: {}, righeRate: 12, caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null, ...STATO_BREVE() };
   const passi = () => guida.percorso === 'breve' ? PASSI_BREVI : PASSI_COMPLETI;
@@ -621,7 +622,8 @@
   const CORTE = {
     tipo_breve: 'Se non sai se il tuo mutuo è a tasso fisso o variabile, scegli la terza voce: lo capisco io dalle rate.',
     importo_iniziale: 'È la somma che ti ha prestato la banca, non il prezzo della casa o dell\'auto: la trovi nella prima pagina del contratto.',
-    numero_rate: 'Tutte le rate previste dal contratto, anche quelle già pagate.',
+    numero_rate: 'Scrivila come la trovi nel contratto: in anni (le rate le conto io) oppure in rate. Conta tutta la durata, anche le rate già pagate.',
+    durata_maxirata: 'Se il contratto dice «36 mesi», scrivi 3 anni: sono 35 rate più la maxirata. Se dice «35 rate + maxirata», scegli «In rate» e scrivi 35.',
     maxirata: 'L\'ultima rata, molto più grande delle altre: è scritta nel contratto vicino al numero di rate.',
     data_addebito: 'La trovi nell\'estratto conto o nel contratto («prima rata il …»). Se ricordi solo il mese, va bene un giorno qualsiasi di quel mese.',
     data_ultima: 'È la scadenza del prestito: la trovi nel contratto o nell\'ultima riga del piano di ammortamento.',
@@ -664,6 +666,7 @@
       return crea('div', { className: 'scelte' }, voce(chiave, 'si', 'Sì, riempile tu', 'Nel piano vedrai subito tutte le rate. Quelle prese dal calcolo restano segnate con «=» finché non le controlli.', guida.riempi === true),
         voce(chiave, 'no', 'No, le scrivo io quando voglio', 'Nel piano le righe senza importo restano da controllare.', guida.riempi === false));
     }
+    if (chiave === 'numero_rate') return controlloDurata();
     const campo = CAMPI[chiave], valore = b[chiave];
     if (campo.tipo === 'scelta') return crea('div', { className: 'scelte' }, ...campo.opzioni.map(o => voce(chiave, String(o.valore), o.etichetta, o.aiuto, o.valore === valore)));
     // Le domande facoltative partono vuote: uno zero sembrerebbe già una risposta.
@@ -674,18 +677,48 @@
   function disegnaDomandaBreve(contenitore, passo) {
     const chiave = passo.chiave, ultima = chiave === 'data_addebito' && guida.modoData === 'ultima';
     const lunga = chiave === 'tipo_breve' ? DOMANDE.tipo_prestito : chiave === 'data_addebito' ? (ultima ? DATA_ULTIMA : DATA_PRIMA) : DOMANDE[chiave];
-    const corta = ultima ? CORTE.data_ultima : chiave === 'riempi' ? testoRiempi() : CORTE[chiave];
+    const corta = ultima ? CORTE.data_ultima : chiave === 'riempi' ? testoRiempi() : chiave === 'numero_rate' && maxiBreve() ? CORTE.durata_maxirata : CORTE[chiave];
     contenitore.replaceChildren(crea('div', { className: 'domanda domanda-sola', 'data-campo': chiave }, controlloBreve(chiave),
       ...(chiave === 'numero_rate' ? [crea('p', { className: 'nota', id: 'durata-anni', 'aria-live': 'polite' })] : []),
       ...(corta ? [crea('p', { className: 'spiegazione-corta' }, corta)] : []),
       ...(lunga && (lunga.cosa || lunga.dove) ? [crea('details', { className: 'piu-spiegazioni' }, crea('summary', {}, 'Altre spiegazioni'), spiegazione(lunga))] : [])));
     if (chiave === 'numero_rate') aggiornaDurata();
   }
-  // Sotto il numero di rate, la durata in anni.
+  // ---------- La durata: in anni (le rate le conta il programma) o in rate ----------
+  // Con la maxirata la durata in anni la comprende: 3 anni sono 35 rate normali più la maxirata.
+  const maxiBreve = () => guida.tipoBreve === 'maxirata';
+  const anniPronti = () => guida.tipoBreve === 'finanziamento' || maxiBreve() ? [2, 3, 4, 5, 7] : [10, 15, 20, 25, 30];
+  function controlloDurata() {
+    const n = guida.bozza.numero_rate, mesi = n > 0 ? n + (maxiBreve() ? 1 : 0) : null, inAnni = guida.durataIn !== 'rate';
+    const casella = (nome, valore, etichetta, unita) => crea('div', { className: 'con-unita' },
+      crea('input', { type: 'text', inputMode: 'decimal', name: nome, id: 'campo-' + nome, value: valore || '', placeholder: nome === 'durata_mesi' ? '0' : '', autocomplete: 'off', 'aria-label': etichetta }), crea('span', {}, unita));
+    return crea('div', { className: 'durata' },
+      crea('div', { className: 'segmenti', role: 'group', 'aria-label': 'Come conosci la durata' },
+        crea('button', { type: 'button', 'data-durata-in': 'anni', 'aria-pressed': String(inAnni) }, 'In anni'),
+        crea('button', { type: 'button', 'data-durata-in': 'rate', 'aria-pressed': String(!inAnni) }, 'In rate')),
+      ...(inAnni ? [crea('div', { className: 'campi-durata' }, casella('durata_anni', mesi ? Math.floor(mesi / 12) : '', 'Anni', 'anni'), casella('durata_mesi', mesi ? mesi % 12 : '', 'Mesi in più', 'mesi')),
+        crea('div', { className: 'anni-pronti' }, ...anniPronti().map(a => crea('button', { type: 'button', className: 'secondario piccolo', 'data-anni': a }, `${a} anni`)))]
+        : [casella('numero_rate', n > 0 ? n : '', 'Numero di rate', maxiBreve() ? 'rate + maxirata' : 'rate')]));
+  }
+  // Mesi in tutto (maxirata compresa) secondo quello che c'è scritto; null se non c'è un numero valido. Gli anni
+  // possono avere la virgola, se fanno mesi interi (2,5 anni sono 30 mesi).
+  function mesiDurata() {
+    const valore = nome => { const i = $(`#campi-passo [name="${nome}"]`); return i ? leggiNumero(i.value) : null; };
+    if (guida.durataIn === 'rate') { const n = valore('numero_rate'); return Number.isInteger(n) && n > 0 ? n + (maxiBreve() ? 1 : 0) : null; }
+    const anni = valore('durata_anni') ?? 0, mesi = valore('durata_mesi') ?? 0, tutti = Math.round(anni * 12) + mesi;
+    if (Number.isNaN(anni) || Number.isNaN(mesi) || Math.abs(anni * 12 - Math.round(anni * 12)) > 1e-9 || !Number.isInteger(mesi) || anni < 0 || mesi < 0 || mesi > 11 || tutti < 1) return null;
+    return tutti;
+  }
+  // Sotto la durata, il conto fatto: le rate se si è scritta in anni, gli anni se si è scritta in rate.
   function aggiornaDurata() {
-    const n = leggiNumero($('#campi-passo [name="numero_rate"]').value), anni = Math.floor(n / 12), mesi = n % 12;
-    const parti = [...(anni ? [anni === 1 ? '1 anno' : `${anni} anni`] : []), ...(mesi ? [mesi === 1 ? '1 mese' : `${mesi} mesi`] : [])];
-    $('#durata-anni').textContent = Number.isInteger(n) && n > 0 ? `${n} rate mensili: ${parti.join(' e ')}.` : '';
+    const riga = $('#durata-anni'), mesi = mesiDurata();
+    if (!riga) return;
+    if (mesi == null) { riga.textContent = ''; return; }
+    const normali = mesi - (maxiBreve() ? 1 : 0), anni = Math.floor(mesi / 12), resto = mesi % 12;
+    const inParole = [...(anni ? [anni === 1 ? '1 anno' : `${anni} anni`] : []), ...(resto ? [resto === 1 ? '1 mese' : `${resto} mesi`] : [])].join(' e ');
+    riga.textContent = guida.durataIn !== 'rate'
+      ? (maxiBreve() ? `= ${normali} rate mensili più la maxirata finale.` : `= ${quanteRate(mesi)} mensili.`)
+      : (maxiBreve() ? `${quanteRate(normali)} più la maxirata: ${inParole} in tutto.` : `${quanteRate(mesi)} mensili: ${inParole}.`);
   }
   function raccogliDomandaBreve(passo, severo) {
     const chiave = passo.chiave, scelto = ($(`#campi-passo input[name="${chiave}"]:checked`) || {}).value;
@@ -709,12 +742,18 @@
     }
     if (chiave === 'dettagli') { guida.conDettagli = scelto === 'si'; return true; }
     if (chiave === 'riempi') { if (!scelto) return !severo || mostraErrore('Scegli una risposta.'); guida.riempi = scelto === 'si'; return true; }
+    if (chiave === 'numero_rate') {
+      const mesi = mesiDurata();
+      if (mesi != null) guida.bozza.numero_rate = mesi - (maxiBreve() ? 1 : 0);
+      if (!severo) return true;
+      if (mesi == null) return mostraErrore(guida.durataIn === 'rate' ? 'Scrivi il numero di rate, ad esempio 240.' : 'Scrivi gli anni, ad esempio 25 (e, se servono, i mesi in più, da 0 a 11).');
+      return guida.bozza.numero_rate >= 1 && guida.bozza.numero_rate <= 600 || mostraErrore('La durata va da un mese a 50 anni.');
+    }
     const letti = leggiDomande([chiave], severo);
     if (letti.errore) return mostraErrore(letti.errore);
     const b = Object.assign(guida.bozza, letti.valori);
     if (!severo) return true;
     if (chiave === 'importo_iniziale' && !(b.importo_iniziale > 0)) return mostraErrore('Scrivi la somma prestata, ad esempio 150.000.');
-    if (chiave === 'numero_rate' && (!Number.isInteger(b.numero_rate) || b.numero_rate < 1 || b.numero_rate > 600)) return mostraErrore('Il numero di rate deve essere un numero intero, ad esempio 240.');
     if (chiave === 'maxirata' && !(b.maxirata < b.importo_iniziale)) return mostraErrore('La maxirata deve essere più bassa dell\'importo prestato.');
     return true;
   }
@@ -1218,7 +1257,7 @@
     benvenuto: 'Ciao! Sono qui per aiutarti a controllare il tuo prestito: tu mi dai pochi numeri, io faccio i conti.',
     tipo_breve: 'Partiamo da una cosa facile. Se hai un dubbio, scegli pure «non so»: ci penso io.',
     importo_iniziale: 'Perfetto. Adesso un numero che trovi nella prima pagina del contratto.',
-    numero_rate: 'Se sai solo gli anni, moltiplica per dodici: 25 anni sono 300 rate.',
+    numero_rate: 'Dimmi la durata come la sai, in anni o in rate: il conto lo faccio io.',
     maxirata: 'Un finanziamento con la maxirata: dimmi quanto vale l\'ultima rata, quella grande.',
     data_addebito: 'Ultima domanda sul prestito: una data. Va bene anche approssimativa.',
     ordine_rate: 'Ora la parte più importante: le rate che hai già pagato. Da quelle capisco tutto il resto.',
@@ -1469,7 +1508,7 @@
   $('#campi-passo').addEventListener('input', evento => {
     // Scrivendo il nome di un altro indice si seleziona da sola la voce "Un altro indice".
     if (evento.target.name === 'indice_nome_altro') { $('#campi-passo input[name="indice_nome"][value="altro"]').checked = true; return passoAttuale().tipo ? null : aggiornaDomande(); }
-    if (evento.target.name === 'numero_rate' && passoAttuale().tipo === 'domanda') return aggiornaDurata();
+    if (['numero_rate', 'durata_anni', 'durata_mesi'].includes(evento.target.name) && passoAttuale().tipo === 'domanda') return aggiornaDurata();
     // Scrivendo un valore diverso nella risposta a un dubbio si seleziona da sola la voce "Un altro valore".
     if (evento.target.name === 'risposta_altro') { $('#campi-passo input[name="risposta"][value="altro"]').checked = true; return; }
     if (evento.target.name !== 'quota_prima_rata') return;
@@ -1502,6 +1541,21 @@
     const togli = evento.target.closest('[data-togli-rata]');
     if (togli) { const voceRata = guida.rate[togli.dataset.togliRata] || {}; voceRata.rata = ''; voceRata.quota = ''; avviaAnalisi(); }
     if (evento.target.id === 'usa-probabile') usaProbabile(guida.situazione);
+    // La durata: in anni o in rate (il numero già scritto passa da una forma all'altra), e le durate pronte.
+    const durataIn = evento.target.closest('[data-durata-in]');
+    if (durataIn) {
+      raccogliDomandaBreve(passoAttuale(), false);
+      guida.durataIn = durataIn.dataset.durataIn;
+      disegnaDomandaBreve($('#campi-passo'), passoAttuale());
+      $('#campi-passo input[type="text"]').focus();
+    }
+    const anniPronto = evento.target.closest('[data-anni]');
+    if (anniPronto) {
+      $('#campi-passo [name="durata_anni"]').value = anniPronto.dataset.anni;
+      $('#campi-passo [name="durata_mesi"]').value = '';
+      $('#errore-passo').hidden = true;
+      aggiornaDurata();
+    }
     if (evento.target.id === 'avanti-lo-stesso') { guida.analisi.accettata = true; concludiAnalisi(situazione()); guida.passo = passoDopo(guida.passo); disegnaPasso(); }
     // «Nel contratto c'è scritto altro?»: i valori scritti diventano sicuri e la deduzione riparte.
     if (evento.target.id === 'ricalcola-analisi') {

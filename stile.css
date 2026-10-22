@@ -1752,6 +1752,19 @@ button[aria-busy="true"]::after {
 .piu-spiegazioni .con-unita { margin-top: var(--s2); }
 .domanda-sola .campi { margin-bottom: var(--s3); }
 
+/* La durata: in anni o in rate, con le durate pronte */
+.durata .segmenti { display: inline-flex; margin-bottom: var(--s3); }
+.campi-durata { display: flex; flex-wrap: wrap; gap: var(--s3); }
+.campi-durata .con-unita { max-width: 190px; }
+.campi-durata .con-unita span { min-width: 3em; }
+.anni-pronti { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s3); }
+.durata + #durata-anni { margin-top: var(--s3); font-size: 16px; font-weight: 650; color: var(--inchiostro); }
+@media (max-width: 760px) {
+  .campi-durata { flex-wrap: nowrap; }
+  .campi-durata .con-unita { flex: 1 1 0; min-width: 0; }
+  .campi-durata .con-unita span { min-width: 0; }
+}
+
 /* Le rate una alla volta: la data per esteso, i pulsanti, quelle già scritte */
 .rata-sola .data-rata { display: inline-block; margin: 0 0 var(--s4); padding: 10px 14px; background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); font-size: 16px; }
 .azioni-rata { margin-top: var(--s4); }
