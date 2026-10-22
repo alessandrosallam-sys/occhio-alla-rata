@@ -1253,6 +1253,7 @@
   // quanto il programma è sicuro, e il «robottino» racconta, una riga alla volta, che cosa sta provando.
   const assistenteGuida = Assistente.nuovo('nella-guida');
   $('#titolo-passo').before(assistenteGuida);
+  Assistente.segui(assistenteGuida, $('#configurazione'));
   const FRASI_GUIDA = {
     benvenuto: 'Ciao! Sono qui per aiutarti a controllare il tuo prestito: tu mi dai pochi numeri, io faccio i conti.',
     tipo_breve: 'Partiamo da una cosa facile. Se hai un dubbio, scegli pure «non so»: ci penso io.',

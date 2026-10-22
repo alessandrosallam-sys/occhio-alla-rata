@@ -1838,6 +1838,25 @@ button[aria-busy="true"]::after {
 .nel-programma.richiuso .parole { display: none; }
 .nel-programma.richiuso .avatar { width: 38px; height: 38px; cursor: pointer; }
 .nel-programma.richiuso .avatar:focus-visible { outline: 2px solid var(--fuoco); outline-offset: 2px; border-radius: 12px; }
+/* Quando la pagina scorre oltre, l'assistente la segue nell'angolo in basso a destra: la testa sempre, il fumetto
+   quando ha qualcosa da dire («zitto»: solo la testa). Il margine in basso lo calcola assistente.js (barre fisse). */
+.assistente.segue {
+  position: fixed; z-index: 35; right: var(--s4); bottom: calc(var(--sotto-assistente, 0px) + var(--s4));
+  flex-direction: row-reverse; align-items: flex-end; max-width: min(420px, calc(100vw - 2 * var(--s4)));
+  margin: 0 !important; padding: 0 !important; pointer-events: none;   /* i clic passano sotto, tranne su testa e fumetto */
+}
+.assistente.segue > * { pointer-events: auto; }
+.assistente.segue .avatar, .nel-programma.segue .avatar {
+  width: 58px; height: 58px; padding: 6px; border-radius: 50%; cursor: pointer;
+  background: var(--superficie); border: 1px solid var(--linea); box-shadow: var(--ombra-alta);
+}
+.assistente.segue .parole {
+  flex: 0 1 auto; max-height: 45vh; overflow-y: auto; border-radius: 16px 16px 4px 16px;
+  background: color-mix(in srgb, var(--accento) 9%, var(--superficie)); box-shadow: var(--ombra-alta);
+}
+.assistente.segue.zitto .parole { display: none; }
+.assistente.spiega .parole { border-color: var(--accento); }
+.posto-assistente { min-width: 0; }
 @media (min-width: 1100px) {
   body:has(.schede:not([hidden])) .assistente.nel-programma { padding: 0 var(--s6); margin-top: var(--s5); }
 }
@@ -1848,6 +1867,8 @@ button[aria-busy="true"]::after {
   .parole { font-size: 14px; }
   .assistente.nel-programma { padding: 0 var(--s4); margin-top: var(--s3); }
   .nel-programma .avatar { width: 38px; height: 38px; }
+  .assistente.segue { left: var(--s3); right: var(--s3); max-width: none; bottom: calc(var(--sotto-assistente, 0px) + var(--s2)); }
+  .assistente.segue .avatar, .nel-programma.segue .avatar { width: 50px; height: 50px; padding: 5px; }
 }
 
 @keyframes palpebre { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
@@ -1859,7 +1880,9 @@ button[aria-busy="true"]::after {
 @keyframes parole { from { opacity: 0; transform: translateY(4px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes strisce { to { background-position: 20px 0, 0 0; } }
 @keyframes riga-robot { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes segue-entra { from { opacity: 0; transform: translateY(18px) scale(0.85); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: no-preference) {
+  .assistente.segue { animation: segue-entra 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   .robot .occhi ellipse { transform-box: fill-box; transform-origin: center; animation: palpebre 5s infinite; }
   .robot .corpo { animation: galleggia 3.4s ease-in-out infinite; }
   .assistente.felice .corpo { animation: saltello 0.6s ease-out, galleggia 3.4s ease-in-out 0.6s infinite; }

@@ -4,6 +4,9 @@
 // Umori: 'parla' (il testo si scrive e la bocca si muove), 'pensa' (occhi in alto e nuvoletta: sta calcolando),
 // 'felice' (occhi a mezzaluna e un saltello), 'dubbio' (testa inclinata).
 // Con «riduci movimento» nelle impostazioni del sistema resta fermo e il testo compare tutto insieme.
+// Se la pagina scorre oltre, l'assistente la segue nell'angolo in basso: resta la testa, e il fumetto compare quando
+// ha qualcosa da dire. Passando con il mouse (o arrivando con la tastiera) su una cosa importante, la spiega
+// (i testi sono in spiegazioni.js); poco dopo torna al suo messaggio.
 (function () {
   'use strict';
   const M = window.Mutuo, { $, crea, euro, meseAnno } = M;
@@ -28,26 +31,160 @@
     el.innerHTML = `<div class="avatar">${DISEGNO}</div><div class="parole"><p class="scritto" aria-hidden="true"></p><span class="solo-lettori" aria-live="polite"></span></div>`;
     return el;
   }
-  // Fa dire un testo all'assistente, lettera per lettera (lo stesso testo di prima non si riscrive: cambia solo l'umore).
-  function dici(el, testo, umore = 'parla') {
+  // Scrive un testo nel fumetto, lettera per lettera (tutto insieme con «subito» o con «riduci movimento»).
+  // Lo stesso testo di prima non si riscrive (cambia solo l'umore): allora restituisce false.
+  function scrivi(el, testo, umore, { veloce = false, subito = false } = {}) {
     for (const u of UMORI) el.classList.toggle(u, u === umore);
-    if (el.dataset.testo === testo) return;
+    if (el.dataset.testo === testo) return false;
     el.dataset.testo = testo;
     $('.solo-lettori', el).textContent = testo;
     const scritto = $('.scritto', el);
     clearInterval(el._scrittura);
-    if (fermo()) { scritto.textContent = testo; el.classList.remove('scrive'); return; }
+    if (subito || fermo()) { scritto.textContent = testo; el.classList.remove('scrive'); return true; }
     M.rianima($('.parole', el), 'appena-detto');
     scritto.textContent = '';
     el.classList.add('scrive');
     let i = 0;
     el._scrittura = setInterval(() => {
-      i = Math.min(testo.length, i + 2);
+      i = Math.min(testo.length, i + (veloce ? 4 : 2));
       scritto.textContent = testo.slice(0, i);
       if (i >= testo.length) { clearInterval(el._scrittura); el.classList.remove('scrive'); }
     }, 22);
+    return true;
   }
-  window.Assistente = { nuovo, dici };
+  // Il messaggio dell'assistente per la pagina: quello a cui torna dopo aver spiegato una cosa.
+  function dici(el, testo, umore = 'parla') {
+    const prima = el._detto;
+    el._detto = [testo, umore];
+    if (el._spiega) {
+      if (prima && prima[0] === testo) return;   // sta spiegando e il messaggio non è cambiato: lo dirà dopo
+      smettiDiSpiegare(el);
+    }
+    if (scrivi(el, testo, umore)) mostraParole(el);
+  }
+  // Una spiegazione al passaggio del mouse: resta finché si è sopra, poi (torna) l'assistente riprende il suo messaggio.
+  function spiega(el, testo) {
+    clearTimeout(el._torna);
+    el._torna = null;
+    el._spiega = true;
+    el.classList.add('spiega');
+    if (scrivi(el, testo, 'parla', { veloce: true }) || el.classList.contains('zitto')) mostraParole(el);
+  }
+  function smettiDiSpiegare(el) {
+    clearTimeout(el._torna);
+    el._torna = null;
+    el._spiega = false;
+    el._spiegato = null;
+    el.classList.remove('spiega');
+  }
+  function torna(el, attesa = 2500) {
+    if (!el._spiega || el._torna) return;
+    el._torna = setTimeout(() => {
+      smettiDiSpiegare(el);
+      const [testo, umore] = el._detto || ['', 'parla'];
+      // Mentre segue la pagina, finita la spiegazione resta solo la testa: il messaggio è già stato detto.
+      if (el.classList.contains('segue')) { el.classList.add('zitto'); scrivi(el, testo, umore, { subito: true }); }
+      else scrivi(el, testo, umore);
+    }, attesa);
+  }
+
+  // ---------- Segue la pagina ----------
+  // Ogni assistente sta in un segnaposto: quando il segnaposto esce dallo schermo in alto (sotto la testata),
+  // l'assistente passa nell'angolo in basso (classe «segue») e il segnaposto tiene il suo spazio, così la pagina
+  // non salta. Seguendo, il fumetto compare solo quando c'è qualcosa da dire e si richiude da solo («zitto»);
+  // un clic sulla testa lo riapre o lo richiude.
+  const seguiti = [];
+  function segui(el, zona = null) {
+    const posto = crea('div', { className: 'posto-assistente' });
+    el.before(posto);
+    posto.append(el);
+    el._zona = zona;   // le spiegazioni dentro questa zona le dà lui (null: tutte le altre)
+    seguiti.push(el);
+    new IntersectionObserver(([voce]) => {
+      const r = voce.boundingClientRect, cima = voce.rootBounds ? voce.rootBounds.top : 0;
+      el._sopra = r.height > 0 && !voce.isIntersecting && r.bottom <= cima + 1;
+      aggiornaSegue(el);
+    }, { rootMargin: '-64px 0px 0px 0px' }).observe(posto);
+    $('.avatar', el).addEventListener('click', () => {
+      if (!el.classList.contains('segue')) return;
+      if (el.classList.contains('zitto')) mostraParole(el); else taci(el, true);
+    });
+    el.addEventListener('mouseleave', () => {
+      if (!el.classList.contains('segue') || el.classList.contains('zitto')) return;
+      clearTimeout(el._zitto);
+      el._zitto = setTimeout(() => taci(el), 2500);
+    });
+  }
+  function aggiornaSegue(el) {
+    const segue = !!el._sopra && !el.classList.contains('richiuso');
+    if (segue === el.classList.contains('segue')) return;
+    const posto = el.parentElement;
+    clearTimeout(el._zitto);
+    if (segue) {
+      posto.style.height = posto.offsetHeight + 'px';
+      el.classList.add('segue', 'zitto');
+      spazioSotto();
+    } else {
+      posto.style.height = '';
+      el.classList.remove('segue', 'zitto');
+    }
+  }
+  // Seguendo, il fumetto resta aperto il tempo di leggerlo (più a lungo se il testo è lungo, e finché c'è sopra il mouse).
+  function mostraParole(el) {
+    el.classList.remove('zitto');
+    clearTimeout(el._zitto);
+    if (el.classList.contains('segue')) el._zitto = setTimeout(() => taci(el), Math.max(7000, (el.dataset.testo || '').length * 65));
+  }
+  function taci(el, subito = false) {
+    clearTimeout(el._zitto);
+    if (!subito && (el.matches(':hover') || el._spiega)) { el._zitto = setTimeout(() => taci(el), 2000); return; }
+    if (el._spiega) torna(el, 0);
+    el.classList.add('zitto');
+  }
+  // Sui telefoni in basso c'è la barra delle schede (nella guida, quella dei pulsanti): l'assistente le resta sopra.
+  function spazioSotto() {
+    let sotto = 0;
+    for (const barra of document.querySelectorAll('.schede, .azioni-guida')) {
+      const r = barra.getBoundingClientRect(), posizione = getComputedStyle(barra).position;
+      if (r.height && (posizione === 'fixed' || posizione === 'sticky') && r.bottom >= innerHeight - 2 && r.top < innerHeight) sotto = Math.max(sotto, innerHeight - r.top);
+    }
+    document.documentElement.style.setProperty('--sotto-assistente', Math.round(sotto) + 'px');
+  }
+  let rinfresco = 0;
+  const allaFine = () => {
+    if (rinfresco || !seguiti.some(el => el.classList.contains('segue'))) return;
+    rinfresco = requestAnimationFrame(() => { rinfresco = 0; spazioSotto(); });
+  };
+  addEventListener('scroll', allaFine, { passive: true });
+  addEventListener('resize', allaFine);
+
+  // ---------- Spiega le cose al passaggio del mouse ----------
+  // Si aspetta un attimo (chi muove il mouse di passaggio non fa parlare l'assistente); con la tastiera (Tab) la
+  // spiegazione arriva subito. Sopra l'assistente stesso il fumetto resta com'è, così si può leggere con calma.
+  const assistentePer = bersaglio => seguiti.find(el => el._zona && el._zona.contains(bersaglio)) || seguiti.find(el => !el._zona);
+  const puoParlare = el => el.getClientRects().length > 0 && !el.classList.contains('richiuso');
+  function guarda(bersaglio) {
+    if (!(bersaglio instanceof Element) || !window.Spiegazioni) return;
+    if (bersaglio.closest('.assistente')) { for (const el of seguiti) { clearTimeout(el._torna); el._torna = null; } return; }
+    const trovato = bersaglio.closest('[role="dialog"], dialog') ? null : Spiegazioni.trova(bersaglio);
+    const chi = trovato && assistentePer(bersaglio);
+    for (const el of seguiti) if (el !== chi) torna(el);
+    if (!chi) return;
+    if (!puoParlare(chi)) return;
+    if (chi._spiega && chi._spiegato === trovato.el && chi.dataset.testo === trovato.testo) { clearTimeout(chi._torna); chi._torna = null; return; }
+    spiega(chi, trovato.testo);
+    chi._spiegato = trovato.el;
+  }
+  let attesa = 0, daTastiera = false;
+  document.addEventListener('mouseover', evento => {
+    clearTimeout(attesa);
+    attesa = setTimeout(() => guarda(evento.target), 350);
+  });
+  document.addEventListener('keydown', evento => { if (evento.key === 'Tab') daTastiera = true; }, true);
+  document.addEventListener('pointerdown', () => { daTastiera = false; }, true);
+  document.addEventListener('focusin', evento => { if (daTastiera) guarda(evento.target); });
+
+  window.Assistente = { nuovo, dici, spiega, segui };
 
   // ---------- In cima alle schede del programma ----------
   const nelProgramma = nuovo('nel-programma');
@@ -56,14 +193,18 @@
   $('.avatar', nelProgramma).setAttribute('role', 'button');
   $('.avatar', nelProgramma).tabIndex = 0;
   $('#principale').prepend(nelProgramma);
+  segui(nelProgramma);
   const chiuso = () => M.ricordo.leggi('assistente') === 'chiuso';
   function richiudi(si) {
     M.ricordo.scrivi('assistente', si ? 'chiuso' : 'aperto');
     nelProgramma.classList.toggle('richiuso', si);
     $('.avatar', nelProgramma).title = si ? 'Apri l\'assistente' : '';
-    if (!si) consiglia();
+    smettiDiSpiegare(nelProgramma);
+    aggiornaSegue(nelProgramma);
+    if (!si) { delete nelProgramma.dataset.testo; consiglia(); }
   }
-  chiudi.addEventListener('click', () => richiudi(true));
+  // Mentre segue la pagina la × chiude solo il fumetto; in cima alla pagina richiude l'assistente.
+  chiudi.addEventListener('click', () => { if (nelProgramma.classList.contains('segue')) taci(nelProgramma, true); else richiudi(true); });
   $('.avatar', nelProgramma).addEventListener('click', () => { if (chiuso()) richiudi(false); });
   $('.avatar', nelProgramma).addEventListener('keydown', evento => { if ((evento.key === 'Enter' || evento.key === ' ') && chiuso()) { evento.preventDefault(); richiudi(false); } });
 
@@ -91,6 +232,7 @@
     const nome = schedaAperta();
     nelProgramma.hidden = !nome || $('#principale').hidden;
     nelProgramma.classList.toggle('richiuso', chiuso());
+    aggiornaSegue(nelProgramma);
     if (!nome || chiuso()) return;
     const [testo, umore] = consiglioPer(nome);
     dici(nelProgramma, testo, umore);
