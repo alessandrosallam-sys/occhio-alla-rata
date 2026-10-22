@@ -170,7 +170,7 @@
   const M = window.Mutuo = {
     stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI, rianima, contaFino, movimento,
     data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice, variabile,
-    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], ricordo,
+    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], alCambioScheda: [], ricordo,
   };
 
   // ---------- Riepilogo in testata ----------
@@ -482,13 +482,14 @@
   const quanteRate = n => n === 1 ? '1 rata' : `${n} rate`;
   const intervallo = righe => righe.length === 1 ? meseAnno(righe[0].inizio) : `da ${meseAnno(righe[0].inizio)} a ${meseAnno(righe[righe.length - 1].inizio)}`;
 
-  async function compilaRate() {
+  // "chiedi": falso quando l'utente ha già risposto di sì nella configurazione guidata.
+  async function compilaRate(chiedi = true) {
     const righe = rateDaCompilare();
-    if (!righe.length) return avvisa('Non ci sono rate passate da compilare');
+    if (!righe.length) return chiedi ? avvisa('Non ci sono rate passate da compilare') : undefined;
     const controllate = stato.piano.righe.filter(r => r.rataVera != null && !r.rataCopiata), diverse = controllate.filter(r => !rataUguale(r)).length;
     const avvertenza = diverse ? `ATTENZIONE: ${quanteRate(diverse)} che hai scritto tu non coincid${diverse === 1 ? 'e' : 'ono'} con il calcolo. Forse le regole non sono ancora giuste: conviene sistemarle prima.\n\n`
       : !controllate.length ? 'ATTENZIONE: non hai ancora scritto nessuna rata vera, quindi non c\'è modo di sapere se il calcolo è giusto. Conviene controllarne prima almeno due o tre.\n\n' : '';
-    if (!confirm(`${avvertenza}Segno come pagat${righe.length === 1 ? 'a' : 'e'} ${quanteRate(righe.length)} (${intervallo(righe)}) con la cifra calcolata dal programma?\n\n`
+    if (chiedi && !confirm(`${avvertenza}Segno come pagat${righe.length === 1 ? 'a' : 'e'} ${quanteRate(righe.length)} (${intervallo(righe)}) con la cifra calcolata dal programma?\n\n`
       + 'Resteranno riconoscibili dal segno «=» perché non sono state controllate sull\'estratto conto. Potrai correggerle una per una, oppure toglierle tutte dal pannello di controllo.')) return;
     await esegui('POST', 'rate', { righe: righe.map(r => ({ n: r.n, rata_copiata: Number(r.rataCalcolata.toFixed(2)) })) },
       `${quanteRate(righe.length)} compilat${righe.length === 1 ? 'a' : 'e'} dal calcolo`);
@@ -511,8 +512,9 @@
     $('#togli-copiate').hidden = $('#legenda-copiata').hidden = !copiate.length;
     $('#togli-copiate').textContent = `Togli ${quanteRate(copiate.length)} pres${copiate.length === 1 ? 'a' : 'e'} dal calcolo`;
   }
-  $('#compila-rate').addEventListener('click', compilaRate);
-  $('#compila-rate-pannello').addEventListener('click', compilaRate);
+  $('#compila-rate').addEventListener('click', () => compilaRate());
+  $('#compila-rate-pannello').addEventListener('click', () => compilaRate());
+  M.compilaRate = compilaRate;
   $('#togli-copiate').addEventListener('click', togliCopiate);
   $('#vai-oggi').addEventListener('click', () => vaiAlMeseCorrente(true));
   // Clic su uno stato della legenda (o su «Vai all'ultima» nel riquadro in testa): porta all'ultima riga con quello stato.
@@ -760,6 +762,7 @@
     if (M.allApertura[nome]) M.allApertura[nome]();
     if (nome === 'piano' && !stato.schedaVista.piano) vaiAlMeseCorrente();
     stato.schedaVista[nome] = true;
+    for (const f of M.alCambioScheda) f(nome);
   }
   // ---------- Avvio ----------
   // Senza una configurazione parte la guida (configura.js); altrimenti si mostra il programma.

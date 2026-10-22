@@ -314,13 +314,20 @@
     };
     // Una combinazione stimata: si ricorda se è la più vicina finora e, se l'errore è abbastanza piccolo da poter
     // tornare, si contano le rate giuste con i numeri arrotondati. "theta" è lo spread (variabile) o il TAN (fisso).
+    // Quando le rate non separano theta dalle spese, una quota capitale scritta lo fa: la quota dipende da theta e non
+    // dalle spese. Allora si provano anche gli spread (o i TAN) più bassi, fino a 25 centesimi di punto, ciascuno con le
+    // sue spese, e decidono le quote.
+    const conQuote = scritte.length > 0 && noti.spese_rata == null;
     const registra = (t, prova, thetaNoto, contaCon, tpDi) => {
       if (prova.errore < migliore.errore) Object.assign(migliore, t, { errore: prova.errore, theta: prova.theta, spese: prova.spese, tp: prova.tp || 0 });
       if (prova.errore > 2) return;
-      for (const theta of thetaNoto != null ? [thetaNoto] : arrotondati(prova.theta)) {
+      const allargati = !prova.separate && conQuote && thetaNoto == null;
+      const candidati = thetaNoto != null ? [thetaNoto] : allargati
+        ? Array.from({ length: 27 }, (_, i) => pulito(Math.round(prova.theta * 1e4) / 1e4 + (1 - i) * 1e-4)) : arrotondati(prova.theta);
+      for (const theta of candidati) {
         for (const tp of tpDi ? tpDi(theta, prova) : [0]) {
-          const esito = contaCon(theta, tp, prova.separate ? noti.spese_rata : (noti.spese_rata ?? 0));
-          if (esito.rate + esito.quote > 0) trovati.push({ ...t, theta, tp, ...esito, separate: prova.separate });
+          const esito = contaCon(theta, tp, prova.separate || allargati ? noti.spese_rata : (noti.spese_rata ?? 0));
+          if (esito.rate + esito.quote > 0) trovati.push({ ...t, theta, tp, ...esito, separate: prova.separate || (allargati && esito.quote === scritte.length) });
         }
       }
     };
@@ -349,7 +356,8 @@
             }
           }
         }
-        yield { fatto: ++fatto, totale };
+        // L'avanzamento dice anche che cosa si è appena provato (la pagina lo racconta mentre aspetta).
+        yield { fatto: ++fatto, totale, tipo, data };
       }
 
       // --- Tasso variabile: indice + spread ---
@@ -414,7 +422,7 @@
             }
           }
         });
-        yield { fatto: ++fatto, totale };
+        yield { fatto: ++fatto, totale, tipo: 'variabile', data, regola, serie: serie.length };
       }
     }
     return risultato(ingresso, trovati, migliore, vere, scritte, fino);
@@ -542,7 +550,7 @@
     return differenze.sort((a, b) => DATI_CHIAVE.indexOf(a.chiave) - DATI_CHIAVE.indexOf(b.chiave));
   }
 
-  // Per la pagina: lo stesso calcolo a pezzi, così la pagina resta viva e può mostrare l'avanzamento.
+  // Per la pagina: lo stesso calcolo a pezzi, così la pagina resta viva e può mostrare l'avanzamento (ogni passo).
   function aPezzi(ingresso, avanzamento) {
     return new Promise((risolvi, rifiuta) => {
       const passi = analizza(ingresso);
@@ -550,8 +558,11 @@
         try {
           const fine = Date.now() + 40;
           let passo;
-          do { passo = passi.next(); if (passo.done) return risolvi(passo.value); } while (Date.now() < fine);
-          if (avanzamento) avanzamento(passo.value);
+          do {
+            passo = passi.next();
+            if (passo.done) return risolvi(passo.value);
+            if (avanzamento) avanzamento(passo.value);
+          } while (Date.now() < fine);
           setTimeout(avanti, 0);
         } catch (errore) { rifiuta(errore); }
       };

@@ -1731,3 +1731,131 @@ button[aria-busy="true"]::after {
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
   .menu-temi:not([hidden]) { animation: menu-sale 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 }
+
+/* ---------- 11. Percorso breve: una domanda per pagina, le rate una alla volta, l'assistente ---------- */
+
+/* Una domanda per pagina: casella grande, spiegazione corta sotto, quella lunga a richiesta */
+.una-domanda #titolo-passo { font-size: 26px; }
+.domanda-sola { margin-bottom: 0; }
+.domanda-sola > input[type="text"], .domanda-sola > div > input[type="date"], .con-unita input { min-height: 52px; font-size: 20px; padding: 0 var(--s3); }
+.domanda-sola > input[type="text"] { width: 100%; max-width: 360px; }
+.domanda-sola > div > input[type="date"] { width: 100%; max-width: 280px; }
+.domanda-sola .spunta { margin-top: var(--s3); }
+.con-unita { display: flex; align-items: center; gap: 10px; max-width: 360px; }
+.con-unita input { flex: 1; min-width: 0; text-align: right; }
+.con-unita span { font-size: 18px; font-weight: 600; color: var(--inchiostro-2); min-width: 1.2em; }
+.titolo-domanda.grande { font-size: 18px; }
+.spiegazione-corta { margin: var(--s3) 0 0; max-width: 62ch; font-size: 14.5px; line-height: 1.5; color: var(--inchiostro-2); }
+.piu-spiegazioni { margin-top: var(--s3); }
+.piu-spiegazioni > summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--accento); }
+.piu-spiegazioni[open] > summary { margin-bottom: var(--s2); }
+.piu-spiegazioni .con-unita { margin-top: var(--s2); }
+.domanda-sola .campi { margin-bottom: var(--s3); }
+
+/* Le rate una alla volta: la data per esteso, i pulsanti, quelle già scritte */
+.rata-sola .data-rata { display: inline-block; margin: 0 0 var(--s4); padding: 10px 14px; background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); font-size: 16px; }
+.azioni-rata { margin-top: var(--s4); }
+.rate-scritte { margin-top: var(--s4); }
+.rate-scritte > .nota { margin: 0; }
+.chip-rate { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s2); }
+.chip-rate button.attuale { border-color: var(--accento); background: var(--accento-tenue); }
+
+/* Mentre si scrivono le rate: quanto il programma è sicuro, e il robottino che racconta i conti */
+.calcolo-rate { margin-top: var(--s4); padding: var(--s3) var(--s4); background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); }
+.testa-calcolo { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: 6px; font-size: 14px; color: var(--inchiostro-2); }
+.testa-calcolo .percento { font-size: 16px; color: var(--inchiostro); font-variant-numeric: tabular-nums; }
+.barra-sicurezza { height: 10px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--accento) 14%, var(--superficie)); }
+.barra-sicurezza > span {
+  display: block; width: 0; height: 100%; border-radius: inherit;
+  background-image: linear-gradient(90deg, var(--accento), color-mix(in srgb, var(--accento) 45%, var(--ok-testo)));
+  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.al-lavoro .barra-sicurezza > span {
+  min-width: 18px;
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.28) 0 7px, transparent 7px 14px), linear-gradient(90deg, var(--accento), color-mix(in srgb, var(--accento) 45%, var(--ok-testo)));
+  background-size: 20px 20px, 100% 100%;
+}
+.righe-robot { min-height: 4.8em; margin: var(--s3) 0 0; padding: 0; list-style: none; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12.5px; line-height: 1.25; color: var(--inchiostro-2); }
+.righe-robot li { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.righe-robot li::before { content: "› "; color: var(--accento); }
+.righe-robot li:not(:last-child) { opacity: 0.55; }
+.righe-robot li.fatto { color: var(--ok-testo); font-weight: 650; }
+.righe-robot li.quasi { color: var(--avviso-testo); font-weight: 650; }
+.righe-robot li.fatto::before, .righe-robot li.quasi::before { content: ""; }
+
+/* L'assistente: un robottino con le sue parole, nella guida sopra il titolo e in cima alle schede */
+.assistente { display: flex; align-items: flex-start; gap: 12px; margin: var(--s1) 0 var(--s4); }
+.assistente[hidden] { display: none; }
+.assistente .avatar { flex: none; width: 58px; height: 58px; }
+.assistente .robot { display: block; width: 100%; height: 100%; overflow: visible; }
+.parole {
+  position: relative; flex: 1; min-width: 0; min-height: 44px; padding: 10px 14px;
+  background: var(--accento-tenue); border: 1px solid color-mix(in srgb, var(--accento) 28%, transparent);
+  border-radius: 4px 16px 16px 16px; color: var(--inchiostro); font-size: 14.5px; line-height: 1.45;
+}
+.parole .scritto { margin: 0; }
+.robot .testa { fill: var(--accento); }
+.robot .viso { fill: var(--superficie); }
+.robot .orecchio { fill: color-mix(in srgb, var(--accento) 70%, #000000); }
+.robot .antenna { stroke: var(--accento); stroke-width: 2.5; stroke-linecap: round; }
+.robot .antenna-luce { fill: #f5b301; }
+.robot .occhi ellipse { fill: var(--inchiostro); }
+.robot .occhi-felici, .robot .bocca { fill: none; stroke: var(--inchiostro); stroke-width: 2.2; stroke-linecap: round; }
+.robot .occhi-felici, .robot .bocca-aperta { display: none; }
+.robot .bocca-aperta { fill: var(--inchiostro); }
+.robot .guancia { fill: #f28b8b; opacity: 0.5; }
+.robot .nuvoletta circle { fill: var(--tenue); opacity: 0; }
+.robot .occhi, .robot .corpo { transition: transform 0.3s ease; }
+.assistente.felice .occhi { display: none; }
+.assistente.felice .occhi-felici { display: inline; }
+.assistente.pensa .occhi { transform: translate(1.5px, -2.5px); }
+.assistente.pensa .nuvoletta circle { opacity: 0.85; }
+.assistente.dubbio .corpo { transform: rotate(-7deg); transform-origin: 32px 44px; }
+.assistente.scrive .bocca { display: none; }
+.assistente.scrive .bocca-aperta { display: inline; }
+/* In cima alle schede: più piccolo, si richiude lasciando solo la testa */
+.assistente.nel-programma { max-width: var(--larghezza-pagina); margin: var(--s4) auto 0; padding: 0 var(--s5); }
+.nel-programma .avatar { width: 46px; height: 46px; }
+.nel-programma .parole { padding-right: 38px; font-size: 14px; }
+.chiudi-assistente {
+  position: absolute; top: 4px; right: 4px; min-height: 0; width: 28px; height: 28px; padding: 0;
+  background: none; border: 0; color: var(--tenue); font-size: 20px; line-height: 1; box-shadow: none;
+}
+.chiudi-assistente:hover { background: var(--velo); color: var(--inchiostro); }
+.nel-programma.richiuso .parole { display: none; }
+.nel-programma.richiuso .avatar { width: 38px; height: 38px; cursor: pointer; }
+.nel-programma.richiuso .avatar:focus-visible { outline: 2px solid var(--fuoco); outline-offset: 2px; border-radius: 12px; }
+@media (min-width: 1100px) {
+  body:has(.schede:not([hidden])) .assistente.nel-programma { padding: 0 var(--s6); margin-top: var(--s5); }
+}
+@media (max-width: 760px) {
+  .una-domanda #titolo-passo { font-size: 22px; }
+  .assistente { gap: 10px; }
+  .assistente .avatar { width: 44px; height: 44px; }
+  .parole { font-size: 14px; }
+  .assistente.nel-programma { padding: 0 var(--s4); margin-top: var(--s3); }
+  .nel-programma .avatar { width: 38px; height: 38px; }
+}
+
+@keyframes palpebre { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+@keyframes galleggia { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+@keyframes saltello { 0% { transform: translateY(0); } 35% { transform: translateY(-5px); } 70% { transform: translateY(1px); } 100% { transform: translateY(0); } }
+@keyframes parla { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
+@keyframes pensiero { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-2px); opacity: 1; } }
+@keyframes luce { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes parole { from { opacity: 0; transform: translateY(4px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes strisce { to { background-position: 20px 0, 0 0; } }
+@keyframes riga-robot { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .robot .occhi ellipse { transform-box: fill-box; transform-origin: center; animation: palpebre 5s infinite; }
+  .robot .corpo { animation: galleggia 3.4s ease-in-out infinite; }
+  .assistente.felice .corpo { animation: saltello 0.6s ease-out, galleggia 3.4s ease-in-out 0.6s infinite; }
+  .assistente.dubbio .corpo { animation: none; }
+  .robot .antenna-luce { animation: luce 2.2s ease-in-out infinite; }
+  .assistente.pensa .nuvoletta circle { animation: pensiero 1.1s ease-in-out infinite; }
+  .assistente.pensa .nuvoletta circle:last-child { animation-delay: 0.25s; }
+  .assistente.scrive .bocca-aperta { transform-box: fill-box; transform-origin: center; animation: parla 0.18s ease-in-out infinite alternate; }
+  .parole.appena-detto { animation: parole 0.35s ease-out; }
+  .al-lavoro .barra-sicurezza > span { animation: strisce 0.6s linear infinite; }
+  .righe-robot li.nuova { animation: riga-robot 0.3s ease-out; }
+}

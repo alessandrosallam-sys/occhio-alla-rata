@@ -195,22 +195,37 @@
     rata_piano: { domanda: 'Rata del piano iniziale', cosa: 'La rata (capitale + interessi) scritta nel piano iniziale. Lascia 0: il programma la calcola dal tasso.' },
   };
   // La guida ha due percorsi.
-  // Il percorso breve è quello normale per un prestito nuovo, pensato per chi non conosce il contratto: quattro domande,
-  // gli importi di alcune rate già pagate, e il resto (tasso, spese, regole) lo ricava il programma dalle rate
-  // (deduzione.js, passo «Ci penso io»), che chiede altro solo se le rate non bastano.
+  // Il percorso breve è quello normale per un prestito nuovo, pensato per chi non conosce il contratto: una domanda
+  // per pagina, con una spiegazione corta sotto; poche domande facili, poi le rate pagate, una alla volta; il resto
+  // (tasso, spese, regole) lo ricava il programma dalle rate (deduzione.js, passo «Ci penso io»), che chiede altri dati
+  // o altre rate finché le rate tornano tutte al centesimo.
   // Il percorso completo fa tutte le domande sul contratto: serve a rivedere un prestito già configurato e a chi
   // preferisce rispondere da sé.
+  // Le domande del percorso breve sono raggruppate in fasi: sono i pallini in alto.
+  const FASI_BREVI = ['Prima di iniziare', 'Il prestito', 'Le rate pagate', 'Ci penso io', 'Gli ultimi dettagli', 'Riepilogo'];
+  const conDettagli = () => guida.conDettagli === true;
   const PASSI_BREVI = [
-    { titolo: 'Prima di iniziare', tipo: 'benvenuto', icona: 'bussola' },
-    { titolo: 'Il prestito', tipo: 'essenziali', icona: 'documento',
-      testo: 'Quattro domande soltanto. Le risposte le trovi nella prima pagina del contratto o nell\'estratto conto.' },
-    { titolo: 'Le rate pagate', tipo: 'rate', icona: 'calendario',
-      testo: 'Scrivi quanto ti è stato addebitato per alcune delle rate che hai già pagato: da questi importi capisco da solo il tasso, le spese e le regole del contratto. Bastano tre o quattro rate, meglio se lontane fra loro; più ne scrivi, più sono sicuro. Le caselle vuote vanno bene.' },
-    { titolo: 'Ci penso io', tipo: 'analisi', icona: 'bacchetta' },
-    { titolo: 'Spese e nome', icona: 'scudo', campi: ['nome', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'spese_annue', 'taeg_dichiarato', 'valore_riferimento', 'anticipo'],
-      testo: 'Ultime domande, tutte facoltative: non cambiano le rate, servono a calcolare quanto costa davvero il prestito (costo totale e TAEG). Se non hai questi dati sotto mano vai avanti: potrai aggiungerli quando vuoi dal «Pannello di controllo».' },
-    { titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', testo: 'Controlla i dati e conferma. Potrai rivedere tutto quando vuoi con il pulsante «Configurazione» in alto.' },
+    { fase: 0, titolo: 'Prima di iniziare', tipo: 'benvenuto', icona: 'bussola' },
+    { fase: 1, tipo: 'domanda', chiave: 'tipo_breve', titolo: 'Che prestito è?', icona: 'documento' },
+    { fase: 1, tipo: 'domanda', chiave: 'importo_iniziale', icona: 'euro' },
+    { fase: 1, tipo: 'domanda', chiave: 'numero_rate', icona: 'calendario' },
+    { fase: 1, tipo: 'domanda', chiave: 'maxirata', icona: 'auto', se: () => guida.tipoBreve === 'maxirata' },
+    { fase: 1, tipo: 'domanda', chiave: 'data_addebito', icona: 'calendario',
+      titolo: () => guida.modoData === 'ultima' ? 'Quando pagherai l\'ultima rata?' : 'Quando ti è stata addebitata la prima rata?' },
+    { fase: 2, tipo: 'domanda', chiave: 'ordine_rate', titolo: 'Quali rate hai sotto mano?', icona: 'documento', se: () => periodiIniziati().length > 3 },
+    { fase: 2, tipo: 'rate', titolo: 'Le rate pagate', icona: 'calendario', se: () => periodiIniziati().length > 0 },
+    { fase: 3, tipo: 'analisi', titolo: 'Ci penso io', icona: 'bacchetta' },
+    { fase: 4, tipo: 'domanda', chiave: 'nome', titolo: 'Come vuoi chiamare questo prestito?', icona: 'matita' },
+    { fase: 4, tipo: 'domanda', chiave: 'dettagli', titolo: 'Vuoi aggiungere spese e assicurazioni?', icona: 'scudo' },
+    // Solo se l'utente ha detto di sì, e solo quelle che hanno senso per il suo prestito.
+    ...['spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'spese_annue', 'taeg_dichiarato', 'valore_riferimento', 'anticipo']
+      .map(chiave => ({ fase: 4, tipo: 'domanda', chiave, icona: chiave === 'valore_riferimento' ? 'casa' : 'scudo', se: () => conDettagli() && (!CAMPI[chiave].se || CAMPI[chiave].se(guida.bozza)) })),
+    // Prima di mostrare il piano: riempire le rate passate che l'utente non ha scritto?
+    { fase: 4, tipo: 'domanda', chiave: 'riempi', titolo: 'Riempio io le rate che non hai scritto?', icona: 'piano', se: () => guida.daRiempire.length > 0 },
+    { fase: 5, titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', testo: 'Controlla i dati e conferma. Potrai rivedere tutto quando vuoi con il pulsante «Configurazione» in alto.' },
   ];
+  // Il titolo di un passo: scritto, oppure calcolato, oppure quello della domanda.
+  const titoloDi = passo => typeof passo.titolo === 'function' ? passo.titolo() : passo.titolo || titoloDomanda(passo.chiave);
   // "se": il passo serve solo per alcuni prestiti (ad esempio gli aggiornamenti del tasso solo per il variabile).
   const PASSI_COMPLETI = [
     { titolo: 'Prima di iniziare', tipo: 'benvenuto', icona: 'bussola', campi: [] },
@@ -237,12 +252,15 @@
   // percorso: 'breve' o 'completo'; rate: importi scritti, per numero di rata; nonSo: domande lasciate al programma
   // (percorso completo); massimo: ultimo passo raggiunto; nuovo: si aggiunge un prestito accanto a quelli che ci sono già
   // (dalla scheda «Prestiti»). Per il percorso breve: tipoBreve (il tipo scelto, anche «mutuo, non so se fisso o
-  // variabile»), dataAddebito e modoData (la data della prima rata, o dell'ultima), conQuota (colonna della quota
-  // capitale), noti (dati scritti dall'utente nel passo «Ci penso io»), chiusi (dubbi a cui ha già risposto), saltate
-  // (dati del contratto a cui ha risposto «Non lo so»), analisi (l'ultima deduzione), serieScaricate (Euribor scaricati
-  // da internet nella guida, per codice).
-  const guida = { percorso: 'breve', passo: 0, massimo: 0, bozza: {}, riapertura: false, nuovo: false, rate: {}, righeRate: 12, caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null,
-    tipoBreve: null, dataAddebito: null, modoData: 'prima', conQuota: false, noti: {}, chiusi: new Set(), saltate: new Set(), analisi: null, serieScaricate: {}, serieProvate: false, serieErrore: null };
+  // variabile»), dataAddebito e modoData (la data della prima rata, o dell'ultima), ordineRate e rataCorrente (le rate
+  // una alla volta: dalle più recenti o dalla prima, e quella sullo schermo), noti (dati scritti dall'utente nel passo
+  // «Ci penso io»), chiusi (dubbi risolti), nonSoDubbio e nonSoDato (dubbi e dati sostitutivi a cui ha risposto «Non lo
+  // trovo»), saltate (risposte lasciate al programma), modoDomande (le rate quasi tornano e l'utente risponde a domande
+  // sul contratto), analisi (l'ultima deduzione), serieScaricate (Euribor scaricati da internet nella guida, per
+  // codice), conDettagli (spese e assicurazioni), daRiempire e riempi (le rate passate che il calcolo può riempire).
+  const STATO_BREVE = () => ({ tipoBreve: null, dataAddebito: null, modoData: 'prima', ordineRate: null, rataCorrente: 0, noti: {}, chiusi: new Set(), nonSoDubbio: new Set(), nonSoDato: new Set(),
+    saltate: new Set(), modoDomande: false, analisi: null, serieScaricate: {}, serieProvate: false, serieErrore: null, conDettagli: false, daRiempire: [], riempi: null });
+  const guida = { percorso: 'breve', passo: 0, massimo: 0, bozza: {}, riapertura: false, nuovo: false, rate: {}, righeRate: 12, caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null, ...STATO_BREVE() };
   const passi = () => guida.percorso === 'breve' ? PASSI_BREVI : PASSI_COMPLETI;
   const passoAttuale = () => passi()[guida.passo];
   // Valori dell'indice pronti per la conferma: quelli già nel programma (se la casella è spuntata) e quelli scaricati
@@ -463,9 +481,9 @@
         crea('p', {}, guida.nuovo ? 'Aggiungi un altro prestito. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».' : presentazione),
         crea('h3', {}, 'Come funziona'),
         crea('ul', { className: 'documenti' },
-          crea('li', {}, 'Ti faccio quattro domande facili sul prestito: che tipo è, quanto ti hanno prestato, in quante rate, quando hai pagato la prima.'),
-          crea('li', {}, 'Poi mi scrivi gli importi di alcune rate che hai già pagato, come li vedi sull\'estratto conto.'),
-          crea('li', {}, 'Il resto (il tasso, le spese, le regole del contratto) provo a capirlo da solo dalle rate. Se non ci riesco ti chiedo solo il dato che mi manca, e ti dico dove trovarlo.')),
+          crea('li', {}, 'Ti faccio qualche domanda facile sul prestito, una alla volta: che tipo è, quanto ti hanno prestato, in quante rate, quando hai pagato la prima.'),
+          crea('li', {}, 'Poi mi scrivi, una alla volta, alcune rate che hai già pagato, come le vedi sull\'estratto conto. Mentre le scrivi faccio i conti.'),
+          crea('li', {}, 'Il resto (il tasso, le spese, le regole del contratto) lo capisco io dalle rate. Se non sono sicuro ti chiedo un dato in più o qualche altra rata, finché i conti non tornano al centesimo.')),
         crea('h3', {}, 'Tieni a portata di mano'),
         crea('ul', { className: 'documenti' },
           documento('L\'estratto conto o le ricevute', 'di alcune rate già pagate: servono gli importi addebitati.'),
@@ -502,28 +520,18 @@
       crea('p', {}, crea('b', {}, 'Rata addebitata. '), 'La cifra totale uscita dal conto per quella rata, spese comprese.'),
       crea('p', {}, crea('b', {}, 'Quota capitale (facoltativa). '), 'La parte della rata che riduce il debito: è una voce del dettaglio della ricevuta. Se la scrivi, il programma riconosce con più sicurezza il tipo di piano.'),
       crea('p', {}, crea('b', {}, 'Un trucco. '), 'Puoi incollare una colonna intera copiata da un foglio di calcolo: clic sulla prima casella e incolla.'));
-    // Nel percorso breve: le rate più recenti, che sono le più facili da trovare, e la quota capitale solo a richiesta.
-    const breve = guida.percorso === 'breve', conQuota = !breve || guida.conQuota;
-    if (!periodi.length) {
-      contenitore.replaceChildren(crea('p', { className: 'nota' }, breve ? 'Il prestito non è ancora partito: non ci sono rate da scrivere. Vai avanti: ti chiederò il tasso del contratto.'
-        : 'Il prestito non è ancora partito: non ci sono rate da inserire. Vai avanti.'));
-      return;
-    }
-    const mostrate = breve ? periodi.slice(-guida.righeRate) : periodi.slice(0, guida.righeRate);
+    if (!periodi.length) { contenitore.replaceChildren(crea('p', { className: 'nota' }, 'Il prestito non è ancora partito: non ci sono rate da inserire. Vai avanti.')); return; }
     const casella = (n, tipo, segnaposto) => crea('input', { type: 'text', inputMode: 'decimal', 'data-rata': n, 'data-tipo': tipo, value: (guida.rate[n] || {})[tipo] || '',
       placeholder: segnaposto, 'aria-label': `${tipo === 'rata' ? 'Rata addebitata' : 'Quota capitale'}, rata ${n}` });
-    const righe = mostrate.map(({ n, inizio }, i) => crea('tr', {}, crea('td', {}, String(n)), crea('td', { className: 'testo' }, M.meseAnno(inizio)),
-      crea('td', {}, casella(n, 'rata', i === 0 ? 'es. 650,00' : '')), ...(conQuota ? [crea('td', {}, casella(n, 'quota', i === 0 ? 'facoltativa' : ''))] : [])));
+    const righe = periodi.slice(0, guida.righeRate).map(({ n, inizio }) => crea('tr', {}, crea('td', {}, String(n)), crea('td', { className: 'testo' }, M.meseAnno(inizio)),
+      crea('td', {}, casella(n, 'rata', n === 1 ? 'es. 650,00' : '')), crea('td', {}, casella(n, 'quota', n === 1 ? 'facoltativa' : ''))));
     const altre = periodi.length - righe.length;
-    const piu = altre > 0 ? [crea('button', { type: 'button', className: 'secondario', id: 'altre-rate' }, breve ? `Mostra ${Math.min(12, altre)} rate prima` : `Mostra altre ${Math.min(12, altre)} rate`)] : [];
-    const tabella = crea('div', { className: 'contenitore-tabella semplice tabella-rate' }, crea('table', {},
-      crea('thead', {}, crea('tr', {}, crea('th', {}, 'Rata'), crea('th', { className: 'testo' }, breve ? 'Addebitata a' : 'Mese'), crea('th', {}, 'Rata addebitata (€)'),
-        ...(conQuota ? [crea('th', {}, 'Quota capitale (€)')] : []))),
-      crea('tbody', {}, ...righe)));
-    if (!breve) { contenitore.replaceChildren(tabella, ...piu, dove); return; }
-    contenitore.replaceChildren(...piu, tabella,
-      crea('label', { className: 'spunta' }, crea('input', { type: 'checkbox', name: 'con_quota', checked: conQuota }),
-        crea('span', {}, 'Nella ricevuta c\'è anche la quota capitale: voglio scriverla (facoltativo, mi aiuta a capire meglio)')), dove);
+    contenitore.replaceChildren(
+      crea('div', { className: 'contenitore-tabella semplice tabella-rate' }, crea('table', {},
+        crea('thead', {}, crea('tr', {}, crea('th', {}, 'Rata'), crea('th', { className: 'testo' }, 'Mese'), crea('th', {}, 'Rata addebitata (€)'), crea('th', {}, 'Quota capitale (€)'))),
+        crea('tbody', {}, ...righe))),
+      ...(altre > 0 ? [crea('button', { type: 'button', className: 'secondario', id: 'altre-rate' }, `Mostra altre ${Math.min(12, altre)} rate`)] : []),
+      dove);
   }
   const leggiCaselleRate = () => {
     for (const input of document.querySelectorAll('#campi-passo input[data-rata]')) {
@@ -595,7 +603,7 @@
       ...blocchi, crea('h3', {}, 'Cosa fare dopo'), crea('ol', { className: 'dopo' }, ...dopo.map(testo => crea('li', {}, testo))));
   }
 
-  // ---------- Percorso breve: «Il prestito» ----------
+  // ---------- Percorso breve: una domanda per pagina ----------
   // Il tipo di prestito, con una voce in più per chi ha un mutuo ma non sa se è fisso o variabile: lo si capisce dalle rate.
   const NON_SO_TIPO = 'mutuo';
   function tipiBrevi() {
@@ -605,53 +613,109 @@
   const DATA_PRIMA = {
     cosa: 'Il giorno in cui la banca ha preso dal conto la prima rata. Serve a sapere a quale mese si riferisce ogni rata.',
     dove: 'Nell\'estratto conto del mese della prima rata, nel contratto («prima rata il …», «decorrenza dell\'ammortamento») o nel piano di ammortamento, alla riga della rata numero 1.',
-    seNonSai: 'Se ricordi solo il mese, scegli un giorno qualsiasi di quel mese. Se non ricordi nemmeno il mese, spunta la casella qui sopra e scrivi la data dell\'ultima rata.' };
+    seNonSai: 'Se ricordi solo il mese, scegli un giorno qualsiasi di quel mese. Se non ricordi nemmeno il mese, spunta la casella e scrivi la data dell\'ultima rata.' };
   const DATA_ULTIMA = {
     cosa: 'Il giorno dell\'ultima rata del piano, cioè la scadenza del prestito: dal numero di rate ricavo la data della prima.',
     dove: 'Nel contratto («durata», «scadenza», «ultima rata il …») o nell\'ultima riga del piano di ammortamento.' };
+  // La spiegazione corta sotto ogni domanda; quella lunga (DOMANDE), dove c'è, si apre con «Altre spiegazioni».
+  const CORTE = {
+    tipo_breve: 'Se non sai se il tuo mutuo è a tasso fisso o variabile, scegli la terza voce: lo capisco io dalle rate.',
+    importo_iniziale: 'È la somma che ti ha prestato la banca, non il prezzo della casa o dell\'auto: la trovi nella prima pagina del contratto.',
+    numero_rate: 'Tutte le rate previste dal contratto, anche quelle già pagate.',
+    maxirata: 'L\'ultima rata, molto più grande delle altre: è scritta nel contratto vicino al numero di rate.',
+    data_addebito: 'La trovi nell\'estratto conto o nel contratto («prima rata il …»). Se ricordi solo il mese, va bene un giorno qualsiasi di quel mese.',
+    data_ultima: 'È la scadenza del prestito: la trovi nel contratto o nell\'ultima riga del piano di ammortamento.',
+    ordine_rate: 'Le più recenti sono nell\'estratto conto online; le prime nelle ricevute dell\'inizio o nel piano di ammortamento. Te le chiedo una alla volta: ne bastano tre o quattro.',
+    nome: 'Serve solo a riconoscerlo, soprattutto se segui più di un prestito.',
+    dettagli: 'Non cambiano le rate: servono a calcolare quanto costa davvero il prestito (costo totale e TAEG). Puoi aggiungerli anche dopo, dal «Pannello di controllo».',
+    spese_iniziali: 'Istruttoria, perizia, imposte pagate alla firma. Se non le sai, lascia vuoto.',
+    assicurazione_iniziale: 'Un premio unico pagato all\'inizio. Se non c\'è, lascia vuoto.',
+    spese_nel_prestito: 'Se la somma che ti hanno accreditato era più bassa dell\'importo prestato, le spese sono dentro il prestito.',
+    assicurazione_rata: 'Solo se la paghi a parte, non dentro la rata. Se non c\'è, lascia vuoto.',
+    spese_annue: 'Ad esempio l\'imposta di bollo sul rendiconto, di solito 2 €. Se non ci sono, lascia vuoto.',
+    taeg_dichiarato: 'Il «tasso annuo effettivo globale» scritto nel contratto: ti dico se il mio calcolo coincide. Se non lo trovi, lascia vuoto.',
+    valore_riferimento: 'Serve solo a mostrarti quanta parte della casa resta da pagare. Se non lo sai, lascia vuoto.',
+    anticipo: 'Quello che hai pagato subito al venditore, senza prestito. Se non c\'è, lascia vuoto.',
+  };
+  const UNITA = { euro: '€', percento: '%', intero: 'rate' };
+  const dataChiara = iso => `${+iso.slice(8)} ${M.meseAnno(iso)}`;
+  const quanteRate = n => n === 1 ? '1 rata' : `${n} rate`;
 
-  function disegnaEssenziali(contenitore) {
-    const ultima = guida.modoData === 'ultima';
-    contenitore.replaceChildren(
-      crea('div', { className: 'domanda', 'data-campo': 'tipo_breve' },
-        crea('p', { className: 'titolo-domanda' }, 'Che prestito è? *'),
-        crea('div', { className: 'scelte' }, ...tipiBrevi().map(o => voce('tipo_breve', o.valore, o.etichetta, o.aiuto, o.valore === guida.tipoBreve, null, o.icona))),
-        spiegazione(DOMANDE.tipo_prestito)),
-      creaDomanda('importo_iniziale'), creaDomanda('numero_rate'), creaDomanda('maxirata'),
-      crea('div', { className: 'domanda', 'data-campo': 'data_addebito' },
-        crea('label', { className: 'titolo-domanda', htmlFor: 'campo-data-addebito' }, ultima ? 'Quando pagherai l\'ultima rata? *' : 'Quando ti è stata addebitata la prima rata? *'),
-        crea('input', { type: 'date', name: 'data_addebito', id: 'campo-data-addebito', value: guida.dataAddebito || '' }),
-        crea('label', { className: 'spunta' }, crea('input', { type: 'checkbox', name: 'data_ultima', checked: ultima }),
-          crea('span', {}, 'Non ricordo la prima rata: scrivo la data dell\'ultima, cioè la scadenza del prestito')),
-        spiegazione(ultima ? DATA_ULTIMA : DATA_PRIMA)));
-    $('[data-campo="numero_rate"] input', contenitore).after(crea('p', { className: 'nota', id: 'durata-anni', 'aria-live': 'polite' }));
-    aggiornaEssenziali();
+  // La casella o le scelte di una domanda.
+  function controlloBreve(chiave) {
+    const b = guida.bozza;
+    if (chiave === 'tipo_breve') return crea('div', { className: 'scelte' }, ...tipiBrevi().map(o => voce(chiave, o.valore, o.etichetta, o.aiuto, o.valore === guida.tipoBreve, null, o.icona)));
+    if (chiave === 'data_addebito') {
+      return crea('div', {}, crea('input', { type: 'date', name: chiave, id: 'campo-' + chiave, value: guida.dataAddebito || '', 'aria-label': 'Data' }),
+        crea('label', { className: 'spunta' }, crea('input', { type: 'checkbox', name: 'data_ultima', checked: guida.modoData === 'ultima' }),
+          crea('span', {}, 'Non ricordo la prima rata: scrivo la data dell\'ultima, cioè la scadenza del prestito')));
+    }
+    if (chiave === 'ordine_rate') {
+      const p = periodiIniziati();
+      return crea('div', { className: 'scelte' },
+        voce(chiave, 'recenti', 'Le più recenti', `Parto dall'ultima rata, di ${M.meseAnno(p[p.length - 1].inizio)}, e vado indietro.`, guida.ordineRate === 'recenti', null, 'calendario'),
+        voce(chiave, 'prime', 'Dalla prima', `Parto dalla prima rata, di ${M.meseAnno(p[0].inizio)}, e vado avanti.`, guida.ordineRate === 'prime', null, 'documento'));
+    }
+    if (chiave === 'dettagli') {
+      return crea('div', { className: 'scelte' }, voce(chiave, 'si', 'Sì, li ho sotto mano', 'Te li chiedo uno alla volta: spese iniziali, assicurazioni, TAEG del contratto.', guida.conDettagli === true),
+        voce(chiave, 'no', 'No, vado avanti', 'Potrai aggiungerli quando vuoi.', guida.conDettagli !== true));
+    }
+    if (chiave === 'riempi') {
+      return crea('div', { className: 'scelte' }, voce(chiave, 'si', 'Sì, riempile tu', 'Nel piano vedrai subito tutte le rate. Quelle prese dal calcolo restano segnate con «=» finché non le controlli.', guida.riempi === true),
+        voce(chiave, 'no', 'No, le scrivo io quando voglio', 'Nel piano le righe senza importo restano da controllare.', guida.riempi === false));
+    }
+    const campo = CAMPI[chiave], valore = b[chiave];
+    if (campo.tipo === 'scelta') return crea('div', { className: 'scelte' }, ...campo.opzioni.map(o => voce(chiave, String(o.valore), o.etichetta, o.aiuto, o.valore === valore)));
+    // Le domande facoltative partono vuote: uno zero sembrerebbe già una risposta.
+    const testo = valore == null || (!campo.obbligatorio && campo.tipo !== 'testo' && !valore) ? '' : campo.tipo === 'testo' ? valore : perCampo(valore, campo.tipo === 'percento');
+    const casella = crea('input', { type: 'text', inputMode: campo.tipo === 'testo' ? 'text' : 'decimal', name: chiave, id: 'campo-' + chiave, value: testo, maxLength: 80, autocomplete: 'off', 'aria-label': titoloDomanda(chiave) });
+    return UNITA[campo.tipo] ? crea('div', { className: 'con-unita' }, casella, crea('span', {}, UNITA[campo.tipo])) : casella;
   }
-  // La maxirata solo per quel tipo; sotto il numero di rate, la durata in anni.
-  function aggiornaEssenziali() {
-    const tipo = ($('#campi-passo input[name="tipo_breve"]:checked') || {}).value;
-    $('#campi-passo [data-campo="maxirata"]').hidden = tipo !== 'maxirata';
+  function disegnaDomandaBreve(contenitore, passo) {
+    const chiave = passo.chiave, ultima = chiave === 'data_addebito' && guida.modoData === 'ultima';
+    const lunga = chiave === 'tipo_breve' ? DOMANDE.tipo_prestito : chiave === 'data_addebito' ? (ultima ? DATA_ULTIMA : DATA_PRIMA) : DOMANDE[chiave];
+    const corta = ultima ? CORTE.data_ultima : chiave === 'riempi' ? testoRiempi() : CORTE[chiave];
+    contenitore.replaceChildren(crea('div', { className: 'domanda domanda-sola', 'data-campo': chiave }, controlloBreve(chiave),
+      ...(chiave === 'numero_rate' ? [crea('p', { className: 'nota', id: 'durata-anni', 'aria-live': 'polite' })] : []),
+      ...(corta ? [crea('p', { className: 'spiegazione-corta' }, corta)] : []),
+      ...(lunga && (lunga.cosa || lunga.dove) ? [crea('details', { className: 'piu-spiegazioni' }, crea('summary', {}, 'Altre spiegazioni'), spiegazione(lunga))] : [])));
+    if (chiave === 'numero_rate') aggiornaDurata();
+  }
+  // Sotto il numero di rate, la durata in anni.
+  function aggiornaDurata() {
     const n = leggiNumero($('#campi-passo [name="numero_rate"]').value), anni = Math.floor(n / 12), mesi = n % 12;
     const parti = [...(anni ? [anni === 1 ? '1 anno' : `${anni} anni`] : []), ...(mesi ? [mesi === 1 ? '1 mese' : `${mesi} mesi`] : [])];
     $('#durata-anni').textContent = Number.isInteger(n) && n > 0 ? `${n} rate mensili: ${parti.join(' e ')}.` : '';
   }
-  function raccogliEssenziali(severo) {
-    const tipo = ($('#campi-passo input[name="tipo_breve"]:checked') || {}).value || null;
-    const letti = leggiDomande(['importo_iniziale', 'numero_rate', 'maxirata'], severo);
+  function raccogliDomandaBreve(passo, severo) {
+    const chiave = passo.chiave, scelto = ($(`#campi-passo input[name="${chiave}"]:checked`) || {}).value;
+    if (chiave === 'tipo_breve') {
+      if (!scelto) return !severo || mostraErrore('Scegli che prestito è.');
+      guida.tipoBreve = scelto;
+      // Finché non si sa se il mutuo è fisso o variabile, la bozza resta su variabile.
+      guida.bozza.tipo_prestito = scelto !== NON_SO_TIPO ? scelto : guida.bozza.tipo_prestito === 'fisso' ? 'fisso' : 'variabile';
+      return true;
+    }
+    if (chiave === 'data_addebito') {
+      guida.dataAddebito = $('#campi-passo [name="data_addebito"]').value || null;
+      guida.modoData = $('#campi-passo [name="data_ultima"]').checked ? 'ultima' : 'prima';
+      return !severo || !!guida.dataAddebito || mostraErrore(guida.modoData === 'ultima' ? 'Scrivi la data dell\'ultima rata.' : 'Scrivi la data della prima rata.');
+    }
+    if (chiave === 'ordine_rate') {
+      if (!scelto) return !severo || mostraErrore('Scegli da quali rate partire.');
+      if (scelto !== guida.ordineRate) guida.rataCorrente = 0;
+      guida.ordineRate = scelto;
+      return true;
+    }
+    if (chiave === 'dettagli') { guida.conDettagli = scelto === 'si'; return true; }
+    if (chiave === 'riempi') { if (!scelto) return !severo || mostraErrore('Scegli una risposta.'); guida.riempi = scelto === 'si'; return true; }
+    const letti = leggiDomande([chiave], severo);
     if (letti.errore) return mostraErrore(letti.errore);
     const b = Object.assign(guida.bozza, letti.valori);
-    if (tipo) {
-      guida.tipoBreve = tipo;
-      // Finché non si sa se il mutuo è fisso o variabile, la bozza resta su variabile.
-      b.tipo_prestito = tipo !== NON_SO_TIPO ? tipo : b.tipo_prestito === 'fisso' ? 'fisso' : 'variabile';
-    }
-    guida.dataAddebito = $('#campi-passo [name="data_addebito"]').value || null;
-    guida.modoData = $('#campi-passo [name="data_ultima"]').checked ? 'ultima' : 'prima';
     if (!severo) return true;
-    if (!tipo) return mostraErrore('Scegli che prestito è.');
-    if (!Number.isInteger(b.numero_rate) || b.numero_rate < 1 || b.numero_rate > 600) return mostraErrore('Il numero di rate deve essere un numero intero, ad esempio 240.');
-    if (tipo === 'maxirata' && !(b.maxirata < b.importo_iniziale)) return mostraErrore('La maxirata deve essere più bassa dell\'importo prestato.');
-    if (!guida.dataAddebito) return mostraErrore(guida.modoData === 'ultima' ? 'Manca la data dell\'ultima rata.' : 'Manca la data della prima rata.');
+    if (chiave === 'importo_iniziale' && !(b.importo_iniziale > 0)) return mostraErrore('Scrivi la somma prestata, ad esempio 150.000.');
+    if (chiave === 'numero_rate' && (!Number.isInteger(b.numero_rate) || b.numero_rate < 1 || b.numero_rate > 600)) return mostraErrore('Il numero di rate deve essere un numero intero, ad esempio 240.');
+    if (chiave === 'maxirata' && !(b.maxirata < b.importo_iniziale)) return mostraErrore('La maxirata deve essere più bassa dell\'importo prestato.');
     return true;
   }
   // Se importo, durata, date o rate cambiano dopo «Ci penso io», i passi successivi vanno rifatti.
@@ -661,9 +725,72 @@
     if (ingresso !== guida.analisi.chiave) guida.massimo = Math.min(guida.massimo, PASSI_BREVI.findIndex(p => p.tipo === 'analisi'));
   }
 
+  // ---------- Percorso breve: le rate, una alla volta ----------
+  // Nell'ordine scelto: dalla più recente all'indietro, o dalla prima in avanti (con poche rate, dalla prima).
+  const rateInOrdine = () => { const p = periodiIniziati(); return guida.ordineRate === 'recenti' && p.length > 3 ? [...p].reverse() : p; };
+  const rateScritte = () => rateInserite().filter(r => r.rata_vera != null);
+  function disegnaRataSola(contenitore) {
+    const lista = rateInOrdine();
+    guida.rataCorrente = Math.max(0, Math.min(guida.rataCorrente, lista.length - 1));
+    const { n, inizio } = lista[guida.rataCorrente], voceRata = guida.rate[n] || {}, scritte = rateScritte();
+    const mesi = new Map(lista.map(p => [p.n, p.inizio]));
+    $('#titolo-passo').replaceChildren(Icone.distintivo('calendario', 'piccolo'), `La rata di ${M.meseAnno(inizio)}`);
+    $('#conta-passi').textContent = `Le rate pagate · ${scritte.length === 1 ? '1 scritta' : `${scritte.length} scritte`}`;
+    const casella = (tipo, segnaposto, etichetta) => crea('div', { className: 'con-unita' },
+      crea('input', { type: 'text', inputMode: 'decimal', id: tipo === 'rata' ? 'campo-rata' : 'campo-quota-rata', 'data-rata': n, 'data-tipo': tipo, value: voceRata[tipo] || '', placeholder: segnaposto, autocomplete: 'off', 'aria-label': etichetta }),
+      crea('span', {}, '€'));
+    const consiglio = scritte.length >= 4 ? `Hai scritto ${scritte.length} rate: possono bastare. Se vuoi, aggiungine altre; altrimenti premi «Ho finito con le rate».`
+      : scritte.length === 3 ? 'Hai scritto 3 rate: con una o due in più sono più sicuro.'
+        : scritte.length ? `Hai scritto ${quanteRate(scritte.length)}: me ne servono almeno tre.` : 'Me ne servono almeno tre o quattro, anche non di fila.';
+    contenitore.replaceChildren(crea('div', { className: 'domanda domanda-sola rata-sola', 'data-campo': 'rata' },
+      crea('p', { className: 'data-rata' }, crea('strong', {}, `Rata numero ${n}`), ` di ${rateTotali(guida.bozza)}, addebitata il ${dataChiara(inizio)}`),
+      crea('label', { className: 'titolo-domanda', htmlFor: 'campo-rata' }, 'Quanto ti è stato addebitato?'),
+      casella('rata', 'es. 650,00', `Rata di ${M.meseAnno(inizio)}`),
+      crea('p', { className: 'spiegazione-corta' }, `L'importo uscito dal conto per questa rata, spese comprese: lo trovi nell'estratto conto di ${M.meseAnno(inizio)} o nella ricevuta. Se quel giorno era festivo, l'addebito può essere del primo giorno lavorativo dopo.`),
+      crea('details', { className: 'piu-spiegazioni', open: !!voceRata.quota }, crea('summary', {}, 'Nella ricevuta c\'è anche la quota capitale?'),
+        crea('p', { className: 'spiegazione-corta' }, 'È la parte della rata che riduce il debito. Non è obbligatoria, ma mi aiuta a capire con certezza come è fatto il tuo piano.'),
+        casella('quota', 'es. 280,00', `Quota capitale della rata di ${M.meseAnno(inizio)}`)),
+      crea('div', { className: 'azioni azioni-rata' },
+        crea('button', { type: 'button', className: 'secondario', id: 'rata-manca' }, guida.rataCorrente < lista.length - 1 ? 'Non ce l\'ho: la prossima' : 'Non ce l\'ho'),
+        crea('button', { type: 'button', className: 'secondario', id: 'rate-finite' }, scritte.length ? 'Ho finito con le rate' : 'Non ho le rate: vai avanti')),
+      pannelloCalcolo(),
+      crea('div', { className: 'rate-scritte' }, crea('p', { className: 'nota' }, consiglio),
+        ...(scritte.length ? [crea('div', { className: 'chip-rate' }, ...scritte.map(r => crea('button', { type: 'button', className: 'secondario piccolo' + (r.n === n ? ' attuale' : ''), 'data-vai-rata': r.n },
+          `${mesi.has(r.n) ? M.meseAnno(mesi.get(r.n)) : `rata ${r.n}`}: ${euro(r.rata_vera)}`)))] : []))));
+    aggiornaCalcolo();
+  }
+  // Legge la rata della pagina; con "severo" controlla che l'importo sia un numero.
+  function leggiRataSola(severo) {
+    leggiCaselleRate();
+    const errori = [];
+    rateInserite(errori);
+    return !severo || !errori.length || mostraErrore('Scrivi l\'importo in euro, ad esempio 650,00, oppure premi «Non ce l\'ho».');
+  }
+  // Va alla rata "n" (dalla tabella delle rate che non tornano, o dall'elenco di quelle scritte).
+  function vaiAllaRata(n) {
+    guida.passo = PASSI_BREVI.findIndex(p => p.tipo === 'rate');
+    guida.rataCorrente = Math.max(0, rateInOrdine().findIndex(p => p.n === n));
+    disegnaPasso();
+  }
+
+  // ---------- Percorso breve: le rate che non sono state scritte ----------
+  // Rate passate senza importo scritto che il calcolo può riempire (dove c'è il valore dell'indice), come «Compila le
+  // rate dal calcolo» nel piano. Si propongono solo se le rate scritte tornano tutte.
+  function rateDaRiempire() {
+    const scritte = new Set(rateScritte().map(r => r.n));
+    return Calcolo.calcolaPiano(datiDellaBozza()).righe.filter(r => r.fine < stato.oggi && !scritte.has(r.n) && r.origineEuribor !== 'previsione');
+  }
+  function testoRiempi() {
+    const d = guida.daRiempire, scritte = rateScritte().length;
+    if (!d.length) return '';
+    const quando = d.length === 1 ? M.meseAnno(d[0].inizio) : `da ${M.meseAnno(d[0].inizio)} a ${M.meseAnno(d[d.length - 1].inizio)}`;
+    return `Delle rate già pagate ne hai scritte ${scritte}. Le altre ${d.length} (${quando}) posso riempirle io con gli importi calcolati: siccome le tue tornano al centesimo, dovrebbero essere giuste.`;
+  }
+
   // ---------- Percorso breve: «Ci penso io» ----------
-  // Dalle rate scritte, la deduzione (deduzione.js) ricava tasso, spese e regole. Il passo mostra che cosa ha capito e,
-  // se le rate non bastano, chiede all'utente solo il dato che manca, con le risposte possibili già pronte.
+  // Dalle rate scritte, la deduzione (deduzione.js) ricava tasso, spese e regole. Il passo mostra che cosa ha capito.
+  // Se non è sicuro chiede un dato (quello in dubbio; se l'utente non lo sa, uno che lo sostituisce: le spese della
+  // ricevuta, la quota capitale di una rata) o altre rate, finché le rate tornano tutte al centesimo.
   const CODICI_DEDUZIONE = ['M01', 'M03', 'M06', 'M12'];   // le versioni dell'Euribor usate nei mutui
   const tipiDaProvare = () => guida.noti.tipo_prestito ? [guida.noti.tipo_prestito] : guida.tipoBreve === NON_SO_TIPO ? ['fisso', 'variabile'] : [guida.tipoBreve];
   const conIndice = () => tipiDaProvare().includes('variabile');
@@ -701,10 +828,15 @@
     if (guida.analisi && guida.analisi.chiave === chiave) return disegnaAnalisi();
     const analisi = guida.analisi = { chiave, inCorso: true, fase: 'calcolo', avanzamento: 0, accettata: false };
     guida.chiusi = new Set();
+    robot.coda = [];
+    const quante = ingresso.rate.filter(r => r.rata_vera != null).length;
+    if (quante) notaRobot(`Comincio i conti con ${quante === 1 ? 'la rata' : `le ${quante} rate`} che mi hai dato…`, 'inizio');
+    aggiornaCalcolo();
     try {
       const dal = TassiInternet.inizioScarico([...ingresso.date].sort()[0]);
       if (conIndice() && ingresso.rate.length && !guida.serieProvate) {
         analisi.fase = 'scarico';
+        notaRobot('Scarico gli ultimi valori dell\'Euribor dalla Bundesbank…', 'inizio');
         disegnaAnalisi();
         // L'indice dell'ultima rata si legge prima dell'inizio del mese in cui viene addebitata: servono i valori fin lì.
         const ultima = periodiIniziati().find(p => p.n === ingresso.rate[ingresso.rate.length - 1].n);
@@ -715,19 +847,23 @@
       disegnaAnalisi();
       const risultato = await Deduzione.aPezzi({ ...ingresso, serie: conIndice() ? serieDisponibili(dal) : [], predefiniti: Archivio.predefiniti() }, p => {
         analisi.avanzamento = p.totale ? p.fatto / p.totale : 0;
+        if (guida.analisi === analisi) notaRobot(fraseRobot(p));
         const barra = $('#avanzamento-analisi');
         if (barra && guida.analisi === analisi) barra.value = Math.round(analisi.avanzamento * 100);
       });
       if (guida.analisi !== analisi) return;
       Object.assign(analisi, { inCorso: false, risultato, candidati: risultato.candidati });
+      const fine = fineRobot(risultato);
+      if (fine) notaRobot(...fine);
     } catch (errore) {
       if (guida.analisi !== analisi) return;
       Object.assign(analisi, { inCorso: false, errore: errore.message, risultato: { esito: 'nessuno', candidati: [], differenze: [] }, candidati: [] });
     }
     disegnaAnalisi();
+    aggiornaCalcolo();
   }
 
-  // Dati da chiedere, in quest'ordine, quando nessuna spiegazione fa tornare le rate.
+  // Dati da chiedere, in quest'ordine, quando nessuna spiegazione fa tornare tutte le rate.
   const DA_CHIEDERE = {
     variabile: ['indice_nome', 'spread', 'spese_rata', 'mesi_revisione', 'regola_rilevazione', 'conteggio_giorni', 'tipo_piano'],
     fisso: ['tasso_fisso', 'spese_rata', 'conteggio_giorni', 'arrotonda_rata'],
@@ -736,26 +872,41 @@
   const tipoSicuro = () => guida.noti.tipo_prestito || (guida.tipoBreve === NON_SO_TIPO ? null : guida.tipoBreve);
   // Un indice scritto dall'utente che non è un Euribor: i suoi valori il programma non li ha.
   const indiceSconosciuto = () => guida.noti.indice_nome && !TassiInternet.riconosci(guida.noti.indice_nome);
-  // I parametri scritti dall'utente, quando le rate non ci sono o non bastano.
+  // I parametri scritti dall'utente, quando le rate non ci sono.
   const dichiarati = () => ({ tipo_prestito: tipoSicuro() || 'variabile', data_prima_rata: iniziPossibili()[0], ...guida.noti });
+  // Senza rate, o con un indice di cui il programma non ha i valori: il tasso lo scrive l'utente, una domanda alla volta.
+  function campiManuali(motivo) {
+    const tipo = tipoSicuro();
+    return !tipo ? ['tipo_prestito'] : tipo !== 'variabile' ? ['tasso_fisso', 'spese_rata'] : motivo === 'indice' ? ['spread', 'spese_rata'] : ['indice_nome', 'spread', 'spese_rata'];
+  }
+  const quoteScritte = () => rateInserite().some(r => r.quota_capitale != null);
+  const altreRate = () => periodiIniziati().length > rateScritte().length;
   // Che cosa mostrare, dall'esito della deduzione e dalle risposte date.
   function situazione() {
     const a = guida.analisi;
     if (!a || a.inCorso) return { tipo: 'attesa' };
     const r = a.risultato, primo = a.candidati[0];
-    // Senza rate (o con un indice di cui non ci sono i valori) il tasso lo scrive l'utente.
     if (r.esito === 'senza-rate' || (conIndice() && tipoSicuro() === 'variabile' && indiceSconosciuto())) {
-      return a.accettata ? { tipo: 'pronto', candidato: { parametri: dichiarati() }, dichiarato: true } : { tipo: 'manuale', motivo: r.esito === 'senza-rate' ? 'senza-rate' : 'indice' };
+      const motivo = r.esito === 'senza-rate' ? 'senza-rate' : 'indice';
+      const chiave = campiManuali(motivo).find(k => guida.noti[k] == null && !guida.saltate.has(k));
+      return chiave ? { tipo: 'manuale', motivo, chiave } : { tipo: 'pronto', candidato: { parametri: dichiarati() }, dichiarato: true };
     }
     if (a.accettata) return { tipo: 'pronto', candidato: primo || (r.vicina ? { parametri: r.vicina.parametri } : { parametri: dichiarati() }), accettato: true };
-    if (r.esito === 'vicino') return { tipo: 'vicino', candidato: primo };
-    if (r.esito === 'nessuno') {
+    // Le rate non tornano tutte: si chiedono dati del contratto (subito se non torna quasi niente, a richiesta se torna quasi tutto).
+    if (r.esito === 'nessuno' || (r.esito === 'vicino' && guida.modoDomande)) {
       const tipo = tipoSicuro(), lista = DA_CHIEDERE[tipo === 'variabile' || (!tipo && guida.saltate.has('tipo_prestito')) ? 'variabile' : 'fisso'];
       const chiave = !tipo && !guida.saltate.has('tipo_prestito') ? 'tipo_prestito' : lista.find(k => guida.noti[k] == null && !guida.saltate.has(k));
       return chiave ? { tipo: 'chiedi', chiave } : { tipo: 'arreso' };
     }
-    const differenze = Deduzione.differenzeFra(a.candidati).filter(d => !guida.chiusi.has(d.chiave) && guida.noti[d.chiave] == null);
-    return differenze.length ? { tipo: 'dubbio', differenza: differenze[0], candidato: primo } : { tipo: 'pronto', candidato: primo };
+    if (r.esito === 'vicino') return { tipo: 'vicino', candidato: primo };
+    const d = Deduzione.differenzeFra(a.candidati).find(x => !guida.chiusi.has(x.chiave) && guida.noti[x.chiave] == null);
+    if (!d) return { tipo: 'pronto', candidato: primo };
+    if (!guida.nonSoDubbio.has(d.chiave)) return { tipo: 'dubbio', differenza: d, candidato: primo };
+    // L'utente non conosce il dato in dubbio: se è il tasso confuso con le spese, bastano le spese della ricevuta o una
+    // quota capitale; altrimenti servono altre rate.
+    if (d.motivo === 'spese' && guida.noti.spese_rata == null && !guida.nonSoDato.has('spese_rata')) return { tipo: 'dato', chiave: 'spese_rata', differenza: d, candidato: primo };
+    if ((d.motivo === 'spese' || d.chiave === 'tasso_annuo_piano') && !quoteScritte() && !guida.nonSoDato.has('quota')) return { tipo: 'dato', chiave: 'quota', differenza: d, candidato: primo };
+    return { tipo: 'incerto', differenza: d, candidato: primo };
   }
 
   const tassoChiave = p => variabile(p) ? 'spread' : 'tasso_fisso';
@@ -776,28 +927,35 @@
     return crea('dl', { className: 'riepilogo-guida' }, ...voci.flatMap(([etichetta, valore]) => [crea('dt', {}, etichetta), crea('dd', {}, valore)]));
   }
   const titoloEsito = (testo, icona, classe) => crea('h3', { className: 'esito-analisi ' + classe }, Icone.crea(icona, 'icona'), testo);
-  // Rate che non tornano: quanto ha scritto l'utente e quanto dice il calcolo.
-  function tabellaSbagliate(sbagliate) {
+  // Rate che non tornano: quanto ha scritto l'utente, quanto dice il calcolo, e i pulsanti per correggerle o toglierle.
+  function tabellaSbagliate(sbagliate, conAzioni) {
     const mesi = new Map(periodiIniziati().map(p => [p.n, p.inizio]));
     return crea('div', { className: 'contenitore-tabella semplice' }, crea('table', {},
-      crea('thead', {}, crea('tr', {}, crea('th', {}, 'Rata'), crea('th', { className: 'testo' }, 'Addebitata a'), crea('th', {}, 'Hai scritto'), crea('th', {}, 'Secondo il calcolo'))),
-      crea('tbody', {}, ...sbagliate.map(s => crea('tr', {}, crea('td', {}, String(s.n)), crea('td', { className: 'testo' }, mesi.has(s.n) ? M.meseAnno(mesi.get(s.n)) : ''),
-        crea('td', {}, euro(s.vera)), crea('td', {}, euro(s.calcolata)))))));
+      crea('thead', {}, crea('tr', {}, crea('th', {}, 'Rata'), crea('th', { className: 'testo' }, 'Addebitata il'), crea('th', {}, 'Hai scritto'), crea('th', {}, 'Secondo il calcolo'),
+        ...(conAzioni ? [crea('th', {}, '')] : []))),
+      crea('tbody', {}, ...sbagliate.map(s => crea('tr', {}, crea('td', {}, String(s.n)), crea('td', { className: 'testo' }, mesi.has(s.n) ? dataChiara(mesi.get(s.n)) : ''),
+        crea('td', {}, euro(s.vera)), crea('td', {}, euro(s.calcolata)),
+        ...(conAzioni ? [crea('td', { className: 'azione' }, crea('button', { type: 'button', className: 'secondario piccolo', 'data-correggi-rata': s.n }, 'Correggi'),
+          crea('button', { type: 'button', className: 'secondario piccolo', 'data-togli-rata': s.n }, 'Togli'))] : []))))));
   }
   const campoNumero = (nome, valore, segnaposto, etichetta) => crea('label', {}, etichetta,
     crea('input', { type: 'text', inputMode: 'decimal', name: nome, value: valore, placeholder: segnaposto }));
 
   // Le domande per i dubbi: che cosa si chiede e perché.
   const TESTI_DUBBIO = {
-    tipo_prestito: { domanda: 'Il tuo mutuo è a tasso fisso o variabile?', perche: 'Le rate che hai scritto tornano in tutti e due i casi: con altre rate lo capirei da solo, ma è più semplice chiederlo a te.' },
+    tipo_prestito: { domanda: 'Il tuo mutuo è a tasso fisso o variabile?', perche: 'Le rate che hai scritto tornano in tutti e due i casi.' },
     indice_nome: { domanda: 'A quale indice è legato il tuo tasso?', perche: 'Le rate che hai scritto tornano con più versioni dell\'Euribor: succede quando nel periodo i loro valori si sono mossi insieme, o quando erano tutti sotto lo zero.' },
     spread: { domanda: 'Quanto vale lo spread?', perche: 'Le rate che hai scritto tornano con più di uno spread.' },
     tasso_fisso: { domanda: 'Qual è il tasso (TAN) del contratto?', perche: 'Le rate che hai scritto tornano con più di un tasso.' },
     spese_rata: { domanda: 'Quanto paghi di spese su ogni rata?', perche: 'Le rate che hai scritto tornano con spese diverse.' },
     tipo_piano: { domanda: 'Come viene restituito il capitale?', perche: 'Le rate che hai scritto tornano in più di un modo.' },
-    tasso_annuo_piano: { domanda: 'Mi scrivi la quota capitale di una rata?', perche: 'Le quote capitale del tuo piano sono state fissate alla firma, ma con queste rate non riesco a capire con quale tasso. La quota capitale di una delle prime rate basta a toglierlo.' },
+    tasso_annuo_piano: { domanda: 'Mi scrivi la quota capitale di una rata?', perche: 'Le quote capitale del tuo piano sono state fissate alla firma, ma con queste rate non riesco a capire con quale tasso.' },
     mesi_revisione: { domanda: 'Ogni quanto la banca aggiorna il tasso?', perche: 'Le rate che hai scritto tornano sia con un aggiornamento mensile sia con uno più lungo.' },
   };
+  // Domanda sulla quota capitale di una rata (per il tasso del piano, o al posto del tasso che l'utente non trova).
+  const campiQuota = () => crea('div', { className: 'campi due-colonne' },
+    crea('label', {}, 'Rata', crea('select', { name: 'quota_rata' }, ...rateScritte().map(r => crea('option', { value: String(r.n) }, `n. ${r.n}, ${M.meseAnno(periodiIniziati()[r.n - 1].inizio)}`)))),
+    campoNumero('quota_valore', '', 'es. 280,00', 'Quota capitale (€)'));
   function domandaDubbio(d) {
     const testi = TESTI_DUBBIO[d.chiave], numero = ['spread', 'tasso_fisso', 'spese_rata'].includes(d.chiave), spese = d.motivo === 'spese';
     const proposto = formatoValore(d.chiave, d.valori[0]);
@@ -807,28 +965,33 @@
     const scelte = d.chiave === 'tasso_annuo_piano' ? [] : d.valori.map((v, i) => voce('risposta', String(i), formatoValore(d.chiave, v), spese ? 'Senza spese aggiunte alle rate.' : null, false));
     const altro = numero ? [voce('risposta', 'altro', spese ? 'Nel contratto c\'è un altro valore' : 'Un altro valore', null, false,
       crea('input', { type: 'text', inputMode: 'decimal', name: 'risposta_altro', placeholder: d.chiave === 'spese_rata' ? 'es. 1,50' : 'es. 1,25', 'aria-label': testi.domanda }))] : [];
-    const quota = d.chiave !== 'tasso_annuo_piano' ? [] : [crea('div', { className: 'campi due-colonne' },
-      crea('label', {}, 'Rata numero', crea('select', { name: 'quota_rata' }, ...ingressoAnalisi().rate.map(r => crea('option', { value: String(r.n) }, String(r.n))))),
-      campoNumero('quota_valore', '', 'es. 280,00', 'Quota capitale (€)'))];
-    const nonSo = voce('risposta', 'nonso', 'Non lo so', d.chiave === 'tasso_annuo_piano' ? 'Scelgo io il più probabile: con altre rate, la taratura nel pannello di controllo lo correggerà.'
-      : `Uso ${proposto}, che è il più probabile.`, false);
-    return crea('div', { className: 'domanda', 'data-campo': 'risposta' },
-      crea('p', { className: 'titolo-domanda' }, testi.domanda), ...quota,
-      crea('div', { className: 'scelte' }, ...scelte, ...altro, nonSo),
-      spiegazione({ perche, dove: d.chiave === 'tasso_annuo_piano' ? 'Nel dettaglio della ricevuta della rata, alla voce «quota capitale», o nel piano di ammortamento.' : (DOMANDE[d.chiave] || {}).dove }));
+    return crea('div', { className: 'domanda domanda-sola', 'data-campo': 'risposta' },
+      crea('p', { className: 'titolo-domanda grande' }, testi.domanda), ...(d.chiave === 'tasso_annuo_piano' ? [campiQuota()] : []),
+      crea('div', { className: 'scelte' }, ...scelte, ...altro, voce('risposta', 'nonso', d.chiave === 'tasso_annuo_piano' ? 'Non la trovo' : 'Non lo trovo', null, false)),
+      crea('p', { className: 'spiegazione-corta' }, perche),
+      ...((DOMANDE[d.chiave] || {}).dove ? [crea('details', { className: 'piu-spiegazioni' }, crea('summary', {}, 'Dove lo trovo?'), spiegazione({ dove: DOMANDE[d.chiave].dove }))] : []));
+  }
+  // Un dato che sostituisce quello in dubbio: le spese della ricevuta, o la quota capitale di una rata.
+  function domandaDato(chiave, d) {
+    const spread = d.chiave === 'spread' ? 'lo spread' : 'il tasso';
+    if (chiave === 'spese_rata') {
+      return crea('div', { className: 'domanda domanda-sola', 'data-campo': 'risposta' },
+        crea('p', { className: 'titolo-domanda grande' }, 'Quanto paghi di spese su ogni rata?'),
+        crea('div', { className: 'scelte' }, voce('risposta', 'zero', 'Nessuna spesa', null, false),
+          voce('risposta', 'altro', 'Questo importo', null, false, crea('input', { type: 'text', inputMode: 'decimal', name: 'risposta_altro', placeholder: 'es. 1,50', 'aria-label': 'Spese per rata' })),
+          voce('risposta', 'nonso', 'Non lo trovo', null, false)),
+        crea('p', { className: 'spiegazione-corta' }, `Con le spese ricavo ${spread} con certezza. Le trovi nella ricevuta della rata, alla voce «spese», «commissioni» o «spese incasso rata».`));
+    }
+    return crea('div', { className: 'domanda domanda-sola', 'data-campo': 'risposta' },
+      crea('p', { className: 'titolo-domanda grande' }, 'Mi scrivi la quota capitale di una rata?'), campiQuota(),
+      crea('div', { className: 'scelte' }, voce('risposta', 'nonso', 'Non la trovo', null, false)),
+      crea('p', { className: 'spiegazione-corta' }, `È la parte della rata che riduce il debito: con quella ricavo ${spread} con certezza. La trovi nel dettaglio della ricevuta, alla voce «quota capitale», o nel piano di ammortamento.`));
   }
   function rispondiDubbio(d) {
     const scelta = $('#campi-passo input[name="risposta"]:checked');
-    if (d.chiave === 'tasso_annuo_piano' && (!scelta || scelta.value !== 'nonso')) {
-      const testo = $('#campi-passo [name="quota_valore"]').value.trim(), quota = leggiNumero(testo, true);
-      if (!(quota > 0)) return mostraErrore('Scrivi la quota capitale in euro, ad esempio 280,00, oppure scegli «Non lo so».');
-      const n = $('#campi-passo [name="quota_rata"]').value;
-      (guida.rate[n] || (guida.rate[n] = {})).quota = testo;
-      guida.conQuota = true;
-      return avviaAnalisi();
-    }
-    if (!scelta) return mostraErrore('Scegli una risposta, oppure «Non lo so».');
-    if (scelta.value === 'nonso') { guida.chiusi.add(d.chiave); guida.saltate.add(d.chiave); return disegnaAnalisi(); }
+    if (d.chiave === 'tasso_annuo_piano' && (!scelta || scelta.value !== 'nonso')) return rispondiQuota();
+    if (!scelta) return mostraErrore('Scegli una risposta, oppure «Non lo trovo».');
+    if (scelta.value === 'nonso') { guida.nonSoDubbio.add(d.chiave); return disegnaAnalisi(); }
     if (scelta.value === 'altro') {
       const v = leggiNumero($('#campi-passo [name="risposta_altro"]').value, d.chiave === 'spese_rata');
       if (v == null || Number.isNaN(v) || v < (d.chiave === 'spread' ? -5 : 0) || v > (d.chiave === 'spese_rata' ? 1000 : 50)) return mostraErrore('Scrivi il valore del contratto, ad esempio 1,25.');
@@ -840,19 +1003,35 @@
     guida.chiusi.add(d.chiave);
     disegnaAnalisi();
   }
-  // Una domanda sul contratto quando le rate non tornano: le stesse domande del percorso completo, più «Non lo so».
+  function rispondiQuota() {
+    const testo = $('#campi-passo [name="quota_valore"]').value.trim(), quota = leggiNumero(testo, true);
+    if (!(quota > 0)) return mostraErrore('Scrivi la quota capitale in euro, ad esempio 280,00, oppure scegli «Non la trovo».');
+    const n = $('#campi-passo [name="quota_rata"]').value;
+    (guida.rate[n] || (guida.rate[n] = {})).quota = testo;
+    avviaAnalisi();
+  }
+  function rispondiDato(s) {
+    const scelta = $('#campi-passo input[name="risposta"]:checked');
+    if (scelta && scelta.value === 'nonso') { guida.nonSoDato.add(s.chiave); return disegnaAnalisi(); }
+    if (s.chiave === 'quota') return rispondiQuota();
+    if (!scelta) return mostraErrore('Scegli una risposta, oppure «Non lo trovo».');
+    const v = scelta.value === 'zero' ? 0 : leggiNumero($('#campi-passo [name="risposta_altro"]').value, true);
+    if (v == null || Number.isNaN(v) || v < 0 || v > 1000) return mostraErrore('Scrivi le spese in euro, ad esempio 1,50.');
+    guida.noti.spese_rata = v;
+    avviaAnalisi();
+  }
+  // Una domanda sul contratto quando le rate non tornano: le stesse del percorso completo, più «Non lo so».
   function domandaMancante(chiave) {
     if (chiave === 'tipo_prestito') {
-      const d = DOMANDE.tipo_prestito;
-      return crea('div', { className: 'domanda', 'data-campo': 'tipo_prestito' }, crea('p', { className: 'titolo-domanda' }, 'Il tuo mutuo è a tasso fisso o variabile?'),
+      return crea('div', { className: 'domanda domanda-sola', 'data-campo': 'tipo_prestito' }, crea('p', { className: 'titolo-domanda grande' }, 'Il tuo mutuo è a tasso fisso o variabile?'),
         crea('div', { className: 'scelte' }, ...CAMPI.tipo_prestito.opzioni.slice(0, 2).map(o => voce('tipo_prestito', o.valore, o.etichetta, o.aiuto, false, null, o.icona)),
-          voce('tipo_prestito', NON_SO, 'Non lo so', null, false)), spiegazione({ dove: d.dove }));
+          voce('tipo_prestito', NON_SO, 'Non lo so', null, false)), crea('p', { className: 'spiegazione-corta' }, DOMANDE.tipo_prestito.dove));
     }
     const domande = [creaDomanda(chiave), ...(chiave === 'regola_rilevazione' ? [creaDomanda('giorni_anticipo_euribor')] : [])];
     // Le caselle partono vuote e nessuna scelta è già fatta: un valore iniziale (spese 0) sembrerebbe già una risposta.
     for (const input of domande[0].querySelectorAll('input[type="text"]')) input.value = '';
     for (const scelta of domande[0].querySelectorAll('input[type="radio"]')) scelta.checked = false;
-    if (!(DOMANDE[chiave] || {}).nonSo && CAMPI[chiave].tipo !== 'scelta') domande[0].append(crea('label', { className: 'spunta' }, crea('input', { type: 'checkbox', name: 'non_lo_so' }), crea('span', {}, 'Non lo so')));
+    if (!(DOMANDE[chiave] || {}).nonSo && CAMPI[chiave].tipo !== 'scelta') domande[0].querySelector('.spiegazione').before(crea('label', { className: 'spunta' }, crea('input', { type: 'checkbox', name: 'non_lo_so' }), crea('span', {}, 'Non lo so')));
     return domande;
   }
   function rispondiMancante(chiave) {
@@ -870,28 +1049,31 @@
     Object.assign(guida.noti, letti.valori);
     avviaAnalisi();
   }
-  // Senza rate, o con un indice di cui il programma non ha i valori: il tasso lo scrive l'utente.
-  function campiManuali(motivo) {
-    const tipo = tipoSicuro();
-    return !tipo ? [] : tipo !== 'variabile' ? ['tasso_fisso', 'spese_rata'] : motivo === 'indice' ? ['spread', 'spese_rata'] : ['indice_nome', 'spread', 'spese_rata'];
-  }
   function rispondiManuale(s) {
-    if (!tipoSicuro()) return mostraErrore('Scegli se il mutuo è a tasso fisso o variabile.');
-    const letti = leggiDomande(campiManuali(s.motivo), true);
+    if (s.chiave === 'tipo_prestito') {
+      const scelta = $('#campi-passo input[name="tipo_prestito"]:checked');
+      if (!scelta) return mostraErrore('Scegli se il mutuo è a tasso fisso o variabile.');
+      guida.noti.tipo_prestito = scelta.value;
+      return disegnaAnalisi();
+    }
+    if (s.chiave === 'spese_rata' && $('#campi-passo [name="non_lo_so"]:checked')) { guida.saltate.add('spese_rata'); return disegnaAnalisi(); }
+    const letti = leggiDomande([s.chiave], true);
     if (letti.errore) return mostraErrore(letti.errore);
     Object.assign(guida.noti, letti.valori);
     Object.assign(guida.bozza, letti.valori);
-    guida.analisi.accettata = true;
     disegnaAnalisi();
   }
 
+  // Il pulsante «Avanti» del passo dice che cosa fa, secondo la situazione.
+  const AVANTI_ANALISI = { dubbio: 'Rispondi', dato: 'Rispondi', chiedi: 'Riprova con questa risposta', vicino: 'Rispondo a una domanda sul contratto', arreso: 'Controllo le rate' };
   function disegnaAnalisi() {
     if (passoAttuale().tipo !== 'analisi') return;
     const s = guida.situazione = situazione(), a = guida.analisi, contenitore = $('#campi-passo'), avanti = $('#guida-avanti');
+    Assistente.dici(assistenteGuida, ...(s.tipo === 'pronto' && s.dichiarato ? ['Ecco il tuo prestito, con il tasso che mi hai dato.', 'felice'] : FRASI_ANALISI[s.tipo]));
     avanti.disabled = s.tipo === 'attesa';
-    avanti.textContent = { dubbio: 'Rispondi', chiedi: 'Riprova con questa risposta', vicino: 'Va bene così, avanti', arreso: 'Continua lo stesso' }[s.tipo] || 'Avanti';
+    avanti.textContent = s.tipo === 'incerto' ? (altreRate() ? 'Aggiungo altre rate' : `Uso ${formatoValore(s.differenza.chiave, s.differenza.valori[0])}`) : AVANTI_ANALISI[s.tipo] || 'Avanti';
     $('#errore-passo').hidden = true;
-    const rate = a && !a.inCorso ? ingressoAnalisi().rate.filter(r => r.rata_vera != null).length : rateInserite().filter(r => r.rata_vera != null).length;
+    const rate = (a && !a.inCorso ? ingressoAnalisi().rate : rateInserite()).filter(r => r.rata_vera != null).length;
     const blocchi = [];
     if (s.tipo === 'attesa') {
       blocchi.push(crea('div', { className: 'attesa', role: 'status' }, crea('span', { className: 'rotella', 'aria-hidden': 'true' }),
@@ -905,10 +1087,10 @@
       else {
         const tutte = c.rate != null && c.rate === c.suRate && c.quote === c.suQuote;
         blocchi.push(crea('p', { className: 'nota ' + (tutte ? 'conferma' : 'evidenza') }, tutte ? (c.suRate === 1 ? '✓ La rata che hai scritto torna al centesimo con questo calcolo.' : `✓ Le ${c.suRate} rate che hai scritto tornano tutte al centesimo con questo calcolo.`)
-          : c.rate == null ? 'Hai scelto di andare avanti con il calcolo che si avvicina di più, anche se le rate non tornano: controlla il piano, e usa la taratura nel «Pannello di controllo» quando avrai altre rate.'
-            : `Con questo calcolo tornano ${c.rate} rate su ${c.suRate}: per le altre hai detto che va bene così.`));
+          : 'Hai scelto di andare avanti anche se non tutte le rate tornano: controlla il piano, e usa la taratura nel «Pannello di controllo» quando avrai altre rate.'));
         if (c.senza) blocchi.push(crea('p', { className: 'nota' }, `Per ${c.senza === 1 ? 'una rata' : `${c.senza} rate`} non ho ancora il valore dell'Euribor del giorno in cui la banca l'ha letto${guida.serieErrore ? ` (${guida.serieErrore})` : ''}: ${c.senza === 1 ? 'la controllerò' : 'le controllerò'} quando arriva.`));
-        if (c.suRate < 3) blocchi.push(crea('p', { className: 'nota' }, 'Con così poche rate potrei sbagliarmi: quando ne avrai altre, scrivile nella pagina «Piano» e controlla che le righe restino verdi.'));
+        if (c.suRate < 3 && altreRate()) blocchi.push(crea('div', { className: 'consiglio' }, crea('p', {}, 'Con meno di tre rate non posso esserne del tutto sicuro: se ne hai altre, scrivile e ricontrollo.'),
+          crea('button', { type: 'button', className: 'secondario', id: 'altre-rate-analisi' }, 'Aggiungo altre rate')));
         if (guida.saltate.size) blocchi.push(crea('p', { className: 'nota' }, 'Dove non lo sapevi ho scelto io la risposta più probabile.'));
         const chiave = tassoChiave(p);
         blocchi.push(crea('details', { className: 'correggi-analisi' }, crea('summary', {}, 'Nel contratto c\'è scritto qualcosa di diverso?'),
@@ -918,43 +1100,53 @@
             campoNumero('correggi_spese', perCampo(p.spese_rata || 0), '', 'Spese per rata (€)')),
           crea('button', { type: 'button', className: 'secondario', id: 'ricalcola-analisi' }, 'Rifai i conti con questi valori')));
       }
-    } else if (s.tipo === 'dubbio') {
-      blocchi.push(titoloEsito('Ho capito quasi tutto: mi manca un dato', 'info', 'quasi'), domandaDubbio(s.differenza),
+    } else if (s.tipo === 'dubbio' || s.tipo === 'dato') {
+      blocchi.push(titoloEsito('Le rate tornano, ma mi manca un dato per esserne sicuro', 'info', 'quasi'),
+        s.tipo === 'dubbio' ? domandaDubbio(s.differenza) : domandaDato(s.chiave, s.differenza),
         crea('details', {}, crea('summary', {}, 'Cosa ho capito finora'), capito({ ...guida.bozza, ...s.candidato.parametri })));
+    } else if (s.tipo === 'incerto') {
+      const d = s.differenza, proposto = formatoValore(d.chiave, d.valori[0]);
+      blocchi.push(titoloEsito('Mi servono altre rate per esserne sicuro', 'info', 'quasi'),
+        crea('p', {}, altreRate() ? `Con le rate che hai scritto non posso decidere ${({ tipo_prestito: 'se il mutuo è fisso o variabile', indice_nome: 'quale indice usa il tuo contratto', tasso_annuo_piano: 'con quale tasso sono state fissate le quote capitale', mesi_revisione: 'ogni quanto si aggiorna il tasso', tipo_piano: 'come viene restituito il capitale' })[d.chiave] || 'il tasso'}. Scrivi altre rate, meglio se lontane da quelle che hai già scritto (di anni diversi, se puoi): ricontrollo da solo.`
+          : 'Hai già scritto tutte le rate pagate, ma non bastano a decidere.'),
+        crea('p', { className: 'nota' }, `Se non hai altre rate, posso usare ${proposto}, che è il valore più probabile: le rate che hai scritto tornano comunque al centesimo.`),
+        crea('p', {}, crea('button', { type: 'button', className: 'secondario', id: 'usa-probabile' }, `Uso ${proposto}`)));
     } else if (s.tipo === 'vicino') {
       const c = s.candidato;
-      blocchi.push(titoloEsito('Quasi tutto torna, ma non tutto', 'attenzione', 'quasi'),
-        crea('p', {}, `Con il calcolo qui sotto tornano ${c.rate} rate su ${c.suRate}. ${c.sbagliate.length === 1 ? 'Questa no' : 'Queste no'}:`),
-        tabellaSbagliate(c.sbagliate),
-        // Pochi centesimi di differenza: di solito manca un dettaglio, non c'è un errore di battitura.
-        ...(c.sbagliate.every(x => Math.abs(x.vera - x.calcolata) <= 0.1)
-          ? [crea('p', { className: 'nota' }, 'Le differenze sono di pochi centesimi: di solito vuol dire che mi manca un dettaglio, non che hai sbagliato a scrivere. Aggiungi qualche rata, oppure la quota capitale di una rata (la trovi nel dettaglio della ricevuta), e rifaccio i conti. Se non le hai, vai avanti lo stesso.'),
-            crea('p', {}, crea('button', { type: 'button', className: 'secondario', id: 'torna-rate' }, 'Aggiungo rate o la quota capitale'))]
-          : [crea('p', { className: 'nota' }, 'Controlla questi importi: forse c\'è un errore di battitura, oppure quel mese la banca ha addebitato qualcosa in più (una mora, una commissione). Se un importo è sbagliato, correggilo; se è giusto, vai avanti lo stesso.'),
-            crea('p', {}, crea('button', { type: 'button', className: 'secondario', id: 'torna-rate' }, 'Correggo le rate'))]),
+      blocchi.push(titoloEsito(c.sbagliate.length === 1 ? 'Una rata non torna' : `${c.sbagliate.length} rate non tornano`, 'attenzione', 'quasi'),
+        crea('p', {}, `Con il calcolo che ho trovato tornano ${c.rate} rate su ${c.suRate}. ${c.sbagliate.length === 1 ? 'Questa no' : 'Queste no'}:`),
+        tabellaSbagliate(c.sbagliate, true),
+        crea('p', { className: 'nota' }, c.sbagliate.every(x => Math.abs(x.vera - x.calcolata) <= 0.1)
+          ? 'Le differenze sono di pochi centesimi: di solito vuol dire che mi manca un dettaglio del contratto. Rispondi a qualche domanda, oppure scrivi altre rate o la quota capitale di una rata.'
+          : 'Forse c\'è un errore di battitura: correggi l\'importo. Se invece quel mese la banca ha addebitato qualcosa in più (una mora, una commissione, un\'assicurazione), togli quella rata: le altre bastano. Se gli importi sono giusti, rispondi a qualche domanda sul contratto.'),
+        crea('div', { className: 'azioni' }, ...(altreRate() ? [crea('button', { type: 'button', className: 'secondario', id: 'altre-rate-analisi' }, 'Aggiungo altre rate')] : [])),
         crea('details', {}, crea('summary', {}, 'Cosa ho capito dalle altre rate'), capito({ ...guida.bozza, ...c.parametri })));
     } else if (s.tipo === 'chiedi') {
       blocchi.push(titoloEsito('Non riesco ancora a far tornare le tue rate', 'attenzione', 'quasi'),
-        crea('p', {}, 'Ho provato le combinazioni di tassi, spese e regole più comuni, ma nessuna riproduce gli importi che hai scritto. Aiutami con un dato del contratto: con quello riprovo.'),
+        crea('p', {}, 'Ho provato le combinazioni di tassi, spese e regole più comuni, ma nessuna riproduce tutti gli importi che hai scritto. Aiutami con un dato del contratto: con quello riprovo.'),
         ...[domandaMancante(s.chiave)].flat());
     } else if (s.tipo === 'arreso') {
       const vicina = a.candidati[0] || a.risultato.vicina;
       blocchi.push(titoloEsito('Non riesco a far tornare le tue rate', 'attenzione', 'quasi'),
-        crea('p', {}, 'Ho provato anche con i dati che mi hai dato, ma i conti non tornano. Può darsi che un importo sia scritto male, oppure che il tuo contratto usi una regola che il programma non conosce.'),
-        ...(vicina && vicina.sbagliate && vicina.sbagliate.length ? [crea('p', {}, 'Con il calcolo che si avvicina di più, ecco le differenze:'), tabellaSbagliate(vicina.sbagliate)] : []),
-        crea('p', { className: 'nota' }, 'Puoi controllare le rate, rispondere tu a tutte le domande sul contratto, oppure andare avanti con il calcolo che si avvicina di più e sistemare dopo, con la taratura nel «Pannello di controllo».'),
-        crea('div', { className: 'azioni' }, crea('button', { type: 'button', className: 'secondario', id: 'torna-rate' }, 'Controllo le rate'),
-          crea('button', { type: 'button', className: 'secondario', id: 'percorso-completo' }, 'Rispondo io a tutte le domande')));
+        crea('p', {}, 'Ho provato anche con i dati che mi hai dato, ma i conti non tornano. Controlla gli importi delle rate (un errore di battitura, o un mese con un addebito in più): appena tornano, vado avanti.'),
+        ...(vicina && vicina.sbagliate && vicina.sbagliate.length ? [crea('p', {}, 'Con il calcolo che si avvicina di più, ecco le differenze:'), tabellaSbagliate(vicina.sbagliate, true)] : []),
+        crea('p', { className: 'nota' }, 'Se il tuo contratto usa una regola particolare, puoi rispondere tu a tutte le domande sul contratto.'),
+        crea('div', { className: 'azioni' }, crea('button', { type: 'button', className: 'secondario', id: 'percorso-completo' }, 'Rispondo io a tutte le domande'),
+          crea('button', { type: 'button', className: 'collegamento', id: 'avanti-lo-stesso' }, 'Vado avanti lo stesso, anche se le rate non tornano')));
     } else if (s.tipo === 'manuale') {
-      const tipo = tipoSicuro();
-      blocchi.push(titoloEsito('Mi serve il tasso del contratto', 'documento', 'quasi'),
-        crea('p', {}, s.motivo === 'indice' ? `Il programma non ha i valori di «${guida.noti.indice_nome}», quindi non posso ricavare lo spread dalle rate: scrivilo tu. I valori dell'indice li inserirai poi nella pagina «Tassi».`
-          : 'Non hai scritto rate già pagate (o il prestito non è ancora partito), quindi non posso ricavare il tasso dalle rate: scrivilo tu, lo trovi nel contratto.'));
-      if (!tipo) {
-        blocchi.push(crea('div', { className: 'domanda', 'data-campo': 'tipo_manuale' }, crea('p', { className: 'titolo-domanda' }, 'Il tuo mutuo è a tasso fisso o variabile? *'),
-          crea('div', { className: 'scelte' }, ...CAMPI.tipo_prestito.opzioni.slice(0, 2).map(o => voce('tipo_manuale', o.valore, o.etichetta, o.aiuto, false, null, o.icona))),
-          spiegazione({ dove: DOMANDE.tipo_prestito.dove })));
-      } else blocchi.push(...campiManuali(s.motivo).map(creaDomanda));
+      const primaDomanda = s.chiave === campiManuali(s.motivo)[0];
+      blocchi.push(titoloEsito('Mi serve il tasso del contratto', 'documento', 'quasi'));
+      if (primaDomanda) blocchi.push(crea('p', {}, s.motivo === 'indice' ? `Il programma non ha i valori di «${guida.noti.indice_nome}», quindi non posso ricavare lo spread dalle rate: scrivilo tu. I valori dell'indice li inserirai poi nella pagina «Tassi».`
+        : 'Non hai scritto rate già pagate (o il prestito non è ancora partito), quindi non posso ricavare il tasso dalle rate: scrivilo tu, lo trovi nel contratto.'));
+      if (s.chiave === 'tipo_prestito') {
+        blocchi.push(crea('div', { className: 'domanda domanda-sola', 'data-campo': 'tipo_prestito' }, crea('p', { className: 'titolo-domanda grande' }, 'Il tuo mutuo è a tasso fisso o variabile?'),
+          crea('div', { className: 'scelte' }, ...CAMPI.tipo_prestito.opzioni.slice(0, 2).map(o => voce('tipo_prestito', o.valore, o.etichetta, o.aiuto, false, null, o.icona))),
+          crea('p', { className: 'spiegazione-corta' }, DOMANDE.tipo_prestito.dove)));
+      } else {
+        const domanda = creaDomanda(s.chiave);
+        if (s.chiave === 'spese_rata') domanda.querySelector('.spiegazione').before(crea('label', { className: 'spunta' }, crea('input', { type: 'checkbox', name: 'non_lo_so' }), crea('span', {}, 'Non lo so: nessuna spesa')));
+        blocchi.push(domanda);
+      }
     }
     if (a && a.errore) blocchi.unshift(crea('p', { className: 'nota evidenza' }, `Qualcosa è andato storto nei calcoli: ${a.errore}`));
     contenitore.replaceChildren(...blocchi);
@@ -965,22 +1157,48 @@
     const regola = $('#campi-passo input[name="regola_rilevazione"]:checked'), giorni = $('#campi-passo [data-campo="giorni_anticipo_euribor"]');
     if (giorni) giorni.hidden = !regola || regola.value !== 'lavorativi_prima';
   }
+  // Dal passo «Ci penso io» alle rate, per aggiungerne altre: si riparte dalla prima non ancora vista.
+  function aggiungiRate() {
+    const lista = rateInOrdine(), scritte = new Set(rateScritte().map(r => r.n));
+    guida.passo = PASSI_BREVI.findIndex(p => p.tipo === 'rate');
+    const dopo = lista.findIndex((p, i) => i > guida.rataCorrente && !scritte.has(p.n)), prima = lista.findIndex(p => !scritte.has(p.n));
+    guida.rataCorrente = dopo >= 0 ? dopo : Math.max(0, prima);
+    disegnaPasso();
+  }
   // «Avanti» nel passo: risponde alla domanda in corso; vero quando si può passare al passo dopo.
   function avantiAnalisi() {
     const s = guida.situazione || situazione();
     if (s.tipo === 'dubbio') rispondiDubbio(s.differenza);
+    else if (s.tipo === 'dato') rispondiDato(s);
     else if (s.tipo === 'chiedi') rispondiMancante(s.chiave);
     else if (s.tipo === 'manuale') rispondiManuale(s);
-    else if (s.tipo === 'vicino' || s.tipo === 'arreso') { guida.analisi.accettata = true; return concludiAnalisi(situazione().candidato); }
-    else if (s.tipo === 'pronto') return concludiAnalisi(s.candidato);
+    else if (s.tipo === 'vicino') { guida.modoDomande = true; disegnaAnalisi(); }
+    else if (s.tipo === 'arreso') {
+      // «Controllo le rate»: si parte dalla prima che non torna.
+      const vicina = guida.analisi.candidati[0] || guida.analisi.risultato.vicina;
+      vaiAllaRata(vicina && vicina.sbagliate && vicina.sbagliate.length ? vicina.sbagliate[0].n : rateInOrdine()[0].n);
+    }
+    else if (s.tipo === 'incerto') { if (altreRate()) aggiungiRate(); else usaProbabile(s); }
+    else if (s.tipo === 'pronto') return concludiAnalisi(s);
     return false;
   }
-  // I numeri trovati (o scritti) vanno nella bozza, con i valori dell'indice scaricati nella guida.
-  function concludiAnalisi(c) {
-    const b = Object.assign(guida.bozza, c.parametri);
+  // Il valore più probabile, quando l'utente non ha altro da dire.
+  function usaProbabile(s) {
+    const d = s.differenza;
+    guida.analisi.candidati = guida.analisi.candidati.filter(c => stessoValore(d.chiave, c.parametri[d.chiave], d.valori[0]));
+    guida.chiusi.add(d.chiave);
+    guida.saltate.add(d.chiave);
+    disegnaAnalisi();
+  }
+  // I numeri trovati (o scritti) vanno nella bozza, con i valori dell'indice scaricati nella guida. Se le rate tornano
+  // tutte, si preparano quelle da riempire con il calcolo.
+  function concludiAnalisi(s) {
+    const c = s.candidato, b = Object.assign(guida.bozza, c.parametri);
     if (b.nome === Archivio.predefiniti().nome) b.nome = b.tipo_prestito === 'variabile' || b.tipo_prestito === 'fisso' ? 'Il mio mutuo' : 'Il mio finanziamento';
     const serie = variabile(b) ? TassiInternet.riconosci(b.indice_nome) : null;
     guida.scaricati = serie && guida.serieScaricate[serie.codice] ? { codice: serie.codice, valori: guida.serieScaricate[serie.codice] } : null;
+    const perfette = !s.dichiarato && !s.accettato && c.rate != null && c.rate === c.suRate && c.quote === c.suQuote;
+    guida.daRiempire = perfette ? rateDaRiempire() : [];
     return true;
   }
   // Passa all'altro percorso, con le risposte date finora.
@@ -990,13 +1208,153 @@
     disegnaPasso();
   }
 
+  // ---------- L'assistente della guida e il robottino dei conti ----------
+  // L'assistente (assistente.js) sta sopra il titolo di ogni pagina e commenta: che cosa serve, come vanno i conti.
+  // Mentre l'utente scrive le rate, la deduzione gira in sottofondo dopo ogni rata: sotto la casella una barra dice
+  // quanto il programma è sicuro, e il «robottino» racconta, una riga alla volta, che cosa sta provando.
+  const assistenteGuida = Assistente.nuovo('nella-guida');
+  $('#titolo-passo').before(assistenteGuida);
+  const FRASI_GUIDA = {
+    benvenuto: 'Ciao! Sono qui per aiutarti a controllare il tuo prestito: tu mi dai pochi numeri, io faccio i conti.',
+    tipo_breve: 'Partiamo da una cosa facile. Se hai un dubbio, scegli pure «non so»: ci penso io.',
+    importo_iniziale: 'Perfetto. Adesso un numero che trovi nella prima pagina del contratto.',
+    numero_rate: 'Se sai solo gli anni, moltiplica per dodici: 25 anni sono 300 rate.',
+    maxirata: 'Un finanziamento con la maxirata: dimmi quanto vale l\'ultima rata, quella grande.',
+    data_addebito: 'Ultima domanda sul prestito: una data. Va bene anche approssimativa.',
+    ordine_rate: 'Ora la parte più importante: le rate che hai già pagato. Da quelle capisco tutto il resto.',
+    nome: 'Ci siamo quasi! Dagli un nome: ti servirà se segui più di un prestito.',
+    dettagli: 'Spese e assicurazioni sono facoltative: servono solo a calcolare il costo totale.',
+    riempi: 'Una comodità: le rate che non hai scritto posso metterle io, così vedi subito il piano completo.',
+    riepilogo: 'Ecco tutto. Se va bene, premi «Crea il prestito» e ti mostro il piano.',
+  };
+  function fraseGuida(passo) {
+    if (passo.tipo === 'benvenuto') return [FRASI_GUIDA.benvenuto, 'felice'];
+    if (passo.tipo === 'riepilogo') return [FRASI_GUIDA.riepilogo, 'felice'];
+    if (guida.percorso !== 'breve') return ['Rispondi con calma: sotto ogni domanda ti dico dove trovare la risposta. Se non la sai, spesso puoi scegliere «Non lo so».', 'parla'];
+    return [FRASI_GUIDA[passo.chiave] || 'Se non lo sai, lascia vuoto: le rate non cambiano.', 'parla'];
+  }
+  const FRASI_ANALISI = {
+    attesa: ['Sto facendo i conti, un attimo…', 'pensa'],
+    pronto: ['Fatto! Ho capito come funziona il tuo prestito.', 'felice'],
+    dubbio: ['Ci siamo quasi: mi manca solo un dato per esserne sicuro.', 'dubbio'],
+    dato: ['Nessun problema: c\'è un altro modo per capirlo.', 'dubbio'],
+    incerto: ['Per esserne sicuro mi servono altre rate.', 'dubbio'],
+    vicino: ['Qualche rata non mi torna: controlliamole insieme.', 'dubbio'],
+    chiedi: ['Aiutami con un dato del contratto e riprovo.', 'dubbio'],
+    arreso: ['I conti non tornano ancora. Controlliamo le rate?', 'dubbio'],
+    manuale: ['Senza rate mi serve il tasso scritto nel contratto.', 'parla'],
+  };
+
+  // Il robottino: le righe si mettono in fila e compaiono una alla volta; se il calcolo va più veloce del racconto, si
+  // salta qualche riga. "ultimo" = l'ultima sicurezza mostrata (resta mentre si rifanno i conti).
+  const robot = { coda: [], righe: [], timer: null, ultimo: 0 };
+  function fraseRobot(p) {
+    if (p.tipo !== 'variabile') return `Provo il tasso fisso${p.tipo === 'maxirata' ? ' con la maxirata' : ''}: interessi a dodicesimi o a giorni, rata arrotondata o no…`;
+    const r = p.regola, g = r.giorni_anticipo_euribor;
+    const quando = r.regola_rilevazione === 'lavorativi_prima' ? `${g} giorn${g === 1 ? 'o' : 'i'} lavorativ${g === 1 ? 'o' : 'i'} prima del mese`
+      : r.regola_rilevazione === 'media_mese' ? 'come media del mese prima' : r.regola_rilevazione === 'ultimo_lavorativo' ? 'l\'ultimo giorno lavorativo del mese prima' : 'il primo giorno lavorativo del mese';
+    return `Provo ${p.serie === 1 ? 'l\'Euribor' : `${p.serie} versioni dell'Euribor`} letto ${quando}…`;
+  }
+  function notaRobot(testo, classe = '') {
+    if (!classe && (robot.coda.length > 2 || testo === robot.ultimaRiga)) return;
+    robot.ultimaRiga = testo;
+    // Il risultato non aspetta il racconto: le righe ancora in fila si saltano.
+    if (classe === 'fatto' || classe === 'quasi') robot.coda = robot.coda.filter(r => r.classe === 'inizio');
+    robot.coda.push({ testo, classe });
+    if (robot.timer) return;
+    robot.timer = setInterval(() => {
+      const riga = robot.coda.shift();
+      if (!riga) { clearInterval(robot.timer); robot.timer = null; return; }
+      robot.righe = [...robot.righe, riga].slice(-4);
+      const lista = $('#righe-robot');
+      if (!lista) return;
+      lista.append(crea('li', { className: 'nuova ' + riga.classe }, riga.testo));
+      while (lista.children.length > 4) lista.firstElementChild.remove();
+    }, 170);
+  }
+  // Quanto il programma è sicuro, da 0 a 100, secondo l'esito della deduzione con le rate scritte finora.
+  function sicurezza() {
+    const a = guida.analisi, scritte = rateScritte().length;
+    if (!scritte) return robot.ultimo = 0;
+    if (!a || a.inCorso || !a.risultato) return robot.ultimo;
+    const r = a.risultato, primo = a.candidati[0];
+    const valore = r.esito === 'trovato' ? 100 : r.esito === 'dubbio' ? 75 : r.esito === 'vicino' ? 40 : r.esito === 'nessuno' ? 15 : 0;
+    // Con meno di tre rate, comunque vada, è solo un'idea.
+    return robot.ultimo = scritte < 3 && valore > 20 ? Math.min(valore, 20 * scritte + 15) : valore;
+  }
+  // Che cosa manca per esserne sicuro, in parole.
+  const DETTAGLI = { tipo_prestito: 'se il mutuo è fisso o variabile', indice_nome: 'quale versione dell\'Euribor usa il contratto', spread: 'se la banca aggiunge spese a ogni rata',
+    tasso_fisso: 'se la banca aggiunge spese a ogni rata', spese_rata: 'quanto sono le spese su ogni rata', tipo_piano: 'come viene restituito il capitale',
+    tasso_annuo_piano: 'con che tasso sono state fissate le quote capitale', mesi_revisione: 'ogni quanto si aggiorna il tasso' };
+  // Che cosa dice l'assistente mentre si scrivono le rate.
+  function riassuntoCalcolo() {
+    const a = guida.analisi, scritte = rateScritte().length;
+    if (!scritte) return ['Scrivi l\'importo come lo vedi nell\'estratto conto: mentre scrivi le rate, io faccio i conti.', 'parla'];
+    if (!a || a.inCorso || !a.risultato) return [`Faccio i conti con ${scritte === 1 ? 'la rata' : `le ${scritte} rate`} che mi hai dato…`, 'pensa'];
+    const r = a.risultato, primo = a.candidati[0], p = primo ? { ...guida.bozza, ...primo.parametri } : null;
+    const tasso = !p ? '' : variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)}` : `${perc(p.tasso_fisso, 3, 2)} fisso`;
+    if ((r.esito === 'trovato' || r.esito === 'dubbio') && scritte < 3) {
+      return [`${scritte === 1 ? 'Con una rata sola' : 'Con due rate'} posso solo farmi un'idea (forse ${tasso}): me ne servono almeno tre.`, 'pensa'];
+    }
+    if (r.esito === 'trovato') return [`Tornano tutte e ${primo.suRate}, con ${tasso}. Sono sicuro: puoi premere «Ho finito con le rate».`, 'felice'];
+    if (r.esito === 'dubbio') {
+      const d = Deduzione.differenzeFra(a.candidati)[0];
+      return [`Tornano tutte e ${primo.suRate} con ${tasso}, ma non so ancora ${DETTAGLI[d.chiave] || 'un dettaglio'}: un'altra rata può aiutarmi, altrimenti te lo chiedo dopo.`, 'parla'];
+    }
+    if (r.esito === 'vicino') {
+      const s = primo.sbagliate[0], quando = periodiIniziati()[s.n - 1];
+      return [`Ne tornano ${primo.rate} su ${primo.suRate}. Controlla la rata${quando ? ` di ${M.meseAnno(quando.inizio)}` : ` numero ${s.n}`}: hai scritto ${euro(s.vera)}, a me risulta ${euro(s.calcolata)}.`, 'dubbio'];
+    }
+    if (r.esito === 'senza-rate') return ['Scrivi l\'importo come lo vedi nell\'estratto conto: mentre scrivi le rate, io faccio i conti.', 'parla'];
+    return [scritte < 3 ? 'Per ora non mi basta: continua con un\'altra rata.' : 'Con queste rate non trovo ancora un calcolo che torni: aggiungine un\'altra, oppure al passo dopo ti chiedo qualche dato.', 'dubbio'];
+  }
+  // La riga finale del robottino, quando i conti sono fatti.
+  function fineRobot(r) {
+    const primo = r.candidati[0];
+    if (r.esito === 'trovato') return [`✓ ${primo.rate} ${primo.rate === 1 ? 'rata su 1 torna' : `rate su ${primo.suRate} tornano`} al centesimo`, 'fatto'];
+    if (r.esito === 'dubbio') return ['✓ Tornano tutte: mi manca solo un dettaglio', 'fatto'];
+    if (r.esito === 'vicino') return [`! ${primo.rate} rate su ${primo.suRate} tornano`, 'quasi'];
+    if (r.esito === 'nessuno') return ['✗ Nessun calcolo torna ancora', 'quasi'];
+    return null;
+  }
+  // La barra e l'assistente nella pagina di una rata.
+  function aggiornaCalcolo() {
+    if (guida.percorso !== 'breve' || passoAttuale().tipo !== 'rate') return;
+    const box = $('#calcolo-rate');
+    if (!box) return;
+    const a = guida.analisi, lavora = !!(a && a.inCorso && rateScritte().length), valore = sicurezza(), [testo, umore] = riassuntoCalcolo();
+    box.classList.toggle('al-lavoro', lavora);
+    box.hidden = !rateScritte().length && !robot.righe.length;
+    $('.titolo-calcolo', box).textContent = lavora ? 'Sto facendo i conti…' : 'Quanto sono sicuro';
+    $('.percento', box).textContent = `${valore}%`;
+    $('.barra-sicurezza', box).setAttribute('aria-valuenow', String(valore));
+    $('.barra-sicurezza > span', box).style.width = `${valore}%`;
+    Assistente.dici(assistenteGuida, testo, umore);
+  }
+  const pannelloCalcolo = () => crea('div', { className: 'calcolo-rate', id: 'calcolo-rate' },
+    crea('div', { className: 'testa-calcolo' }, crea('span', { className: 'titolo-calcolo' }, 'Quanto sono sicuro'), crea('strong', { className: 'percento' })),
+    crea('div', { className: 'barra-sicurezza', role: 'progressbar', 'aria-label': 'Quanto sono sicuro', 'aria-valuemin': '0', 'aria-valuemax': '100' }, crea('span', {})),
+    crea('ul', { className: 'righe-robot', id: 'righe-robot', 'aria-hidden': 'true' }, ...robot.righe.map(r => crea('li', { className: r.classe }, r.testo))));
+
   function disegnaPasso() {
-    const passo = passoAttuale(), ultimo = guida.passo === passi().length - 1, utili = passiUtili();
+    const passo = passoAttuale(), ultimo = guida.passo === passi().length - 1, utili = passiUtili(), breve = guida.percorso === 'breve';
     guida.massimo = Math.max(guida.massimo, guida.passo);
-    $('#passi-guida').replaceChildren(...utili.map(i => crea('li', { className: (i === guida.passo ? 'attivo' : i < guida.passo ? 'fatto' : '') + (i <= guida.massimo ? ' raggiunto' : ''),
-      'data-passo': i, title: passi()[i].titolo }, crea('span', {}, passi()[i].titolo))));
-    $('#conta-passi').textContent = `Passo ${utili.indexOf(guida.passo) + 1} di ${utili.length}`;
-    $('#titolo-passo').replaceChildren(Icone.distintivo(passo.icona || 'info', 'piccolo'), passo.titolo);
+    if (breve) {
+      // Un pallino per fase: porta alla prima domanda della fase, se è già stata raggiunta.
+      $('#passi-guida').replaceChildren(...FASI_BREVI.map((titolo, f) => {
+        const primo = utili.find(i => passi()[i].fase === f);
+        return crea('li', { className: (f === passo.fase ? 'attivo' : f < passo.fase ? 'fatto' : '') + (primo != null && primo <= guida.massimo ? ' raggiunto' : ''),
+          'data-passo': primo ?? '', title: titolo }, crea('span', {}, titolo));
+      }));
+      const nellaFase = utili.filter(i => passi()[i].fase === passo.fase);
+      $('#conta-passi').textContent = nellaFase.length > 1 ? `${FASI_BREVI[passo.fase]} · domanda ${nellaFase.indexOf(guida.passo) + 1} di ${nellaFase.length}` : FASI_BREVI[passo.fase];
+    } else {
+      $('#passi-guida').replaceChildren(...utili.map(i => crea('li', { className: (i === guida.passo ? 'attivo' : i < guida.passo ? 'fatto' : '') + (i <= guida.massimo ? ' raggiunto' : ''),
+        'data-passo': i, title: passi()[i].titolo }, crea('span', {}, passi()[i].titolo))));
+      $('#conta-passi').textContent = `Passo ${utili.indexOf(guida.passo) + 1} di ${utili.length}`;
+    }
+    $('#titolo-passo').replaceChildren(Icone.distintivo(passo.icona || 'info', 'piccolo'), titoloDi(passo));
+    $('#form-guida').classList.toggle('una-domanda', breve);
     // Il passo nuovo entra dal lato giusto: da destra andando avanti, da sinistra tornando indietro.
     const modulo = $('#form-guida');
     modulo.classList.remove('passo-avanti', 'passo-indietro');
@@ -1009,8 +1367,8 @@
     const contenitore = $('#campi-passo');
     if (passo.tipo === 'benvenuto') disegnaBenvenuto(contenitore);
     else if (passo.tipo === 'riepilogo') disegnaRiepilogo(contenitore);
-    else if (passo.tipo === 'rate') disegnaRate(contenitore);
-    else if (passo.tipo === 'essenziali') disegnaEssenziali(contenitore);
+    else if (passo.tipo === 'rate') breve ? disegnaRataSola(contenitore) : disegnaRate(contenitore);
+    else if (passo.tipo === 'domanda') disegnaDomandaBreve(contenitore, passo);
     else if (passo.tipo === 'analisi') contenitore.replaceChildren();
     else {
       const avanzati = (passo.avanzati || []).map(creaDomanda);
@@ -1039,17 +1397,23 @@
     $('#configurazione').scrollTop = 0;
     window.scrollTo(0, 0);
     const primo = $('#campi-passo input[type="text"], #campi-passo input[type="date"]');
-    if (primo && !passo.tipo) primo.focus({ preventScroll: true });
+    if (primo && (!passo.tipo || passo.tipo === 'domanda' || (breve && passo.tipo === 'rate'))) primo.focus({ preventScroll: true });
     // «Ci penso io»: la deduzione parte (o riprende il risultato di prima, se niente è cambiato) e ridisegna il passo.
     if (passo.tipo === 'analisi') { disegnaAnalisi(); avviaAnalisi(); }
+    else if (!(breve && passo.tipo === 'rate')) Assistente.dici(assistenteGuida, ...fraseGuida(passo));
   }
   // Salva nella bozza le risposte del passo corrente. Restituisce false (mostrando l'errore) se qualcosa non va.
   function raccogliPasso(severo) {
     const passo = passoAttuale();
     if (passo.tipo === 'riepilogo' || passo.tipo === 'benvenuto' || passo.tipo === 'analisi') return true;
-    if (passo.tipo === 'essenziali') {
-      if (!raccogliEssenziali(severo)) return false;
+    if (passo.tipo === 'domanda') {
+      if (!raccogliDomandaBreve(passo, severo)) return false;
       if (severo) invalidaDopoAnalisi();
+      return true;
+    }
+    if (passo.tipo === 'rate' && guida.percorso === 'breve') {
+      if (!leggiRataSola(severo)) return false;
+      invalidaDopoAnalisi();
       return true;
     }
     if (passo.tipo === 'rate') {
@@ -1085,8 +1449,7 @@
     Object.assign(guida, { percorso: riapertura ? 'completo' : 'breve', passo: 0, massimo: riapertura ? PASSI_COMPLETI.length - 1 : 0, riapertura, nuovo: !riapertura && nuovo && Archivio.configurato(), daOfferte, rate,
       righeRate: Math.max(12, ...Object.keys(rate).map(Number)), caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null, dubbio: null,
       bozza: { ...Archivio.predefiniti(), ...(riapertura ? stato.dati.parametri : partenza || {}) },
-      tipoBreve: partenza ? partenza.tipo_prestito || 'variabile' : null, dataAddebito: null, modoData: 'prima', conQuota: false, noti, chiusi: new Set(), saltate: new Set(), analisi: null,
-      serieScaricate: {}, serieProvate: false, serieErrore: null });
+      ...STATO_BREVE(), tipoBreve: partenza ? partenza.tipo_prestito || 'variabile' : null, noti });
     $('#configurazione').hidden = false;
     for (const id of ['#principale', '.schede', '#riepilogo', '#apri-configurazione']) $(id).hidden = true;
     disegnaPasso();
@@ -1096,20 +1459,17 @@
     const tipo = passoAttuale().tipo, nome = evento.target.name;
     $('#errore-passo').hidden = true;   // l'avviso riguardava le risposte di prima
     if (!tipo) aggiornaDomande();
-    else if (tipo === 'essenziali') {
+    else if (tipo === 'domanda' && nome === 'data_ultima') {
       // Prima o ultima rata: cambiano la domanda e la spiegazione.
-      if (nome === 'data_ultima') { raccogliEssenziali(false); disegnaEssenziali($('#campi-passo')); }
-      else aggiornaEssenziali();
-    } else if (tipo === 'rate' && nome === 'con_quota') { leggiCaselleRate(); guida.conQuota = evento.target.checked; disegnaRate($('#campi-passo')); }
-    else if (tipo === 'analisi') {
-      if (nome === 'tipo_manuale') { guida.noti.tipo_prestito = evento.target.value; disegnaAnalisi(); }
-      else if (nome === 'regola_rilevazione') aggiornaMancante();
-    }
+      raccogliDomandaBreve(passoAttuale(), false);
+      $('#titolo-passo').replaceChildren(Icone.distintivo(passoAttuale().icona, 'piccolo'), titoloDi(passoAttuale()));
+      disegnaDomandaBreve($('#campi-passo'), passoAttuale());
+    } else if (tipo === 'analisi' && nome === 'regola_rilevazione') aggiornaMancante();
   });
   $('#campi-passo').addEventListener('input', evento => {
     // Scrivendo il nome di un altro indice si seleziona da sola la voce "Un altro indice".
     if (evento.target.name === 'indice_nome_altro') { $('#campi-passo input[name="indice_nome"][value="altro"]').checked = true; return passoAttuale().tipo ? null : aggiornaDomande(); }
-    if (evento.target.name === 'numero_rate' && passoAttuale().tipo === 'essenziali') return aggiornaEssenziali();
+    if (evento.target.name === 'numero_rate' && passoAttuale().tipo === 'domanda') return aggiornaDurata();
     // Scrivendo un valore diverso nella risposta a un dubbio si seleziona da sola la voce "Un altro valore".
     if (evento.target.name === 'risposta_altro') { $('#campi-passo input[name="risposta"][value="altro"]').checked = true; return; }
     if (evento.target.name !== 'quota_prima_rata') return;
@@ -1127,7 +1487,22 @@
     if (evento.target.id === 'apri-offerte') { stato.soloOfferte = true; M.avvia(); }
     if (evento.target.id === 'percorso-completo') cambiaPercorso('completo');
     if (evento.target.id === 'percorso-breve') cambiaPercorso('breve');
-    if (evento.target.id === 'torna-rate') { guida.passo = PASSI_BREVI.findIndex(p => p.tipo === 'rate'); disegnaPasso(); }
+    if (evento.target.id === 'torna-rate' || evento.target.id === 'altre-rate-analisi') aggiungiRate();
+    // Le rate una alla volta: «Non ce l'ho», «Ho finito», e il salto a una rata già scritta.
+    if (evento.target.id === 'rata-manca') {
+      for (const input of document.querySelectorAll('#campi-passo input[data-rata]')) input.value = '';
+      $('#form-guida').requestSubmit();
+    }
+    if (evento.target.id === 'rate-finite' && leggiRataSola(true)) { invalidaDopoAnalisi(); guida.passo = passoDopo(guida.passo); disegnaPasso(); }
+    const vai = evento.target.closest('[data-vai-rata]');
+    if (vai && leggiRataSola(false)) { guida.rataCorrente = rateInOrdine().findIndex(p => p.n === +vai.dataset.vaiRata); avviaAnalisi(); disegnaPasso(); }
+    // Le rate che non tornano: correggerne una, o toglierla (un mese con un addebito in più).
+    const correggi = evento.target.closest('[data-correggi-rata]');
+    if (correggi) vaiAllaRata(+correggi.dataset.correggiRata);
+    const togli = evento.target.closest('[data-togli-rata]');
+    if (togli) { const voceRata = guida.rate[togli.dataset.togliRata] || {}; voceRata.rata = ''; voceRata.quota = ''; avviaAnalisi(); }
+    if (evento.target.id === 'usa-probabile') usaProbabile(guida.situazione);
+    if (evento.target.id === 'avanti-lo-stesso') { guida.analisi.accettata = true; concludiAnalisi(situazione()); guida.passo = passoDopo(guida.passo); disegnaPasso(); }
     // «Nel contratto c'è scritto altro?»: i valori scritti diventano sicuri e la deduzione riparte.
     if (evento.target.id === 'ricalcola-analisi') {
       const p = { ...guida.bozza, ...guida.situazione.candidato.parametri }, chiave = tassoChiave(p);
@@ -1174,18 +1549,24 @@
   // Clic su un passo già raggiunto: ci si torna direttamente (in avanti solo se le risposte del passo attuale sono a posto).
   $('#passi-guida').addEventListener('click', evento => {
     const voce = evento.target.closest('li[data-passo]');
-    const destinazione = voce ? +voce.dataset.passo : guida.passo;
+    const destinazione = voce && voce.dataset.passo !== '' ? +voce.dataset.passo : guida.passo;
     if (destinazione === guida.passo || destinazione > guida.massimo || !raccogliPasso(destinazione > guida.passo) || !passoServe(destinazione)) return;
     if (destinazione > guida.passo && passoAttuale().tipo === 'analisi') return;
     guida.passo = destinazione;
     disegnaPasso();
   });
-  $('#guida-indietro').addEventListener('click', () => { raccogliPasso(false); guida.passo = passoPrima(guida.passo); disegnaPasso(); });
+  $('#guida-indietro').addEventListener('click', () => {
+    raccogliPasso(false);
+    if (guida.percorso === 'breve' && passoAttuale().tipo === 'rate' && guida.rataCorrente > 0) { guida.rataCorrente--; guida.disegnato = guida.passo + 1; return disegnaPasso(); }
+    guida.passo = passoPrima(guida.passo);
+    disegnaPasso();
+  });
   $('#guida-annulla').addEventListener('click', () => M.avvia());
   $('#form-guida').addEventListener('submit', async evento => {
     evento.preventDefault();
     if (!raccogliPasso(true)) return;
     if (passoAttuale().tipo === 'analisi' && !avantiAnalisi()) return;
+    if (guida.percorso === 'breve' && passoAttuale().tipo === 'rate' && guida.rataCorrente < rateInOrdine().length - 1) { guida.rataCorrente++; avviaAnalisi(); return disegnaPasso(); }
     if (guida.passo < passi().length - 1) { guida.passo = passoDopo(guida.passo); return disegnaPasso(); }
     const rate = rateInserite(), tassi = variabile(guida.bozza) ? tassiPronti(guida.bozza) : [];
     try {
@@ -1196,7 +1577,13 @@
     const prima = !guida.riapertura;
     await M.avvia();
     if (!prima) return avvisa('Configurazione salvata');
-    if (tassi.length || rate.length || !variabile(guida.bozza)) { M.mostraScheda('piano'); avvisa('Prestito creato. Nel piano le rate verdi tornano con i conti della banca.'); }
+    // Le rate passate che l'utente non ha scritto, riempite con il calcolo se ha risposto di sì (segnate con «=»).
+    const riempite = guida.percorso === 'breve' && guida.riempi && guida.daRiempire.length ? guida.daRiempire.length : 0;
+    if (riempite) await M.compilaRate(false);
+    if (tassi.length || rate.length || !variabile(guida.bozza)) {
+      M.mostraScheda('piano');
+      avvisa(riempite ? `Prestito creato, con ${riempite === 1 ? '1 rata riempita' : `${riempite} rate riempite`} dal calcolo (segnate con «=»).` : 'Prestito creato. Nel piano le rate verdi tornano con i conti della banca.');
+    }
     else { M.mostraScheda('tassi'); avvisa(TassiInternet.riconosci(guida.bozza.indice_nome) ? 'Prestito creato. Ora scarica da internet i valori dell\'indice, con il pulsante qui sotto.' : 'Prestito creato. Ora inserisci i valori dell\'indice: le date che servono sono elencate qui.'); }
   });
 
