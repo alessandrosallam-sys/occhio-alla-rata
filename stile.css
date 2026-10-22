@@ -1139,6 +1139,7 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .carta-dati { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3) var(--s5); }
 .carta-dati .testo-dati { flex: 1 1 360px; min-width: 0; }
 .carta-dati .nota { margin: 0; }
+.carta-dati .nota + .nota { margin-top: var(--s2); }
 .gruppo-pannello { display: flex; flex-direction: column; gap: var(--s4); }
 .gruppo-pannello > .nota { margin: calc(-1 * var(--s3)) 0 0; }
 .titolo-gruppo { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tenue); }
@@ -1304,25 +1305,6 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .scelte-in-linea input[type="text"] { width: 100%; }
 .scelte-in-linea label.spunta { flex-direction: row; align-items: center; padding: 8px var(--s3); }
 .scelte-in-linea label.spunta input { width: 18px; margin: 0; }
-
-/* File collegato (file-collegato.js): avviso in alto quando serve il permesso di scrivere nel file, o una scelta */
-.barra-file { max-width: var(--larghezza-pagina); margin: 0 auto; padding: var(--s4) var(--s5) 0; }
-.carta-file { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4); padding: var(--s4) var(--s5); border-left: 4px solid var(--avviso-testo); }
-.carta-file > .nota { flex: 1 1 360px; margin: 0; }
-.carta-file .confronto { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s3); }
-.carta-file .file-trovato { margin: 0; }
-/* Indicatore in testata: dove finiscono le modifiche. L'ora dell'ultimo salvataggio si vede nella barra laterale. */
-.dettaglio-salvataggio { display: none; }
-#stato-salvataggio.da-riprendere { background: var(--avviso-sfondo); color: var(--avviso-testo); border-color: color-mix(in srgb, var(--avviso-testo) 40%, transparent); }
-@media (min-width: 1100px) {
-  body:has(.schede:not([hidden])) .barra-file { padding: var(--s5) var(--s6) 0; }
-  body:has(.schede:not([hidden])) .dettaglio-salvataggio { display: inline; margin-left: auto; font-size: 13px; font-weight: 450; color: var(--tenue); }
-}
-@media (max-width: 760px) {
-  .barra-file { padding: var(--s3) var(--s4) 0; }
-  .carta-file { padding: var(--s3) var(--s4); }
-  .carta-file .azioni, .carta-file .azioni button { width: 100%; }
-}
 
 /* ---------- 9. Struttura e temi: barra laterale, selettore dei temi, ritocchi per tema ---------- */
 
@@ -1656,7 +1638,6 @@ button[aria-busy="true"]::after {
 @keyframes menu-entra { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes menu-sale { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
 @keyframes respiro { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
-@keyframes battito { 0% { transform: scale(1); } 35% { transform: scale(1.25); } 70% { transform: scale(0.95); } 100% { transform: scale(1); } }
 @keyframes gira { to { transform: rotate(360deg); } }
 @keyframes deriva { from { transform: translate(0, 0) scale(1); } to { transform: translate(-26px, 14px) scale(1.1); } }
 @keyframes alza-distintivo { from { opacity: 0; transform: scale(0.6) rotate(-8deg); } to { opacity: 1; transform: none; } }
@@ -1714,9 +1695,8 @@ button[aria-busy="true"]::after {
   .passo-indietro :is(#titolo-passo, #testo-passo, #campi-passo) { animation: da-sinistra 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   .passo-avanti #campi-passo, .passo-indietro #campi-passo { animation-delay: 0.04s; }
 
-  /* Il mese in corso nel piano respira piano; l'icona del file batte a ogni salvataggio */
+  /* Il mese in corso nel piano respira piano */
   #tabella-piano tr.corrente .segno { animation: respiro 2.4s ease-in-out infinite; }
-  .appena-salvato { animation: battito 0.6s ease-out; }
 
   /* Cambio di tema: i colori sfumano invece di saltare */
   body, .testata, .carta, .dato, .riquadro-statistica { transition-property: background-color, color, border-color, box-shadow, transform; transition-duration: 0.3s, 0.3s, 0.3s, 0.2s, 0.2s; }

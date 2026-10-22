@@ -251,7 +251,7 @@
     if (vale(modulo.scenario, scelte.scenario)) { modulo.scenario.value = scelte.scenario; modulo.scenario.dataset.toccato = '1'; }
   }
   ripristinaScelte();
-  // Dati nuovi (avvio, file caricato, file collegato ripreso): se le scelte salvate sono cambiate si rimettono nel
+  // Dati nuovi (avvio, backup caricato): se le scelte salvate sono cambiate si rimettono nel
   // modulo, e la proiezione già calcolata con le scelte di prima si rifà.
   function applicaScelteDeiDati() {
     const testo = stato.dati.parametri.previsione_modulo || '';

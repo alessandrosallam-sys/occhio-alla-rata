@@ -1,5 +1,5 @@
 // Configurazione del mutuo: guida iniziale a passi, modulo delle regole nel pannello di controllo,
-// taratura automatica delle regole sulle rate vere, salvataggio e caricamento dei dati su file.
+// taratura automatica delle regole sulle rate vere, backup dei dati su file.
 (function () {
   'use strict';
   const M = window.Mutuo;
@@ -733,28 +733,57 @@
     if (await esegui('PUT', 'parametri', scelto.parametri, 'Regole applicate')) { esiti = null; disegnaTaratura(); }
   });
 
-  // ---------- Salvataggio e caricamento su file ----------
+  // ---------- Backup: una copia di tutti i dati in un file, da ricaricare qui o su un altro computer ----------
+  // I dati stanno nel browser. Il browser ricorda anche la data dell'ultimo backup (salvato o caricato), per il pannello.
+  const quando = iso => new Date(iso).toLocaleString('it-IT', { dateStyle: 'long', timeStyle: 'short' });
+  const testoRate = n => n === 0 ? 'nessuna rata pagata inserita' : n === 1 ? '1 rata pagata inserita' : `${n} rate pagate inserite`;
+  function ricordaBackup(iso) {
+    M.ricordo.scrivi('ultimo-backup', iso || '');
+    disegnaBackup();
+  }
+  function disegnaBackup() {
+    const ultimo = M.ricordo.leggi('ultimo-backup'), nota = $('#ultimo-backup');
+    const valido = ultimo && !isNaN(Date.parse(ultimo));
+    nota.classList.toggle('evidenza', !valido);
+    if (!valido) return void (nota.textContent = 'Non hai ancora salvato un backup da questo browser.');
+    const giorno = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const giorni = Math.round((giorno(new Date()) - giorno(new Date(ultimo))) / 864e5);
+    nota.textContent = `Ultimo backup: ${quando(ultimo)}` + (giorni <= 0 ? ' (oggi).' : giorni === 1 ? ' (ieri).' : ` (${giorni} giorni fa).`);
+  }
   $('#salva-file').addEventListener('click', () => {
     if (M.salvaSuFile) return M.salvaSuFile();   // versione in un unico file: salva nel file dei dati
-    const nome = (stato.dati.parametri.nome || 'mutuo').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'mutuo';
-    const collegamento = crea('a', { href: URL.createObjectURL(new Blob([Archivio.esporta()], { type: 'application/json' })), download: `${nome}-${stato.oggi}.json` });
+    // Il nome dice cosa c'è dentro: il prestito, oppure «prestiti» se sono più di uno (il backup li contiene tutti).
+    const prestiti = Archivio.elenco();
+    const nome = prestiti.length > 1 ? 'prestiti' : !prestiti.length ? 'offerte'
+      : prestiti[0].parametri.nome.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'prestito';
+    const nomeFile = `backup-${nome}-${stato.oggi}.json`;
+    const collegamento = crea('a', { href: URL.createObjectURL(new Blob([Archivio.esporta()], { type: 'application/json' })), download: nomeFile });
     document.body.append(collegamento);
     collegamento.click();
     collegamento.remove();
     setTimeout(() => URL.revokeObjectURL(collegamento.href), 1000);
-    avvisa('Copia salvata nella cartella dei download');
+    ricordaBackup(new Date().toISOString());
+    avvisa(`Backup salvato: «${nomeFile}», di solito nella cartella Download`);
   });
-  // Sostituisce i dati con quelli di un salvataggio. La usa anche file-collegato.js, che apre i file a modo suo.
+  // Sostituisce i dati con quelli di un backup. Con "conferma" (ci sono dati che verrebbero sostituiti) prima chiede,
+  // dicendo di quando è il backup e che cosa contiene.
   M.caricaSalvataggio = async function caricaSalvataggio(testo, conferma) {
-    if (conferma && !confirm('Tutti i prestiti di adesso verranno sostituiti con quelli del file. Continuare?')) return false;
+    const contenuto = Archivio.descrivi(testo);
+    if (!contenuto) { avvisa('Questo file non è un backup del programma, oppure è rovinato: non ho cambiato niente.', true); return false; }
+    const { nomi, rate, offerte, salvato } = contenuto;
+    const delBackup = salvato ? `il backup del ${quando(salvato)}` : 'il backup';
+    const dentro = [...(nomi.length ? [`${nomi.join(', ')}, con ${testoRate(rate)}`] : []),
+      ...(offerte ? [offerte === 1 ? '1 offerta da confrontare' : `${offerte} offerte da confrontare`] : [])].join('; ');
+    if (conferma && !confirm(`Vuoi caricare ${delBackup}?\nContiene: ${dentro}.\n\nTutti i prestiti e le offerte di adesso verranno sostituiti con quelli del backup.`)) return false;
     try {
       Archivio.importa(testo);
     } catch (errore) {
       avvisa(errore.message, true);
       return false;
     }
+    ricordaBackup(salvato);
     await M.avvia();
-    avvisa('Dati caricati dal file');
+    avvisa(`Caricato ${delBackup}`);
     return true;
   };
   async function caricaDaFile(input, conferma) {
@@ -765,11 +794,12 @@
   $('#carica-file input').addEventListener('change', evento => caricaDaFile(evento.target, true));
   $('#guida-carica input').addEventListener('change', evento => caricaDaFile(evento.target, false));
   $('#cancella-tutto').addEventListener('click', () => {
-    if (!confirm('Cancellare tutti i prestiti, con le rate e i tassi inseriti? Se non hai salvato una copia su file non si possono recuperare. Per toglierne uno solo usa «Elimina» nella pagina «Prestiti».')) return;
+    if (!confirm('Cancellare tutti i prestiti e le offerte, con le rate e i tassi inseriti? Se non hai salvato un backup non si possono recuperare. Per toglierne uno solo usa «Elimina» nella pagina «Prestiti».')) return;
     Archivio.azzera();
+    ricordaBackup(null);
     location.hash = '';
     M.avvia();
   });
 
-  M.viste.push(disegnaRegole, disegnaTaratura);
+  M.viste.push(disegnaRegole, disegnaTaratura, disegnaBackup);
 })();

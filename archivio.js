@@ -134,8 +134,7 @@
   // L'archivio contiene uno o più prestiti, ognuno con parametri, rate, valori dell'indice e festività, e ricorda
   // quale è aperto: le operazioni di "richiesta" lavorano sul prestito aperto ("dati"). Contiene anche le offerte da
   // confrontare prima di firmare (scheda «Offerte»): ognuna ha solo i parametri, con gli stessi campi di un prestito.
-  // "modificato" = quando i dati del browser sono cambiati l'ultima volta (serve a confrontarli con un file).
-  let archivio = null, dati = null, modificato = null;
+  let archivio = null, dati = null;
   const nuovoId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const vuoto = () => ({ id: nuovoId(), parametri: {}, rate: [], euribor: [], festivita: [] });
   const configurato = p => p.parametri.importo_iniziale > 0;
@@ -151,11 +150,8 @@
     let testo = null;
     if (NEL_BROWSER) try { testo = localStorage.getItem(CHIAVE); } catch { /* archivio del browser non disponibile: si lavora in memoria */ }
     if (testo) {
-      try {
-        const grezzo = JSON.parse(testo);
-        archivio = pulisciArchivio(grezzo);
-        if (typeof grezzo.modificato === 'string' && !isNaN(Date.parse(grezzo.modificato))) modificato = grezzo.modificato;
-      } catch { /* dati illeggibili: si riparte da zero senza toccare quelli salvati */ }
+      try { archivio = pulisciArchivio(JSON.parse(testo)); }
+      catch { /* dati illeggibili: si riparte da zero senza toccare quelli salvati */ }
     }
     scegli(archivio.attivo);
     return dati;
@@ -163,26 +159,24 @@
   // L'archivio da salvare o da confrontare: solo i prestiti configurati.
   const daSalvare = () => ({ attivo: archivio.attivo, prestiti: archivio.prestiti.filter(configurato), offerte: archivio.offerte });
   function salva() {
-    modificato = new Date().toISOString();
     if (NEL_BROWSER) {
-      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 2, modificato, ...daSalvare() })); }
-      catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva su file» per non perderli.'); }
+      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 2, ...daSalvare() })); }
+      catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva un backup» per non perderli.'); }
     }
-    // Chi tiene una copia in un file (file-collegato.js, o la variante in un unico file) la aggiorna.
+    // La variante in un unico file tiene i dati solo in memoria: a ogni modifica aggiorna il suo file.
     if (window.Archivio.alCambio) window.Archivio.alCambio();
   }
-  // Legge un salvataggio (il .json, o il file dei dati della variante in un unico file) e lo rende valido.
+  // Legge un salvataggio (il backup .json, o il file dei dati della variante in un unico file) e lo rende valido.
+  // "salvato" = quando è stato salvato, se il file lo dice.
   function leggiSalvataggio(testo) {
     let grezzo;
     try { grezzo = JSON.parse(String(testo).replace(/^\uFEFF?\s*window\.MutuoDatiSalvati\s*=\s*/, '').replace(/;\s*$/, '')); }
     catch { throw new ErroreDati('Il file non è un salvataggio valido'); }
     const nuovo = pulisciArchivio(grezzo);
     richiedi(nuovo.prestiti.length > 0 || nuovo.offerte.length > 0, 'Il file non contiene la configurazione di un mutuo');
-    return nuovo;
+    const salvato = typeof grezzo.salvato === 'string' && !isNaN(Date.parse(grezzo.salvato)) ? grezzo.salvato : null;
+    return { archivio: nuovo, salvato };
   }
-  // Testo che non dipende dall'ordine delle chiavi, per confrontare due insiemi di dati.
-  const confrontabile = d => JSON.stringify(d, (chiave, v) => v && typeof v === 'object' && !Array.isArray(v)
-    ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v);
   // Rende valido un archivio letto dal browser o da un file. I salvataggi fino alla versione 1 avevano un solo mutuo,
   // con i dati in cima: diventano un archivio con un prestito. I prestiti lasciati a metà della guida si scartano.
   function pulisciArchivio(grezzo) {
@@ -332,10 +326,10 @@
     return dal ? tutti.filter(t => t.giorno >= dal) : tutti;
   }
 
-  // Breve descrizione di un archivio, per riconoscerlo: nomi dei prestiti e rate pagate inserite.
+  // Breve descrizione di un archivio, per riconoscerlo: nomi dei prestiti, rate pagate inserite, numero di offerte.
   function descrivi(a) {
     const rate = a.prestiti.reduce((n, p) => n + p.rate.filter(r => r.rata_vera != null || r.rata_copiata != null).length, 0);
-    return { nomi: a.prestiti.map(p => p.parametri.nome || 'Prestito senza nome'), rate };
+    return { nomi: a.prestiti.map(p => p.parametri.nome || 'Prestito senza nome'), rate, offerte: a.offerte.length };
   }
 
   window.Archivio = {
@@ -347,33 +341,26 @@
     elenco: () => (carica(), archivio.prestiti.filter(configurato).map(copiaDi)),
     // Le offerte da confrontare, con i parametri completi.
     offerte: () => (carica(), archivio.offerte.map(o => JSON.parse(JSON.stringify({ id: o.id, parametri: { ...predefiniti(), ...o.parametri } })))),
-    // Testo del salvataggio da scaricare come file.
+    // Testo del backup da scaricare come file.
     esporta: () => (carica(), JSON.stringify({ programma: 'mutuo-variabile', versione: 2, salvato: new Date().toISOString(), ...daSalvare() }, null, 1)),
     // Lo stesso salvataggio nella forma del file dei dati della versione in un unico file.
     esportaFile() { return PREFISSO_FILE + this.esporta() + ';\n'; },
     // Sostituisce tutti i dati con quelli di un salvataggio (va bene sia il .json sia il file dei dati, di ogni versione).
     importa(testo) {
-      archivio = leggiSalvataggio(testo);
+      archivio = leggiSalvataggio(testo).archivio;
       scegli(archivio.attivo);
       salva();
       return copia();
     },
-    // Vero se il salvataggio contiene esattamente i dati di adesso, o quelli del salvataggio "altro" se c'è
-    // (la data del salvataggio non conta).
-    uguale(testo, altro) {
-      try { return confrontabile(leggiSalvataggio(testo)) === confrontabile(leggiSalvataggio(altro === undefined ? this.esporta() : altro)); } catch { return false; }
-    },
-    // Descrizione di un salvataggio (null se non è leggibile) o, senza testo, dei dati di adesso.
+    // Descrizione di un salvataggio, con la data in cui è stato salvato (null se non è leggibile), o, senza testo,
+    // dei dati di adesso.
     descrivi(testo) {
       if (testo === undefined) return (carica(), descrivi(daSalvare()));
-      try { return descrivi(leggiSalvataggio(testo)); } catch { return null; }
+      try { const { archivio: a, salvato } = leggiSalvataggio(testo); return { ...descrivi(a), salvato }; } catch { return null; }
     },
-    // Quando i dati del browser sono cambiati l'ultima volta (ISO), se si sa.
-    modificato: () => (carica(), modificato),
     azzera() {
       archivio = { attivo: null, prestiti: [], offerte: [] };
       scegli(null);
-      modificato = null;
       if (NEL_BROWSER) try { localStorage.removeItem(CHIAVE); } catch { /* niente da cancellare */ }
     },
   };

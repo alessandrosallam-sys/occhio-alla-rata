@@ -85,7 +85,7 @@
     }
     if (elimina) {
       const d = Archivio.elenco().find(x => x.id === elimina.dataset.elimina), nome = d ? d.parametri.nome || 'Prestito senza nome' : '';
-      if (!d || !confirm(`Eliminare «${nome}»?\n\nLe rate e i tassi inseriti per questo prestito si perdono. Gli altri prestiti restano. Se vuoi tenerne una copia, prima usa «Salva una copia» nel pannello di controllo.`)) return;
+      if (!d || !confirm(`Eliminare «${nome}»?\n\nLe rate e i tassi inseriti per questo prestito si perdono. Gli altri prestiti restano. Se vuoi tenerne una copia, prima usa «Salva un backup» nel pannello di controllo.`)) return;
       try {
         await Archivio.richiesta('DELETE', 'prestiti/' + d.id);
       } catch (errore) {
