@@ -1225,6 +1225,32 @@ details.avanzate .domanda:last-child { margin-bottom: 6px; }
 .tabella-rate + .spiegazione, #altre-rate + .spiegazione { margin-top: var(--s3); }
 .tabella-rate td { padding-block: 4px; }
 .tabella-rate td input { width: 100%; min-width: 120px; min-height: 34px; text-align: right; }
+.tabella-rate + .spunta, #altre-rate + .tabella-rate { margin-top: var(--s3); }
+/* Percorso breve: data della prima rata, durata in anni, passaggio al percorso completo */
+.domanda > input + .spunta, .domanda > input + .nota { margin-top: var(--s2); }
+#durata-anni:empty { display: none; }
+button.collegamento {
+  display: inline; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none;
+  color: var(--accento); font-size: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; white-space: normal; text-align: left;
+}
+button.collegamento:hover { background: none; color: var(--accento-forte); }
+/* «Ci penso io»: attesa con la barra di avanzamento, esito con l'icona, domande e correzioni */
+.attesa { display: flex; align-items: flex-start; gap: var(--s4); padding: var(--s4); border: 1px solid var(--linea); border-radius: var(--r2); background: var(--superficie-2); }
+.attesa > div { flex: 1; min-width: 0; }
+.attesa p { margin: 0 0 var(--s3); font-size: 15px; }
+.attesa progress { width: 100%; height: 8px; accent-color: var(--accento); }
+.rotella { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 3px solid var(--accento); border-right-color: transparent; }
+.guida h3.esito-analisi { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s3); font-size: 18px; }
+.esito-analisi .icona { width: 24px; height: 24px; }
+.esito-analisi.riuscito .icona { color: var(--ok-testo); }
+.esito-analisi.quasi .icona { color: var(--avviso-testo); }
+#campi-passo > p { max-width: 68ch; }
+#campi-passo > details { margin-top: var(--s4); }
+#campi-passo > .contenitore-tabella { margin-bottom: var(--s3); }
+#campi-passo > details > summary { cursor: pointer; font-size: 14.5px; font-weight: 600; color: var(--accento); }
+#campi-passo > details[open] > summary { margin-bottom: var(--s3); }
+.correggi-analisi .campi { margin: var(--s3) 0; max-width: 520px; }
+.domanda > .campi { margin-bottom: var(--s3); max-width: 520px; }
 /* Pulsanti della guida: Avanti a destra, sempre a portata */
 .azioni-guida { margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--linea); }
 .azioni-guida #guida-indietro { order: 1; }
@@ -1684,6 +1710,7 @@ button[aria-busy="true"]::after {
   button > .icona-aggiunta { transition: transform 0.2s ease; }
   button:hover > .icona-aggiunta { transform: translateX(1px) scale(1.08); }
   button[aria-busy="true"]::after { animation: gira 0.8s linear infinite; }
+  .rotella { animation: gira 0.9s linear infinite; }
 
   /* Avviso in basso, menu dei temi, pannelli che si aprono */
   .notifica.compare { animation: avviso-entra 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }

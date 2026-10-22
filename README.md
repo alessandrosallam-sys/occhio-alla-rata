@@ -2,14 +2,20 @@
 
 Una pagina web che ricostruisce, rata per rata, un mutuo (a tasso variabile o fisso) o un finanziamento e lo confronta con quello che la banca addebita. Dice se ogni rata è giusta al centesimo, quanto costa davvero il prestito (con spese, assicurazioni e TAEG), quanto si è pagato finora di interessi e, per il variabile, come potrebbero andare le rate future.
 
-È pensata per chi non sa niente di mutui: una configurazione guidata spiega ogni domanda, dove trovare la risposta nei documenti e cosa fare se non la si conosce. Dove può, il programma ricava le regole del contratto da solo, a partire dalle rate già pagate.
+È pensata per chi non sa niente di mutui: la configurazione chiede solo quattro dati facili (che prestito è, quanto, in quante rate, quando è stata pagata la prima) e gli importi di alcune rate già pagate, come si vedono sull'estratto conto. Il resto (tasso fisso, oppure indice e spread, spese, regole del contratto) il programma lo ricava da solo dalle rate, e chiede altro solo se le rate non bastano, spiegando dove trovarlo.
 
 Non serve installare niente: si scarica la cartella e si apre `index.html` con il browser. I dati restano sul computer di chi la usa, nel browser, e se ne può salvare un backup in un file. L'unica cosa che passa da internet è lo scarico dei valori dell'Euribor dal sito della Bundesbank.
 
 ## Come si usa
 
 1. Scarica il progetto (pulsante **Code → Download ZIP** su GitHub, oppure `git clone`) e apri `index.html` con un doppio clic. Provato con Microsoft Edge; dovrebbe funzionare con qualunque browser recente.
-2. Alla prima apertura parte la **configurazione guidata**: nove passi, con le spiegazioni. Tieni a portata di mano il contratto di mutuo e qualche ricevuta delle rate. Alle domande tecniche puoi rispondere «Non lo so»: se inserisci tre o quattro rate già pagate, il programma prova le combinazioni di regole e sceglie quella che le riproduce.
+2. Alla prima apertura parte la **configurazione guidata**. Tieni a portata di mano l'estratto conto o qualche ricevuta delle rate.
+   - **Il prestito**: quattro domande (tipo, importo, numero di rate, data della prima rata; se non la ricordi, va bene quella dell'ultima). Per un mutuo c'è anche la risposta «non so se è fisso o variabile».
+   - **Le rate pagate**: gli importi addebitati di alcune rate, anche non di fila; la tabella parte dalle più recenti, che sono le più facili da trovare. Bastano tre o quattro rate, meglio se lontane fra loro.
+   - **Ci penso io**: il programma prova migliaia di combinazioni di tasso, spese e regole e dice che cosa ha capito («Euribor 3 mesi + 1,30%, nessuna spesa, rata ricalcolata ogni mese… le 12 rate tornano al centesimo»). Se più risposte fanno tornare le rate, chiede solo il dato che manca, con le risposte possibili già pronte e «Non lo so»; se una rata non torna, la mostra; se il prestito non è ancora partito, chiede il tasso del contratto.
+   - **Spese e nome** (facoltativi, servono al costo totale e al TAEG) e il **riepilogo**.
+
+   Chi conosce bene il contratto può scegliere «Preferisco rispondere io a tutte le domande»: è il percorso completo, lo stesso che si apre con il pulsante «Configurazione» per rivedere un prestito.
 3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no.
 4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Il grafico mostra tutta la storia dell'Euribor dal 1999 (all'inizio solo il periodo del tuo mutuo) e, a destra, la proiezione in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
 5. Dal **Pannello di controllo** puoi salvare un backup di tutti i dati in un file e ricaricarlo (anche su un altro computer), rivedere le regole del contratto o lanciare la taratura automatica.
@@ -72,13 +78,14 @@ index.html            pagina unica: guida iniziale + cinque schede (Piano, Tassi
 stile.css             stile: un blocco di variabili per ogni tema, poi i componenti
 temi.js               scelta del tema (prima del disegno) e selettore «Aspetto»
 calcolo.js            motore di calcolo con le regole sceglibili, e taratura automatica
+deduzione.js          ricava tasso, spese e regole dalle rate pagate (passo «Ci penso io» della configurazione)
 archivio.js           dati nel browser: lettura, scrittura, controlli, backup su file
 app.js                nucleo della pagina: formati, piano, statistiche, pannello di controllo
 tassi.js              scheda Tassi, scarico da internet
 calendario.js         schede Calendario e Festività
 previsioni.js         proiezioni dell'indice nella pagina Tassi: modelli, scenari, confronto, scelta per le rate future
 modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
-configura.js          configurazione guidata, regole nel pannello, taratura
+configura.js          configurazione guidata (percorso breve e completo), regole nel pannello, taratura
 prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali
 costi.js              quanto costa il prestito aperto: costo totale e TAEG, estinzione anticipata (pannello di controllo)
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
@@ -89,13 +96,15 @@ crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`.
+Gli script si caricano in quest'ordine: `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, prestiti: [...], offerte: [...] }` (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
 
 **Modelli.** `Modelli.stima(modello, serieMensile, opzioni)` (in `modelli.js`) restituisce la proiezione con le fasce; `Modelli.perGiorno` la trasforma nella funzione giorno → valore che il piano riceve come `opzioni.previsione`. Il file non tocca la pagina: `node -e "const M = require('./modelli.js'); …"` per provarlo.
 
 **Motore.** `Calcolo.calcolaPiano(dati, opzioni)` restituisce le righe del piano con, per ogni rata, periodo, data di rilevazione, indice, tasso, interessi, quota capitale, rata calcolata e confronto con la rata vera. `Calcolo.tara(dati)` prova le combinazioni di regole sulle rate vere e restituisce le migliori. Le scelte possibili, con nome e spiegazione, sono in `Calcolo.REGOLE`.
+
+**Deduzione.** `Deduzione.analizza(ingresso)` (in `deduzione.js`, gira anche in Node) riceve importo, numero di rate, le date possibili di inizio del primo periodo, le rate pagate e le serie dell'Euribor, e ricava il resto. Per ogni combinazione di regole (inizio del periodo, versione dell'Euribor, giorno di rilevazione, aggiornamento, valore minimo, conteggio dei giorni, tipo di piano) un calcolo veloce stima spread o TAN, spese e tasso del piano; le stime sono robuste (mediane, somme senza il quarto peggiore) così una rata scritta male non nasconde la combinazione giusta. I numeri arrotondati come li scrivono le banche passano poi dal motore vero. Il risultato dice l'esito (`trovato`, `dubbio`, `vicino`, `nessuno`, `senza-rate`), le spiegazioni migliori e, in `differenze`, i dati su cui le spiegazioni che fanno tornare tutte le rate restano diverse: sono le domande che la pagina fa all'utente. Quando le rate non bastano a distinguere lo spread (o il TAN) dalle spese per rata, la deduzione non sceglie a caso e chiede il tasso.
 
 **Prove.** Non ci sono strumenti di test nel repository. Le prove sono state fatte con Edge senza finestra (`msedge --headless=new --remote-debugging-port=…`) pilotato da uno script Node tramite il protocollo DevTools, che apre `index.html` da `file://`, simula clic e digitazione e legge il risultato dalla pagina. Dopo una modifica al motore va rifatta almeno la prova del contratto noto (le rate devono tornare tutte).
 

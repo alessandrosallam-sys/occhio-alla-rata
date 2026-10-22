@@ -493,7 +493,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });
