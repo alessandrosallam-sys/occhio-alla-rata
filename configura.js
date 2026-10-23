@@ -513,8 +513,42 @@
     ['offerte', 'Confronta le offerte', 'Prima di firmare: rata, interessi, costo totale e TAEG di banche diverse, uno accanto all\'altro.'],
     ['lucchetto', 'I tuoi dati restano qui', 'Niente account e niente server: tutto resta in questo browser, e ne fai un backup su file. Da internet arriva solo l\'Euribor.'],
   ];
-  const presentazioneProgetto = () => crea('ul', { className: 'intro-punti' }, ...PUNTI.map(([icona, titolo, testo], i) =>
-    crea('li', { style: '--i:' + i }, Icone.distintivo(icona, 'piccolo'), crea('div', {}, crea('strong', {}, titolo), crea('p', {}, testo)))));
+  const presentazioneProgetto = () => crea('ul', { className: 'intro-punti', style: '--durata:' + Intro.durata() + 's' }, ...PUNTI.map(([icona, titolo, testo], i) =>
+    crea('li', { style: '--i:' + i }, Icone.distintivo(icona), crea('strong', {}, titolo), crea('p', {}, testo))));
+  // Come funziona: tre passi numerati, in fila sugli schermi larghi
+  const PASSI_BENVENUTO = [
+    ['Poche domande', 'Ti faccio qualche domanda facile sul prestito, una alla volta: che tipo è, quanto ti hanno prestato, in quante rate, quando hai pagato la prima.'],
+    ['Le rate pagate', 'Poi mi scrivi, una alla volta, alcune rate che hai già pagato, come le vedi sull\'estratto conto. Mentre le scrivi faccio i conti.'],
+    ['Il resto lo capisco io', 'Il tasso, le spese e le regole del contratto li ricavo dalle rate. Se non sono sicuro ti chiedo un dato in più o qualche altra rata, finché i conti non tornano al centesimo.'],
+  ];
+  const comeFunziona = () => crea('ol', { className: 'passi-benvenuto' }, ...PASSI_BENVENUTO.map(([titolo, testo]) =>
+    crea('li', {}, crea('span', { className: 'numero-passo', 'aria-hidden': 'true' }), crea('strong', {}, titolo), crea('p', {}, testo))));
+  const cartaDocumento = (icona, nome, contenuto) => crea('li', {}, Icone.distintivo(icona, 'piccolo'), crea('div', {}, crea('strong', {}, nome), crea('p', {}, contenuto)));
+
+  // La prima volta: la scelta del simbolo del programma (uno dei loghi). Scelto, la pagina si ridisegna con la scritta animata.
+  function sceltaLogoIniziale(contenitore) {
+    const blocco = crea('div', { className: 'scelta-logo-iniziale' });
+    const griglia = crea('div', { className: 'griglia-loghi', role: 'group', 'aria-label': 'Simboli disponibili' });
+    for (const l of Loghi.ELENCO) {
+      const pulsante = crea('button', { type: 'button', className: 'tessera-logo', 'data-logo-iniziale': l.codice, title: l.descrizione });
+      const riquadro = crea('span', { className: 'logo anteprima-logo', 'aria-hidden': 'true' });
+      riquadro.append(Loghi.crea(l.codice));
+      pulsante.append(riquadro, crea('span', {}, l.nome));
+      griglia.append(pulsante);
+    }
+    griglia.addEventListener('click', evento => {
+      const pulsante = evento.target.closest('[data-logo-iniziale]');
+      if (!pulsante) return;
+      Loghi.scegli(pulsante.dataset.logoIniziale);
+      disegnaBenvenuto(contenitore);
+      contenitore.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+    blocco.append(
+      crea('h3', {}, 'Prima di tutto, scegli il simbolo di Occhio alla Rata'),
+      crea('p', { className: 'nota' }, 'Lo vedrai in alto a sinistra e nella scheda del browser. Sono tutti animati: passaci sopra con il mouse. Puoi cambiarlo quando vuoi nelle Impostazioni.'),
+      griglia);
+    return blocco;
+  }
 
   function disegnaBenvenuto(contenitore) {
     const documento = (nome, contenuto) => crea('li', {}, crea('strong', {}, nome), ' ' + contenuto);
@@ -525,18 +559,16 @@
       crea('button', { type: 'button', className: 'secondario', id: 'apri-offerte' }, 'Confronta delle offerte'))];
     if (guida.percorso === 'breve') {
       contenitore.replaceChildren(
-        // Da zero, la scena del gufo (intro.js) e sotto la presentazione del progetto.
+        // Da zero: la prima volta si sceglie il simbolo, poi la scritta animata con quel simbolo (intro.js) e sotto la
+        // presentazione del progetto.
         ...(guida.nuovo ? [crea('p', {}, 'Aggiungi un altro prestito. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».')]
-          : [Intro.crea(), crea('h3', {}, 'Che cosa fa'), presentazioneProgetto()]),
-        crea('h3', {}, 'Come funziona'),
-        crea('ul', { className: 'documenti' },
-          crea('li', {}, 'Ti faccio qualche domanda facile sul prestito, una alla volta: che tipo è, quanto ti hanno prestato, in quante rate, quando hai pagato la prima.'),
-          crea('li', {}, 'Poi mi scrivi, una alla volta, alcune rate che hai già pagato, come le vedi sull\'estratto conto. Mentre le scrivi faccio i conti.'),
-          crea('li', {}, 'Il resto (il tasso, le spese, le regole del contratto) lo capisco io dalle rate. Se non sono sicuro ti chiedo un dato in più o qualche altra rata, finché i conti non tornano al centesimo.')),
-        crea('h3', {}, 'Tieni a portata di mano'),
-        crea('ul', { className: 'documenti' },
-          documento('L\'estratto conto o le ricevute', 'di alcune rate già pagate: servono gli importi addebitati.'),
-          documento('Il contratto,', 'se ce l\'hai: potrei chiederti un dato, come il tasso.')),
+          : Loghi.sceltoDaUtente() ? [Intro.crea(), crea('h3', { className: 'titolo-benvenuto' }, 'Che cosa fa'), presentazioneProgetto()] : [sceltaLogoIniziale(contenitore)]),
+        crea('h3', { className: 'titolo-benvenuto' }, 'Come funziona'),
+        comeFunziona(),
+        crea('h3', { className: 'titolo-benvenuto' }, 'Tieni a portata di mano'),
+        crea('ul', { className: 'carte-documenti' },
+          cartaDocumento('documento', 'L\'estratto conto o le ricevute', 'di alcune rate già pagate: servono gli importi addebitati.'),
+          cartaDocumento('regole', 'Il contratto, se ce l\'hai', 'potrei chiederti un dato, come il tasso.')),
         crea('p', { className: 'nota' }, 'Niente è definitivo: puoi tornare indietro, e rivedere tutto quando vuoi con il pulsante «Dati del prestito».'),
         ...offerte,
         crea('p', { className: 'nota' }, 'Conosci bene il tuo contratto? ',

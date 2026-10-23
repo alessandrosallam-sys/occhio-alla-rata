@@ -1758,64 +1758,53 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 /* Il marchio: una casa con il segno di percentuale */
 .logo { cursor: pointer; }
 /* Nella prima pagina della guida: il logo grande con il nome */
-/* La scena della prima apertura (intro.js): il bosco di notte, la luna, il gufo, il sacchetto e il ceppo; il nome in
-   alto a sinistra. Senza animazioni si vede la fine: il gufo posato sul ceppo, le ali chiuse, le monete nell'erba. */
-.intro {
-  --mx: 0; --my: 0;   /* il mouse sulla scena, da -1 a 1 (intro.js): i piani si spostano in misura diversa, come guardando da una finestra */
-  position: relative; container-type: inline-size; margin: 0 0 var(--s5); border-radius: var(--r3); overflow: hidden; cursor: pointer;
-  background: #04101f; box-shadow: var(--ombra-alta);
+/* La prima apertura (intro.js): la scritta OCCHIO ALLA RATA, nel carattere dei titoli, una lettera per span, con un
+   alone leggero dietro e il motto sotto. Senza animazioni si vede tutto fermo. */
+.intro-scritta {
+  --durata: 1.6s;
+  position: relative; container-type: inline-size; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  margin: 0 0 var(--s4); padding: clamp(18px, 5cqw, 36px) clamp(10px, 3cqw, 24px) clamp(14px, 4cqw, 28px); cursor: pointer;
 }
-.intro-strato { transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
-.intro-strato-cielo { transform: translate(calc(var(--mx) * 3px), calc(var(--my) * 1.5px)); }
-.intro-strato-lontano { transform: translate(calc(var(--mx) * -2px), calc(var(--my) * -1px)); }
-.intro-strato-medio { transform: translate(calc(var(--mx) * -5px), calc(var(--my) * -2.5px)); }
-.intro-strato-terra { transform: translate(calc(var(--mx) * -9px), calc(var(--my) * -4px)); }
-.intro-strato-vicino { transform-box: view-box; transform-origin: 320px 160px; transform: translate(calc(var(--mx) * -16px), calc(var(--my) * -7px)) scale(1.05); }
-.intro-raggi { transform-box: view-box; transform-origin: 500px 72px; }
-.intro-disegno { display: block; width: 100%; height: auto; }
-.intro-testo {
-  position: absolute; top: 0; left: 0; max-width: 58%; padding: clamp(14px, 5cqw, 30px) clamp(18px, 7cqw, 48px) clamp(18px, 7cqw, 48px) clamp(14px, 5cqw, 30px);
-  color: #ffffff; pointer-events: none; background: radial-gradient(ellipse at 0 0, rgba(4, 12, 28, 0.72), rgba(4, 12, 28, 0) 72%);
+.intro-scritta::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: min(86%, 560px); height: 120%; transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, var(--accento-tenue), transparent); opacity: 0.9; pointer-events: none;
 }
-.intro-testo p { margin: 0; }
-.intro-nome { font-size: clamp(21px, 6.4cqw, 38px); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55); }
-.intro-nome span { color: #ffd24a; }
-p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-height: 1.4; opacity: 0.92; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }
-.intro-ali-aperte, .intro-scintille path, .intro-ombra-terra, .intro-ombra-volo { opacity: 0; }
-.intro-ombra-volo { transform-box: fill-box; transform-origin: center; }
-.intro-volo { transform-box: view-box; transform-origin: 0 -60px; }
-.intro-zampe { transform-box: view-box; transform-origin: 0 -30px; }
-.intro-ala, .intro-artigli, .intro-felce { transform-box: view-box; transform-origin: 0 0; }
-.intro-gufo { transform-box: fill-box; transform-origin: 50% 100%; }
-.intro-palpebra, .intro-stelle .brilla, .intro-moneta, .intro-scintille path, .intro-luccichi path { transform-box: fill-box; transform-origin: center; }
-/* La prima apertura, versione Linea (intro.js, creaLinea): senza sfondo, sulla riga di base; il gufo a tratto nel colore
-   del tema, la scritta nel carattere dei titoli, la moneta che rotola sulla riga. Senza animazioni: tutto al suo posto. */
-.intro-linea {
-  --x-moneta: 60px; --corsa: 400px;
-  position: relative; container-type: inline-size; display: flex; align-items: flex-end; gap: clamp(14px, 4cqw, 34px);
-  margin: 0 0 var(--s5); padding: var(--s3) 0 0; border-bottom: 2px solid var(--linea-forte); cursor: pointer;
+.scritta-testo { position: relative; text-align: center; max-width: 100%; }
+.scritta-testo p { margin: 0; }
+.scritta-titolo { font-family: var(--carattere-titoli); font-weight: 800; font-size: clamp(30px, 8cqw, 60px); line-height: 1.04; letter-spacing: 0.03em; text-transform: uppercase; color: var(--inchiostro); }
+.scritta-parola { display: inline-block; vertical-align: bottom; white-space: nowrap; }
+.scritta-lettera { display: inline-block; }
+.scritta-rata { color: var(--accento); }
+p.scritta-motto { margin-top: 12px; font-size: clamp(13.5px, 2.5cqw, 17px); line-height: 1.4; color: var(--tenue); }
+/* La pagina di benvenuto: i titoli delle sezioni, i sei riquadri «Che cosa fa», i tre passi «Come funziona», le due
+   carte «Tieni a portata di mano» */
+.titolo-benvenuto { margin: var(--s5) 0 var(--s3); font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tenue); }
+.intro-punti { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s3); }
+.intro-punti li {
+  padding: var(--s4); border: 1px solid var(--linea); border-radius: var(--r2); background: var(--superficie);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
-.linea-gufo { flex: none; width: clamp(96px, 22cqw, 150px); height: auto; overflow: visible; position: relative; z-index: 1; }
-.linea-corpo { transform-box: fill-box; transform-origin: 50% 100%; }
-.linea-tratto { stroke-dasharray: 1; stroke-dashoffset: 0; }
-.linea-occhi { transform-box: fill-box; transform-origin: center; }
-.linea-testo { flex: 1; min-width: 0; padding-bottom: 10px; }
-.linea-testo p { margin: 0; }
-.linea-titolo { font-family: var(--carattere-titoli); font-weight: 800; font-size: clamp(28px, 7.4cqw, 58px); line-height: 1.02; letter-spacing: 0.03em; text-transform: uppercase; color: var(--inchiostro); }
-.linea-parola { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0.04em 0.02em 0; margin-bottom: -0.04em; }
-.linea-lettera { display: inline-block; }
-.linea-rata { color: var(--accento); }
-p.linea-motto { margin-top: 10px; font-size: clamp(13px, 2.4cqw, 16px); line-height: 1.4; color: var(--tenue); }
-.linea-moneta {
-  position: absolute; left: var(--x-moneta); bottom: 3px; width: 28px; height: 28px; border-radius: 50%;
-  display: grid; place-items: center; font: 800 15px/1 var(--carattere-numeri); color: #8a5a00;
-  background: radial-gradient(circle at 36% 32%, #fff0a0, #f7b500 55%, #c98200); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+.intro-punti li:hover { transform: translateY(-3px); box-shadow: var(--ombra); border-color: var(--accento-tenue); }
+.intro-punti .distintivo-icona { margin-bottom: var(--s3); }
+.intro-punti strong { display: block; font-size: 15.5px; color: var(--inchiostro); }
+.intro-punti p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--tenue); }
+.passi-benvenuto { counter-reset: passo; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s4); }
+.passi-benvenuto li { counter-increment: passo; position: relative; padding-top: 4px; }
+.numero-passo {
+  display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: var(--s3); border-radius: 50%;
+  background: var(--accento); color: #ffffff; font: 800 17px/1 var(--carattere-numeri); box-shadow: 0 0 0 6px var(--accento-tenue);
 }
-
-.intro-punti { list-style: none; margin: 0 0 var(--s5); padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s3); }
-.intro-punti li { display: flex; align-items: flex-start; padding: var(--s3) var(--s4); border: 1px solid var(--linea); border-radius: var(--r2); background: var(--superficie-2); }
-.intro-punti strong { display: block; font-size: 15px; color: var(--inchiostro); }
-.intro-punti p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: var(--tenue); }
+.numero-passo::before { content: counter(passo); }
+.passi-benvenuto strong { display: block; font-size: 15.5px; color: var(--inchiostro); }
+.passi-benvenuto p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--tenue); }
+@media (min-width: 700px) {
+  .passi-benvenuto li:not(:last-child)::after { content: ""; position: absolute; top: 23px; left: 54px; right: -4px; height: 2px; background: linear-gradient(90deg, var(--accento-tenue), var(--linea)); }
+}
+.carte-documenti { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s3); }
+.carte-documenti li { display: flex; align-items: flex-start; padding: var(--s3) var(--s4); border-radius: var(--r2); background: var(--superficie-2); border: 1px solid var(--linea); }
+.carte-documenti strong { display: block; font-size: 15px; color: var(--inchiostro); }
+.carte-documenti p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: var(--tenue); }
+.carte-documenti + .nota { margin-top: var(--s4); }
 .logo.logo-grande { width: 76px; height: 76px; border-radius: 22px; box-shadow: var(--ombra-alta); }
 /* I loghi (loghi.js): undici disegni, ognuno con le sue animazioni; quello scelto sta in ogni riquadro .logo.
    Lo sfondo è quello del riquadro, il colore principale il suo testo (currentColor), le monete d'oro. */
@@ -1843,126 +1832,14 @@ p.linea-motto { margin-top: 10px; font-size: clamp(13px, 2.4cqw, 16px); line-hei
 .logo-sveglia .ore, .logo-sveglia .minuti { transform-box: view-box; transform-origin: 32px 35px; }
 .logo-sveglia .squillo { opacity: 0; }
 
-/* La scena della prima apertura: lucciole, stelle, felci e nuvole sempre; con «in-volo» il volo (5 secondi), poi il nome e la presentazione */
+/* La prima apertura: di base le lettere sorgono una dopo l'altra e il motto arriva alla fine (--durata, data dalla
+   variante); i riquadri della presentazione seguono. Le varianti aggiungono le loro animazioni nel loro CSS. */
 @media (prefers-reduced-motion: no-preference) {
-  .intro-stelle .brilla { animation: respiro 3.2s ease-in-out infinite; }
-  .intro-lucciola { animation: intro-vaga var(--t) ease-in-out var(--d) infinite; }
-  .intro-felce { animation: intro-ondeggia var(--t) ease-in-out infinite alternate; }
-  .intro-nuvole { animation: intro-nuvole 28s ease-in-out infinite alternate; }
-  .intro-raggi { animation: intro-raggi 11s ease-in-out infinite alternate; }
-  .intro-foschia { animation: intro-nuvole 36s ease-in-out infinite alternate-reverse; }
-  .intro-pulsa { animation: respiro 4s ease-in-out infinite; }
-  .intro-luccichi path { animation: logo-luccica 3.6s 5.6s infinite; }
-  .intro-luccichi path + path { animation-delay: 7.4s; }
-  .intro-palpebra { animation: logo-batte 5s 5.6s infinite; }
-  .intro-gufo { animation: logo-inclina 9s 7s ease-in-out infinite; }
-  .in-volo .intro-volo { animation: intro-plana 5s linear both; }
-  .in-volo .intro-insieme { animation: intro-porta 5s ease-in-out both; }
-  .in-volo .intro-ala { animation: intro-batte 5s ease-in-out both; }
-  .in-volo .intro-ali-aperte { animation: intro-ali-aperte 5s both; }
-  .in-volo .intro-ali-chiuse { animation: intro-ali-chiuse 5s both; }
-  .in-volo .intro-zampe { animation: intro-zampe 5s ease-out both; }
-  .in-volo .intro-artigli { animation: intro-artigli 5s ease-out both; }
-  .in-volo .intro-sguardo { animation: intro-guarda-sacco 5s ease-in-out both; }
-  .in-volo .intro-moneta { animation: intro-cade 5s both; }
-  .in-volo .intro-ombra-terra { animation: intro-ombra-terra 5s both; }
-  .in-volo .intro-ombra-volo { animation: intro-ombra-volo 5s linear both; }
-  .in-volo .intro-ombra-ceppo { animation: intro-ombra-ceppo 5s both; }
-  .in-volo .intro-scintille path { animation: intro-brilla 5.4s both; }
-  .in-volo .intro-scintille path:nth-child(2) { animation-delay: 0.12s; }
-  .in-volo .intro-scintille path:nth-child(3) { animation-delay: 0.24s; }
-  .in-volo .intro-nome { animation: sale 0.7s 4.7s both; }
-  .in-volo .intro-motto { animation: sale 0.7s 4.95s both; }
-  .intro.in-volo ~ .intro-punti > li { animation: sale 0.5s calc(5.2s + var(--i) * 0.09s) both; }
-  /* La versione Linea: il gufo si disegna (0–1 s), le lettere sorgono (0,25–0,85 s), la moneta rotola (0,8–1,75 s) seguita
-     dagli occhi, il gufo saltella e la agguanta (1,7–2 s), poi il motto e la presentazione */
-  .in-volo .linea-tratto { animation: linea-disegna 0.7s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--d) * 1s) both; }
-  .in-volo .linea-pieno { animation: appare 0.4s 0.75s both; }
-  .in-volo .linea-lettera { animation: linea-sorge 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(0.25s + var(--i) * 0.045s) both; }
-  .in-volo .linea-moneta { animation: linea-rotola 2.4s linear both; }
-  .in-volo .linea-sguardo { animation: linea-segui 2.4s ease-in-out both; }
-  .in-volo .linea-corpo { animation: linea-salta 2.4s ease-in-out both; }
-  .in-volo .linea-motto { animation: sale 0.5s 1.95s both; }
-  .intro-linea.in-volo ~ .intro-punti > li { animation: sale 0.45s calc(2.15s + var(--i) * 0.08s) both; }
-  .linea-occhi { animation: linea-batte 5s 3.2s infinite; }
+  .intro-scritta.in-volo .scritta-lettera { animation: scritta-sorge 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(0.2s + var(--i) * 0.045s) both; }
+  .intro-scritta.in-volo .scritta-motto { animation: sale 0.5s calc(var(--durata) - 0.45s) both; }
+  .intro-scritta.in-volo ~ .intro-punti > li { animation: sale 0.45s calc(var(--durata) + var(--i) * 0.08s) both; }
 }
-/* Il gufo arriva da lontano (piccolo) da fuori in alto a sinistra lungo una parabola, inclinato in picchiata, cresce
-   avvicinandosi e frena sul sacchetto (50%) */
-@keyframes intro-plana {
-  0%, 4% { transform: translate(-410px, -296px) rotate(22deg) scale(0.6); }
-  15.5% { transform: translate(-307px, -166px) rotate(20deg) scale(0.7); }
-  27% { transform: translate(-205px, -74px) rotate(15deg) scale(0.8); }
-  38.5% { transform: translate(-102px, -18px) rotate(8deg) scale(0.92); animation-timing-function: ease-out; }
-  50% { transform: translate(0, 0) rotate(-12deg) scale(1); animation-timing-function: ease-in-out; }
-  60% { transform: translate(0, 0) rotate(-4deg) scale(1); }
-  100% { transform: none; }
-}
-/* La sua ombra sull'erba: lo segue, cresce e si fa netta mentre scende, sparisce quando risale con il sacchetto */
-@keyframes intro-ombra-volo {
-  0%, 4% { opacity: 0; transform: translateX(-410px) scale(0.3); }
-  20% { opacity: 0.08; transform: translateX(-280px) scale(0.45); }
-  38.5% { opacity: 0.28; transform: translateX(-102px) scale(0.8); }
-  50% { opacity: 0.45; transform: translateX(0) scale(1); }
-  60% { opacity: 0.3; transform: translateX(28px) scale(0.9); }
-  78% { opacity: 0.1; transform: translateX(130px) scale(0.6); }
-  90%, 100% { opacity: 0; transform: translateX(220px) scale(0.4); }
-}
-/* Poi lo porta con i colpi d'ala fino al ceppo e ci si posa, con un piccolo rimbalzo */
-@keyframes intro-porta {
-  0%, 50% { transform: translate(-220px, 71px); }
-  53% { transform: translate(-217px, 76px); }
-  60% { transform: translate(-192px, 40px); }
-  69% { transform: translate(-146px, 4px); }
-  78% { transform: translate(-90px, -20px); }
-  86% { transform: translate(-38px, -22px); }
-  92% { transform: translate(-6px, -8px); }
-  95% { transform: translate(0, 2px); }
-  98% { transform: translate(0, -1px); }
-  100% { transform: none; }
-}
-/* Le ali (la destra è specchiata, basta un movimento solo): planata quasi ferma, frenata, colpi d'ala, frenata sul ceppo */
-@keyframes intro-batte {
-  0%, 4% { transform: rotate(2deg); } 14% { transform: rotate(-4deg); } 24% { transform: rotate(3deg); } 34% { transform: rotate(-3deg); }
-  42% { transform: rotate(8deg); } 47% { transform: rotate(30deg) scaleX(0.9); } 50% { transform: rotate(-38deg) scaleX(0.8); }
-  54%, 62%, 70% { transform: rotate(36deg) scaleX(0.92); } 58%, 66%, 74% { transform: rotate(-40deg) scaleX(0.78); }
-  78% { transform: rotate(30deg) scaleX(0.92); } 82% { transform: rotate(-30deg) scaleX(0.82); } 86% { transform: rotate(34deg) scaleX(0.92); } 90% { transform: rotate(48deg) scaleX(0.95); } 93.5%, 100% { transform: rotate(52deg); }
-}
-@keyframes intro-ali-aperte { 0%, 93.5% { opacity: 1; } 94.5%, 100% { opacity: 0; } }
-@keyframes intro-ali-chiuse { 0%, 93.5% { opacity: 0; } 94.5%, 100% { opacity: 1; } }
-/* Le zampe raccolte in planata, tese in avanti poco prima di afferrare */
-@keyframes intro-zampe { 0%, 34% { transform: scaleY(0.4); } 46%, 100% { transform: none; } }
-@keyframes intro-artigli { 0%, 34% { transform: translateY(-16px); } 46%, 100% { transform: none; } }
-/* In picchiata guarda il sacchetto (in basso a destra); quando lo prende torna a guardare avanti */
-@keyframes intro-guarda-sacco { 0%, 44% { transform: translate(2.2px, 2.6px); } 54%, 100% { transform: none; } }
-/* Quattro monete saltano dal bordo del sacchetto, girano in aria e cadono nell'erba con un rimbalzo */
-@keyframes intro-cade {
-  0%, 50% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(0deg) scaleY(1); }
-  51% { opacity: 1; transform: translate(var(--x), var(--y)) rotate(0deg) scaleY(1); }
-  58% { transform: translate(var(--px), var(--py)) rotate(calc(var(--g) * 200deg)) scaleY(1.25); animation-timing-function: ease-in; }
-  66% { transform: translate(0, 0) rotate(calc(var(--g) * 360deg)) scaleY(1); animation-timing-function: ease-out; }
-  70% { transform: translate(0, -5px) rotate(calc(var(--g) * 360deg)) scaleY(1); animation-timing-function: ease-in; }
-  74%, 100% { opacity: 1; transform: translate(0, 0) rotate(calc(var(--g) * 360deg)) scaleY(1); }
-}
-@keyframes intro-ombra-terra { 0%, 50% { opacity: 0.5; } 56%, 100% { opacity: 0; } }
-@keyframes intro-ombra-ceppo { 0%, 93% { opacity: 0; } 97%, 100% { opacity: 0.55; } }
-@keyframes intro-brilla { 0%, 92% { opacity: 0; transform: scale(0.2) rotate(0deg); } 96% { opacity: 1; transform: scale(1.15) rotate(45deg); } 100% { opacity: 0; transform: scale(0.4) rotate(90deg); } }
-/* Sempre: le lucciole vagano e pulsano, le felci ondeggiano, le nuvole scorrono */
-@keyframes intro-vaga { 0%, 100% { transform: translate(0, 0); opacity: 0.25; } 30% { opacity: 1; } 50% { transform: translate(var(--x), var(--y)); opacity: 0.45; } 75% { opacity: 1; } }
-@keyframes intro-ondeggia { from { transform: rotate(calc(var(--r) * -1)); } to { transform: rotate(var(--r)); } }
-@keyframes linea-disegna { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes linea-sorge { from { opacity: 0; transform: translateY(0.6em); } to { opacity: 1; transform: none; } }
-@keyframes linea-rotola {
-  0%, 33% { opacity: 0; transform: translateX(var(--corsa)) rotate(0deg); }
-  36% { opacity: 1; transform: translateX(var(--corsa)) rotate(0deg); animation-timing-function: cubic-bezier(0.2, 0.6, 0.3, 1); }
-  73% { transform: translateX(0) rotate(-720deg); }
-  80% { transform: translateX(0) rotate(-720deg) scale(1.1, 0.84); }
-  86%, 100% { opacity: 1; transform: translateX(0) rotate(-720deg); }
-}
-@keyframes linea-segui { 0%, 30% { transform: none; } 38% { transform: translate(6px, 1px); } 62% { transform: translate(3px, 5px); } 70%, 80% { transform: translate(0, 6px); } 90%, 100% { transform: none; } }
-@keyframes linea-salta { 0%, 70% { transform: none; } 75% { transform: translateY(-9px) scale(1.02, 0.98); } 80% { transform: translateY(3px) scale(0.98, 1.03); } 86% { transform: translateY(-1px); } 90%, 100% { transform: none; } }
-@keyframes linea-batte { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
-@keyframes intro-nuvole { from { transform: translateX(0); } to { transform: translateX(-26px); } }
-@keyframes intro-raggi { from { transform: rotate(-2.5deg); opacity: 0.75; } 50% { opacity: 1; } to { transform: rotate(2.5deg); opacity: 0.8; } }
+@keyframes scritta-sorge { from { opacity: 0; transform: translateY(0.5em); } to { opacity: 1; transform: none; } }
 @keyframes logo-apre { from { transform: scaleY(0.06); } to { transform: scaleY(1); } }
 @keyframes logo-batte { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
 @keyframes logo-occhiolino { 0%, 100% { transform: scaleY(1); } 40%, 55% { transform: scaleY(0.08); } }

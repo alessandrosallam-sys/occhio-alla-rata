@@ -110,7 +110,7 @@
       pulsante.append(riquadro, elemento('span', '', {}, l.nome));
       g.append(pulsante);
     }
-    return [elemento('h3', '', {}, 'Logo'), elemento('p', 'nota', {}, 'Il disegno in alto e nella scheda del browser: ognuno ha la sua animazione. Cambia solo l\'aspetto.'), g];
+    return [elemento('h3', '', {}, 'Logo'), elemento('p', 'nota', {}, 'Il disegno in alto e nella scheda del browser, e l\'animazione della prima pagina. Cambia solo l\'aspetto.'), g];
   }
   // L'aspetto del robottino (assistente.js): un'anteprima per ognuno, con le stesse espressioni dell'assistente vero.
   function grigliaAvatar() {
@@ -124,17 +124,6 @@
       g.append(pulsante);
     }
     return [elemento('p', 'nota', {}, 'Il suo aspetto: scegli quello che ti sta più simpatico. Cambia solo il disegno, non quello che dice.'), g];
-  }
-  // La prima apertura (intro.js): la versione Linea o il Bosco
-  function grigliaIntro() {
-    if (!window.Intro || !window.Intro.VERSIONI) return [];
-    const g = elemento('div', 'scelta-versione', { role: 'group', 'aria-label': 'Animazione della prima apertura' });
-    for (const v of window.Intro.VERSIONI) {
-      const pulsante = elemento('button', 'tessera-versione', { type: 'button', 'data-scelta-intro': v.codice, 'aria-pressed': String(v.codice === window.Intro.scelta()) });
-      pulsante.append(elemento('span', 'nome-tema', {}, v.nome), elemento('span', 'descrizione-tema', {}, v.descrizione));
-      g.append(pulsante);
-    }
-    return [elemento('h3', '', {}, 'Prima apertura'), elemento('p', 'nota', {}, 'L\'animazione della prima pagina, quando si parte da zero.'), g];
   }
   // Versione, assistente, colori e logo: le stesse scelte nel riquadro della testata e nel pannello di controllo.
   function scelte() {
@@ -162,15 +151,13 @@
       ...grigliaAvatar(),
       elemento('h3', '', {}, 'Colori'),
       griglia(),
-      ...grigliaLoghi(),
-      ...grigliaIntro());
+      ...grigliaLoghi());
     blocco.addEventListener('click', evento => {
-      const tema = evento.target.closest('[data-scelta-tema]'), scelta = evento.target.closest('[data-scelta-versione]'), logo = evento.target.closest('[data-scelta-logo]'), avatar = evento.target.closest('[data-scelta-avatar]'), intro = evento.target.closest('[data-scelta-intro]');
+      const tema = evento.target.closest('[data-scelta-tema]'), scelta = evento.target.closest('[data-scelta-versione]'), logo = evento.target.closest('[data-scelta-logo]'), avatar = evento.target.closest('[data-scelta-avatar]');
       if (tema) applica(tema.dataset.sceltaTema, true);
       if (scelta) applicaVersione(scelta.dataset.sceltaVersione, true);
       if (logo) window.Loghi.scegli(logo.dataset.sceltaLogo);
       if (avatar) window.Assistente.scegliAvatar(avatar.dataset.sceltaAvatar);
-      if (intro) window.Intro.scegli(intro.dataset.sceltaIntro);
     });
     blocco.addEventListener('change', evento => {
       const casella = evento.target.closest('[data-opzione-assistente]');

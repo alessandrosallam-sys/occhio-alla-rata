@@ -131,19 +131,6 @@
         <path class="linea" d="M15 40 25 30 35 34 46 21" fill="none" stroke="#ffe680" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/>
         <g class="punte"><circle cx="15" cy="40" r="2.1" fill="#ffffff"/><circle cx="25" cy="30" r="2.1" fill="#ffffff"/><circle cx="35" cy="34" r="2.1" fill="#ffffff"/></g>
         <g class="cima">${moneta('oro-' + n, 49.5, 17, 6.2)}</g>` },
-    { codice: 'sveglia', nome: 'Sveglia', descrizione: 'Una sveglia che suona: la scadenza della rata non ti scappa.', sguardo: null,
-      disegno: n => `<defs>${oro('oro-' + n)}</defs>
-        <path class="squillo" d="M7 30H3.5M8 23.5l-3-2M57 30h3.5M56 23.5l3-2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-        <g class="sveglia">
-          <path d="M12.5 23a9 9 0 0 1 12.2-11.4ZM51.5 23a9 9 0 0 0-12.2-11.4Z" fill="currentColor"/>
-          <path d="M32 15.5v-5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="8.5" r="2.6" fill="currentColor"/>
-          <path d="M20 51.5l-4 5.5M44 51.5l4 5.5" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
-          <circle cx="32" cy="35" r="18" fill="#ffffff"/><circle cx="32" cy="35" r="18" fill="none" stroke="currentColor" stroke-width="3.4"/>
-          <path d="M32 19.5v3M47.5 35h-3M32 50.5v-3M16.5 35h3" stroke="#1e1b4b" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
-          <path class="ore" d="M32 35l-6.5-5" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round"/>
-          <path class="minuti" d="M32 35V22.5" stroke="#1e1b4b" stroke-width="2.4" stroke-linecap="round"/>
-          ${moneta('oro-' + n, 32, 35, 3.2, false)}
-        </g>` },
   ];
   const valido = codice => LOGHI.some(l => l.codice === codice);
   const leggi = () => { if (window.MUTUO_UN_FILE) return null; try { return localStorage.getItem(CHIAVE); } catch { return null; } };
@@ -226,7 +213,7 @@
   });
 
   document.addEventListener('DOMContentLoaded', ridisegna);
-  window.Loghi = { ELENCO: LOGHI, crea, scegli, scelto: () => scelto };
+  window.Loghi = { ELENCO: LOGHI, crea, scegli, scelto: () => scelto, sceltoDaUtente: () => valido(leggi()) };   // sceltoDaUtente: l'ha scelto lui (la prima pagina lo chiede)
   // Per chi disegna il logo da sé (la prima pagina della guida): quello scelto.
   if (window.Icone) window.Icone.logo = classe => crea(scelto, classe);
 })();
