@@ -222,7 +222,7 @@
       .map(chiave => ({ fase: 4, tipo: 'domanda', chiave, icona: chiave === 'valore_riferimento' ? 'casa' : 'scudo', se: () => conDettagli() && (!CAMPI[chiave].se || CAMPI[chiave].se(guida.bozza)) })),
     // Prima di mostrare il piano: riempire le rate passate che l'utente non ha scritto?
     { fase: 4, tipo: 'domanda', chiave: 'riempi', titolo: 'Riempio io le rate che non hai scritto?', icona: 'piano', se: () => guida.daRiempire.length > 0 },
-    { fase: 5, titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', testo: 'Controlla i dati e conferma. Potrai rivedere tutto quando vuoi con il pulsante «Configurazione» in alto.' },
+    { fase: 5, titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', testo: 'Controlla i dati e conferma. Potrai rivedere tutto quando vuoi con il pulsante «Dati del prestito».' },
   ];
   // Il titolo di un passo: scritto, oppure calcolato, oppure quello della domanda.
   const titoloDi = passo => typeof passo.titolo === 'function' ? passo.titolo() : passo.titolo || titoloDomanda(passo.chiave);
@@ -246,7 +246,7 @@
       testo: 'L\'ultima domanda sul contratto riguarda il modo in cui restituisci il capitale.' },
     { titolo: 'Le rate già pagate', tipo: 'rate', icona: 'calendario', campi: [],
       testo: 'Se hai già pagato delle rate, scrivile qui: il programma le usa per controllare le risposte date finora e per ricavare quelle che hai lasciato in sospeso. Bastano le prime tre o quattro; più ne metti, più il controllo è sicuro.' },
-    { titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', campi: [], testo: 'Controlla i dati e conferma. Potrai rifare la configurazione quando vuoi con il pulsante «Configurazione» in alto.' },
+    { titolo: 'Riepilogo', tipo: 'riepilogo', icona: 'spunta', campi: [], testo: 'Controlla i dati e conferma. Potrai rifare la configurazione quando vuoi con il pulsante «Dati del prestito».' },
   ];
   const NON_SO = '?';
   // percorso: 'breve' o 'completo'; rate: importi scritti, per numero di rata; nonSo: domande lasciate al programma
@@ -489,7 +489,7 @@
         crea('ul', { className: 'documenti' },
           documento('L\'estratto conto o le ricevute', 'di alcune rate già pagate: servono gli importi addebitati.'),
           documento('Il contratto,', 'se ce l\'hai: potrei chiederti un dato, come il tasso.')),
-        crea('p', { className: 'nota' }, 'Niente è definitivo: puoi tornare indietro, e rivedere tutto quando vuoi con il pulsante «Configurazione» in alto.'),
+        crea('p', { className: 'nota' }, 'Niente è definitivo: puoi tornare indietro, e rivedere tutto quando vuoi con il pulsante «Dati del prestito».'),
         ...offerte,
         crea('p', { className: 'nota' }, 'Conosci bene il tuo contratto? ',
           crea('button', { type: 'button', className: 'collegamento', id: 'percorso-completo' }, 'Preferisco rispondere io a tutte le domande')));
@@ -510,7 +510,7 @@
       crea('ul', { className: 'documenti' },
         crea('li', {}, 'Ci vogliono circa dieci minuti. Ogni domanda spiega che cosa ti viene chiesto e dove trovarlo.'),
         crea('li', {}, 'Se una risposta non la sai, spesso puoi scegliere «Non lo so»: il programma la ricava dalle rate che hai già pagato.'),
-        crea('li', {}, 'Niente è definitivo: puoi tornare indietro, e rifare tutto quando vuoi con il pulsante «Configurazione» in alto.')),
+        crea('li', {}, 'Niente è definitivo: puoi tornare indietro, e rifare tutto quando vuoi con il pulsante «Dati del prestito».')),
       ...offerte);
   }
 

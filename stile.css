@@ -551,6 +551,8 @@
 /* ---------- 2. Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* Versione semplice (predefinita) e avanzata, scelta nelle impostazioni (temi.js mette data-versione su <html>) */
+[data-versione="semplice"] .solo-avanzata, :root:not([data-versione="semplice"]) .solo-semplice { display: none !important; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--alto-testata) + var(--s3)); }
 body {
   margin: 0; min-height: 100vh; min-height: 100dvh;
@@ -802,7 +804,8 @@ tr.in-evidenza td { background-color: var(--accento-tenue); }
 .schede button:focus-visible { outline-offset: -4px; border-radius: var(--r1); }
 /* Pulsanti a destra della testata: Aspetto (temi.js) e Configurazione */
 .azioni-testata { display: flex; align-items: center; gap: var(--s2); margin-left: auto; flex: none; }
-.tema-attuale { display: none; }
+.impostazione-attuale { display: none; }
+.spiega-scheda { display: none; }   /* la riga sotto il nome della scheda: solo nella barra laterale */
 .pulsante-icona .icona { width: 18px; height: 18px; }
 
 /* ---------- 5. Riepilogo del mese ----------
@@ -845,7 +848,7 @@ tr.in-evidenza td { background-color: var(--accento-tenue); }
 }
 
 /* ---------- 6. Pagine ---------- */
-main { display: block; }
+main { display: block; padding-bottom: 64px; }   /* in fondo, spazio per la testa dell'assistente che segue la pagina */
 .scheda { min-width: 0; max-width: var(--larghezza-pagina); margin: 0 auto; padding: var(--s4) var(--s5) var(--s6); }
 .scheda[hidden] { display: none; }
 .colonna { display: flex; flex-direction: column; gap: var(--s4); width: 100%; margin: 0 auto; }
@@ -1357,6 +1360,14 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
     border-radius: var(--r2); font-size: 15px; font-weight: 600; color: var(--inchiostro-2);
   }
   body:has(.schede:not([hidden])) .schede button .icona { display: block; width: 21px; height: 21px; }
+  body:has(.schede:not([hidden])) .schede button {
+    display: grid; grid-template-columns: 21px minmax(0, 1fr); column-gap: 12px; row-gap: 1px; align-content: center; padding-top: 7px; padding-bottom: 7px; text-align: left;
+  }
+  body:has(.schede:not([hidden])) .schede button .icona { grid-row: 1 / span 2; align-self: center; }
+  body:has(.schede:not([hidden])) .schede button .spiega-scheda {
+    display: block; grid-column: 2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    font-size: 12px; font-weight: 450; line-height: 1.3; color: inherit; opacity: 0.68;
+  }
   body:has(.schede:not([hidden])) .schede button::after { display: none; }
   body:has(.schede:not([hidden])) .schede button:hover { background: var(--velo); color: var(--inchiostro); }
   body:has(.schede:not([hidden])) .schede button[aria-selected="true"] { background: var(--nav-attiva-sfondo); color: var(--nav-attiva-testo); box-shadow: inset 3px 0 0 var(--accento); }
@@ -1366,7 +1377,7 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
   }
   body:has(.schede:not([hidden])) .azioni-testata button { justify-content: flex-start; width: 100%; background: transparent; border-color: transparent; box-shadow: none; color: var(--inchiostro-2); }
   body:has(.schede:not([hidden])) .azioni-testata button:hover { background: var(--velo); color: var(--inchiostro); }
-  body:has(.schede:not([hidden])) .tema-attuale { display: inline; margin-left: auto; font-size: 13px; font-weight: 450; color: var(--tenue); }
+  body:has(.schede:not([hidden])) .impostazione-attuale { display: inline; margin-left: auto; font-size: 13px; font-weight: 450; color: var(--tenue); }
   body:has(.schede:not([hidden])) .riepilogo,
   body:has(.schede:not([hidden])) .scheda { padding-left: var(--s6); padding-right: var(--s6); }
   body:has(.schede:not([hidden])) .riepilogo { padding-top: var(--s5); }
@@ -1384,15 +1395,15 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
 .testa-menu h2 { margin: 0; font-size: 18px; }
 .menu-temi > .nota { margin: var(--s3) 0 0; }
 .griglia-temi { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: var(--s3); }
-button.tessera-tema {
+button.tessera-tema, button.tessera-versione {
   display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; min-height: 0; padding: 8px 8px 10px;
   background: var(--superficie); color: var(--inchiostro); border: var(--spessore) solid var(--linea-forte); border-radius: var(--r2);
   text-align: left; white-space: normal; font-weight: 400; line-height: 1.3;
 }
-button.tessera-tema:hover { background: var(--superficie-2); border-color: var(--tenue); }
-button.tessera-tema[aria-pressed="true"] { border-color: var(--accento); box-shadow: 0 0 0 2px var(--accento); }
+button.tessera-tema:hover, button.tessera-versione:hover { background: var(--superficie-2); border-color: var(--tenue); }
+button.tessera-tema[aria-pressed="true"], button.tessera-versione[aria-pressed="true"] { border-color: var(--accento); box-shadow: 0 0 0 2px var(--accento); }
 .nome-tema { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 2px; font-size: 14px; font-weight: 700; }
-button.tessera-tema[aria-pressed="true"] .nome-tema::after { content: "✓"; color: var(--accento-testo); font-weight: 800; }
+:is(button.tessera-tema, button.tessera-versione)[aria-pressed="true"] .nome-tema::after { content: "✓"; color: var(--accento-testo); font-weight: 800; }
 .descrizione-tema { padding: 0 2px; font-size: 12.5px; color: var(--inchiostro-2); }
 /* Anteprima: una pagina in miniatura con i colori veri del tema (ogni .mini porta il suo data-tema) */
 .anteprima-tema { display: flex; height: 78px; overflow: hidden; border: 1px solid var(--linea); border-radius: max(2px, calc(var(--r2) - 4px)); }
@@ -1407,6 +1418,26 @@ button.tessera-tema[aria-pressed="true"] .nome-tema::after { content: "✓"; col
 .mini-pillola { align-self: end; width: 46%; height: 10px; border-radius: 6px; background: var(--accento); }
 .gruppo-pannello .griglia-temi { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 .gruppo-pannello .anteprima-tema { height: 100px; }
+/* Le impostazioni (temi.js): versione, assistente, colori; nel riquadro della testata e nel pannello */
+.scelte-impostazioni > h3 { margin: var(--s5) 0 var(--s2); font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tenue); }
+.scelte-impostazioni > h3:first-child { margin-top: var(--s1); }
+.scelte-impostazioni > .nota { margin: 0 0 var(--s3); }
+.scelta-versione { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
+button.tessera-versione { padding: 12px 14px; gap: 4px; }
+button.tessera-versione .nome-tema { font-size: 15.5px; }
+.opzioni-assistente { display: flex; flex-direction: column; gap: var(--s2); }
+label.opzione-assistente { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; line-height: 1.4; cursor: pointer; }
+label.opzione-assistente input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accento); }
+@media (max-width: 520px) { .scelta-versione { grid-template-columns: minmax(0, 1fr); } }
+
+/* Pannello: l'indice in cima porta alle sezioni; nella versione semplice, che cosa c'è in più nell'avanzata */
+.indice-pannello { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.indice-pannello .nota { margin: 0 var(--s1) 0 0; }
+.pannello > [id] { scroll-margin-top: calc(var(--alto-testata) + var(--s4)); }
+.carta-versione { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3) var(--s5); }
+.carta-versione > div:first-child { flex: 1 1 380px; }
+.carta-versione h2 { margin-top: 0; }
+.carta-versione .azioni { margin: 0; }
 
 /* Ritocchi per tema: quello che le variabili da sole non bastano a dire */
 [data-tema="carta"] .riepilogo .dato.principale { border-top: 4px solid var(--accento); }
@@ -1856,7 +1887,10 @@ button[aria-busy="true"]::after {
 }
 .assistente.segue.zitto .parole { display: none; }
 .assistente.spiega .parole { border-color: var(--accento); }
-.posto-assistente { min-width: 0; }
+.posto-assistente { display: flow-root; position: relative; min-width: 0; }   /* flow-root: il margine dell'assistente resta dentro, così l'altezza tenuta è giusta */
+/* Al suo posto, la spiegazione si apre sopra la pagina (il segnaposto tiene l'altezza): niente salti sotto il mouse */
+.assistente.sovrapposto { position: absolute; z-index: 15; top: 0; left: 0; right: 0; }
+.assistente.sovrapposto .parole { background: color-mix(in srgb, var(--accento) 9%, var(--superficie)); box-shadow: var(--ombra-alta); }
 @media (min-width: 1100px) {
   body:has(.schede:not([hidden])) .assistente.nel-programma { padding: 0 var(--s6); margin-top: var(--s5); }
 }

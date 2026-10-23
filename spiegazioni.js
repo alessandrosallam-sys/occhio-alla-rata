@@ -6,8 +6,15 @@
 (function () {
   'use strict';
   const M = window.Mutuo, { euro, meseAnno } = M;
-  // Prima parte del testo di un'intestazione (senza la spiegazione piccola sotto).
-  const etichetta = el => { const t = el && el.querySelector(':scope > th, :scope > dt, :scope > .etichetta, :scope > h3') || el; return t ? (t.childNodes[0] || t).textContent.trim() : ''; };
+  // Prima parte del testo di un'intestazione (senza le icone e senza la spiegazione piccola sotto).
+  function etichetta(el) {
+    const t = el && el.querySelector(':scope > th, :scope > dt, :scope > .etichetta, :scope > h3') || el;
+    for (const n of t ? t.childNodes : []) {
+      const testo = n.nodeType === Node.TEXT_NODE ? n.textContent.trim() : n.nodeType !== Node.ELEMENT_NODE || n.matches('svg, .icona') ? '' : n.textContent.trim();
+      if (testo) return testo;
+    }
+    return '';
+  }
   const perEtichetta = (tabella, testo) => { for (const [inizio, spiega] of tabella) if (testo.startsWith(inizio)) return spiega; return ''; };
 
   // Le righe del piano: lo stato della rata, con le cifre.
@@ -102,8 +109,15 @@
     ['[data-spiega]', el => el.dataset.spiega],
     // Navigazione e testata
     ['.schede button[data-scheda]', el => SCHEDE[el.dataset.scheda]],
-    ['#apri-configurazione', 'Rivedi tutte le risposte sul contratto: importo, tasso, regole. Le rate che hai scritto restano.'],
-    ['#scegli-tema', 'Cambia i colori e l\'aspetto della pagina.'],
+    ['#apri-configurazione', 'Rivedi o cambia i dati del prestito: importo, durata, tasso, regole del contratto. Le rate che hai scritto restano.'],
+    ['#scegli-tema', 'Le impostazioni: versione semplice o avanzata, che cosa fa l\'assistente, i colori della pagina.'],
+    // Impostazioni (riquadro e pannello)
+    ['[data-scelta-versione="semplice"]', 'La versione semplice mostra solo l\'essenziale: le rate e se tornano, quanto costa il prestito, il rimborso anticipato, il backup.'],
+    ['[data-scelta-versione="avanzata"]', 'La versione avanzata aggiunge gli strumenti per chi conosce bene il contratto: colonne del piano, calendario, festività, previsioni, taratura, regole.'],
+    ['label:has([data-opzione-assistente="spiega"])', 'Se lo spegni non spiego più le cose quando ci passi sopra con il mouse.'],
+    ['label:has([data-opzione-assistente="segue"])', 'Se lo spegni resto in cima alla pagina e non ti seguo quando scorri.'],
+    ['#passa-avanzata', 'Mostra anche gli strumenti per esperti. Si torna alla semplice dalle «Impostazioni».'],
+    ['.indice-pannello [data-vai-a]', el => `Porta alla sezione «${el.textContent.trim()}» di questa pagina.`],
     // Riepilogo in testa
     ['#riepilogo .dato', el => perEtichetta(RIEPILOGO, etichetta(el)) || (/euribor|indice/i.test(etichetta(el)) ? 'Il valore dell\'indice per la rata di questo mese, e il giorno in cui la banca l\'ha letto.' : '')],
     // Piano

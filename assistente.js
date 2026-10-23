@@ -6,7 +6,8 @@
 // Con «riduci movimento» nelle impostazioni del sistema resta fermo e il testo compare tutto insieme.
 // Se la pagina scorre oltre, l'assistente la segue nell'angolo in basso: resta la testa, e il fumetto compare quando
 // ha qualcosa da dire. Passando con il mouse (o arrivando con la tastiera) su una cosa importante, la spiega
-// (i testi sono in spiegazioni.js); poco dopo torna al suo messaggio.
+// (i testi sono in spiegazioni.js); poco dopo torna al suo messaggio. Le due cose si spengono nelle impostazioni
+// (temi.js: «Spiega le cose…», «Ti segue…»).
 (function () {
   'use strict';
   const M = window.Mutuo, { $, crea, euro, meseAnno } = M;
@@ -25,6 +26,7 @@
     <g class="nuvoletta"><circle cx="53" cy="11" r="2"/><circle cx="58.5" cy="5.5" r="2.8"/></g>
   </svg>`;
   const fermo = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const vuole = codice => !window.Temi || Temi.opzione(codice);   // scelte delle impostazioni: 'spiega', 'segue'
 
   function nuovo(classe = '') {
     const el = crea('div', { className: 'assistente ' + classe });
@@ -68,6 +70,7 @@
     el._torna = null;
     el._spiega = true;
     el.classList.add('spiega');
+    sovrapponi(el, true);
     if (scrivi(el, testo, 'parla', { veloce: true }) || el.classList.contains('zitto')) mostraParole(el);
   }
   function smettiDiSpiegare(el) {
@@ -76,16 +79,28 @@
     el._spiega = false;
     el._spiegato = null;
     el.classList.remove('spiega');
+    sovrapponi(el, false);
   }
   function torna(el, attesa = 2500) {
     if (!el._spiega || el._torna) return;
     el._torna = setTimeout(() => {
-      smettiDiSpiegare(el);
       const [testo, umore] = el._detto || ['', 'parla'];
-      // Mentre segue la pagina, finita la spiegazione resta solo la testa: il messaggio è già stato detto.
-      if (el.classList.contains('segue')) { el.classList.add('zitto'); scrivi(el, testo, umore, { subito: true }); }
-      else scrivi(el, testo, umore);
+      // Il messaggio è già stato detto: torna tutto insieme, e mentre segue la pagina resta solo la testa.
+      if (el.classList.contains('segue')) el.classList.add('zitto');
+      scrivi(el, testo, umore, { subito: true });
+      smettiDiSpiegare(el);
     }, attesa);
+  }
+  // Al suo posto in cima alla pagina, la spiegazione si apre sopra il resto invece di spingerlo in giù: così la
+  // cosa sotto il mouse non si sposta (e non ne arriva un'altra da spiegare). Il segnaposto tiene l'altezza di prima.
+  function sovrapponi(el, si) {
+    const posto = el.parentElement;
+    if (!posto || !posto.classList.contains('posto-assistente')) return;
+    si = si && !el.classList.contains('segue');
+    if (si === el.classList.contains('sovrapposto')) return;
+    if (si) posto.style.height = posto.offsetHeight + 'px';
+    else if (!el.classList.contains('segue')) posto.style.height = '';
+    el.classList.toggle('sovrapposto', si);
   }
 
   // ---------- Segue la pagina ----------
@@ -116,17 +131,19 @@
     });
   }
   function aggiornaSegue(el) {
-    const segue = !!el._sopra && !el.classList.contains('richiuso');
+    const segue = !!el._sopra && !el.classList.contains('richiuso') && vuole('segue');
     if (segue === el.classList.contains('segue')) return;
     const posto = el.parentElement;
     clearTimeout(el._zitto);
     if (segue) {
       posto.style.height = posto.offsetHeight + 'px';
+      el.classList.remove('sovrapposto');
       el.classList.add('segue', 'zitto');
       spazioSotto();
     } else {
-      posto.style.height = '';
       el.classList.remove('segue', 'zitto');
+      // Se sta spiegando, al suo posto la spiegazione resta sopra la pagina; altrimenti il segnaposto torna libero.
+      if (el._spiega) el.classList.add('sovrapposto'); else posto.style.height = '';
     }
   }
   // Seguendo, il fumetto resta aperto il tempo di leggerlo (più a lungo se il testo è lungo, e finché c'è sopra il mouse).
@@ -156,6 +173,7 @@
     rinfresco = requestAnimationFrame(() => { rinfresco = 0; spazioSotto(); });
   };
   addEventListener('scroll', allaFine, { passive: true });
+  document.addEventListener('cambio-assistente', () => { for (const el of seguiti) { if (!vuole('spiega')) torna(el, 0); aggiornaSegue(el); } });
   addEventListener('resize', allaFine);
 
   // ---------- Spiega le cose al passaggio del mouse ----------
@@ -166,7 +184,7 @@
   function guarda(bersaglio) {
     if (!(bersaglio instanceof Element) || !window.Spiegazioni) return;
     if (bersaglio.closest('.assistente')) { for (const el of seguiti) { clearTimeout(el._torna); el._torna = null; } return; }
-    const trovato = bersaglio.closest('[role="dialog"], dialog') ? null : Spiegazioni.trova(bersaglio);
+    const trovato = !vuole('spiega') || bersaglio.closest('[role="dialog"], dialog') ? null : Spiegazioni.trova(bersaglio);
     const chi = trovato && assistentePer(bersaglio);
     for (const el of seguiti) if (el !== chi) torna(el);
     if (!chi) return;
@@ -221,11 +239,15 @@
       if (nonTornano) return [`${rata} Attenzione: ${nonTornano === 1 ? 'una rata non torna' : `${nonTornano} rate non tornano`} con il calcolo (le righe rosse). Clicca la cifra per correggerla, oppure prova la taratura nel «Pannello di controllo».`, 'dubbio'];
       return [`${rata} Quando ti arriva una rata nuova, scrivila nella colonna «Rata vera»: se la riga diventa verde, la banca ha fatto i conti giusti.`, 'felice'];
     }
-    if (nome === 'tassi') return ['Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Sotto il grafico puoi provare le previsioni per le rate future.', 'parla'];
+    if (nome === 'tassi') return [M.semplice() ? 'Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Passa sul grafico per leggere il valore di un giorno.'
+      : 'Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Sotto il grafico puoi provare le previsioni per le rate future.', 'parla'];
     if (nome === 'calendario') return ['Il calendario mostra in che giorno la banca legge l\'indice per ogni rata. Clicca un giorno per vedere i dettagli.', 'parla'];
     if (nome === 'festivita') return ['Le festività servono a contare i giorni lavorativi. Di solito non c\'è niente da cambiare.', 'parla'];
-    if (nome === 'pannello') return [M.ricordo.leggi('ultimo-backup') ? 'Qui trovi quanto costa davvero il prestito, l\'estinzione anticipata, il backup e le regole del contratto.'
-      : 'Qui trovi il costo del prestito, l\'estinzione anticipata e le regole del contratto. Un consiglio: salva ogni tanto un backup dei tuoi dati.', 'parla'];
+    if (nome === 'pannello') {
+      const cosa = M.semplice() ? 'Qui trovi quanto costa davvero il prestito, il rimborso anticipato e il backup. Le regole del contratto e la taratura sono nella versione avanzata.'
+        : 'Qui trovi quanto costa davvero il prestito, il rimborso anticipato, il backup e le regole del contratto.';
+      return [cosa + (M.ricordo.leggi('ultimo-backup') ? '' : ' Un consiglio: salva ogni tanto un backup dei tuoi dati.'), 'parla'];
+    }
     return ['', 'parla'];
   }
   function consiglia() {

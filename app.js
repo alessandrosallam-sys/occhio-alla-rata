@@ -49,8 +49,11 @@
   const indice = () => (stato.dati && stato.dati.parametri.indice_nome) || 'indice';
   // Mutuo a tasso variabile (con indice, rilevazioni, Euribor) oppure a tasso fisso (mutuo fisso, finanziamento).
   const variabile = () => !stato.dati || (stato.dati.parametri.tipo_prestito || 'variabile') === 'variabile';
-  // Schede che servono solo a chi ha un indice da seguire.
-  const SCHEDE_VARIABILE = ['tassi', 'calendario', 'festivita'];
+  // Schede che servono solo a chi ha un indice da seguire, e schede che ci sono solo nella versione avanzata.
+  const SCHEDE_VARIABILE = ['tassi', 'calendario', 'festivita'], SCHEDE_AVANZATE = ['calendario', 'festivita'];
+  // Versione della pagina, scelta nelle impostazioni (temi.js la mette su <html>): la semplice nasconde gli strumenti
+  // per esperti (in stile.css la classe «solo-avanzata», qui schede e colonne del piano).
+  const semplice = () => document.documentElement.dataset.versione === 'semplice';
 
   // Esegue una modifica: l'archivio risponde con tutti i dati aggiornati.
   async function esegui(metodo, percorso, corpo, messaggio) {
@@ -170,7 +173,7 @@
   const M = window.Mutuo = {
     stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI, rianima, contaFino, movimento,
     data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice, variabile,
-    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], alCambioScheda: [], ricordo,
+    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], alCambioScheda: [], ricordo, semplice,
   };
 
   // ---------- Riepilogo in testata ----------
@@ -298,10 +301,10 @@
   const titoloGruppo = g => g === 4 && !variabile() ? 'Tasso' : GRUPPI[g];
   // Dopo l'etichetta della rata, le colonne del foglio TABELLA nello stesso ordine, più variazione e target.
   // "g" = gruppo, "x" = nome completo della colonna (se diverso), "campo" = colonna modificabile (nome nel database),
-  // "soloVariabile" = colonna che riguarda l'indice: a tasso fisso non c'è.
+  // "soloVariabile" = colonna che riguarda l'indice: a tasso fisso non c'è; "avanzata" (come le "extra") = solo nella versione avanzata.
   const COLONNE = [
     { g: 0, t: 'Rata', aiuto: 'Numero della rata e mese di competenza', v: etichettaRata, titolo: (r, s) => s.titolo },
-    { g: 0, t: 'Data di rilevazione', x: 'Data di rilevazione dell\'indice', campo: 'data_riferimento', tipo: 'data', soloVariabile: true,
+    { g: 0, t: 'Data di rilevazione', x: 'Data di rilevazione dell\'indice', campo: 'data_riferimento', tipo: 'data', soloVariabile: true, avanzata: true,
       aiuto: 'Il giorno in cui si legge l\'indice secondo le regole del contratto; oppure forzata a mano',
       v: r => data(r.riferimento), manuale: r => r.riferimentoManuale,
       titolo: r => r.riferimentoManuale ? `Forzata a mano (calcolata: ${data(r.riferimentoAutomatico)}): svuota la cella per tornare alla data calcolata` : '' },
@@ -319,9 +322,9 @@
       v: r => r.rataVera == null ? '' : esito((!rataUguale(r) ? '≠ ' : r.rataCopiata ? '= ' : '✓ ') + euroT(r.rataVera)),
       classe: r => r.rataVera == null ? '' : !rataUguale(r) ? 'ko' : r.rataCopiata ? 'copiata' : 'ok',
       titolo: r => r.rataCopiata ? 'Presa dal calcolo, non controllata. Clic: Invio la conferma come controllata, un\'altra cifra la sostituisce, vuota la toglie' : '' },
-    { g: 2, t: 'Variazione sul mese prima', soloVariabile: true, aiuto: 'Confronto in percentuale del costo al giorno: rata divisa per i giorni del mese, rispetto al mese precedente',
+    { g: 2, t: 'Variazione sul mese prima', soloVariabile: true, avanzata: true, aiuto: 'Confronto in percentuale del costo al giorno: rata divisa per i giorni del mese, rispetto al mese precedente',
       v: cellaVariazione, classe: r => r.rataVera == null ? previsione(r) : '', titolo: titoloVariazione },
-    { g: 2, t: 'Distanza dal target', visibile: () => obiettivo() != null, aiuto: 'Rata del mese − rata ideale impostata nel pannello di controllo',
+    { g: 2, t: 'Distanza dal target', avanzata: true, visibile: () => obiettivo() != null, aiuto: 'Rata del mese − rata ideale impostata nel pannello di controllo',
       v: cellaObiettivo, classe: r => r.rataVera == null ? previsione(r) : '', titolo: titoloObiettivo },
     { g: 2, t: 'Quota capitale', campo: 'quota_capitale', aiuto: 'Dal piano di rimborso scelto nelle regole del contratto, oppure inserita a mano',
       v: r => euroT(r.quotaCapitale), manuale: r => r.quotaCapitaleManuale, titolo: titoloQuota },
@@ -352,7 +355,7 @@
   // di base entra nello schermo. I gruppi aperti vengono ricordati.
   const gruppiAperti = new Set();
   try { for (const g of JSON.parse(ricordo.leggi('colonne') || '[]')) if (GRUPPI[g]) gruppiAperti.add(g); } catch { /* si parte con tutto chiuso */ }
-  const colonnaPossibile = c => !c.soloVariabile || variabile();
+  const colonnaPossibile = c => (!c.soloVariabile || variabile()) && (!(c.avanzata || c.extra) || !semplice());
   const extraDelGruppo = g => COLONNE.filter(c => c.g === g && c.extra && colonnaPossibile(c)).length;
   const gruppiConExtra = () => GRUPPI.map((_, g) => g).filter(extraDelGruppo);
   function apriGruppi(gruppi, aperti) {
@@ -362,6 +365,7 @@
   }
   function disegnaSceltaColonne() {
     const tutti = gruppiConExtra().every(g => gruppiAperti.has(g));
+    $('#colonne-extra').hidden = !gruppiConExtra().length;   // nella versione semplice non ci sono colonne da aggiungere
     $('#colonne-extra').replaceChildren(crea('span', {}, 'Approfondisci:'),
       ...gruppiConExtra().map(g => crea('button', { type: 'button', 'data-gruppo': g, 'aria-pressed': String(gruppiAperti.has(g)),
         title: (gruppiAperti.has(g) ? 'Nascondi' : 'Mostra') + ' le colonne: ' + COLONNE.filter(c => c.g === g && c.extra && colonnaPossibile(c)).map(c => c.t).join(', ') }, `${titoloGruppo(g)} +${extraDelGruppo(g)}`)),
@@ -764,6 +768,28 @@
     stato.schedaVista[nome] = true;
     for (const f of M.alCambioScheda) f(nome);
   }
+  // Schede che si possono aprire: senza prestiti solo le offerte; a tasso fisso niente tassi né calendario;
+  // nella versione semplice niente calendario e festività.
+  const schedaPossibile = nome => !!$('#scheda-' + nome) && (stato.dati ? variabile() || !SCHEDE_VARIABILE.includes(nome) : nome === 'offerte')
+    && !(semplice() && SCHEDE_AVANZATE.includes(nome));
+  function aggiornaSchede() {
+    for (const pulsante of document.querySelectorAll('.schede button[data-scheda]')) pulsante.hidden = !schedaPossibile(pulsante.dataset.scheda);
+  }
+  // Cambiata la versione nelle impostazioni: schede, piano e pagine si ridisegnano; se la scheda aperta non c'è più,
+  // si torna al piano.
+  document.addEventListener('cambio-versione', () => {
+    if ($('#principale').hidden) return;
+    aggiornaSchede();
+    if (stato.dati) { disegnaPiano(); for (const disegna of M.viste) disegna(); }
+    const aperta = document.querySelector('.schede button[aria-selected="true"]');
+    if (aperta && aperta.hidden) mostraScheda(stato.dati ? 'piano' : 'offerte');
+  });
+  // Indice in cima al pannello: porta alla sezione scelta.
+  $('.indice-pannello').addEventListener('click', evento => {
+    const pulsante = evento.target.closest('[data-vai-a]');
+    if (pulsante) $('#' + pulsante.dataset.vaiA).scrollIntoView({ behavior: movimento() ? 'smooth' : 'auto', block: 'start' });
+  });
+
   // ---------- Avvio ----------
   // Senza una configurazione parte la guida (configura.js); altrimenti si mostra il programma.
   // Senza prestiti ma con delle offerte (o se lo si è chiesto dalla guida) c'è solo la scheda «Offerte»: serve a chi
@@ -776,7 +802,7 @@
     for (const id of ['#riepilogo', '#apri-configurazione']) $(id).hidden = !pronto;
     if (soloOfferte) {
       stato.dati = stato.piano = null;
-      for (const pulsante of document.querySelectorAll('.schede button[data-scheda]')) pulsante.hidden = pulsante.dataset.scheda !== 'offerte';
+      aggiornaSchede();
       return mostraScheda('offerte');
     }
     if (!pronto) return M.apriGuida(false);
@@ -787,9 +813,9 @@
     }
     formApplicato.giorno.value = stato.oggi;
     caricaValoriRata();
-    for (const pulsante of document.querySelectorAll('.schede button[data-scheda]')) pulsante.hidden = !variabile() && SCHEDE_VARIABILE.includes(pulsante.dataset.scheda);
+    aggiornaSchede();
     const scheda = location.hash.slice(1);
-    mostraScheda(/^[a-z]+$/.test(scheda) && $('#scheda-' + scheda) && !(!variabile() && SCHEDE_VARIABILE.includes(scheda)) ? scheda : 'piano');
+    mostraScheda(/^[a-z]+$/.test(scheda) && schedaPossibile(scheda) ? scheda : 'piano');
     for (const f of M.dopoAvvio) f();   // ad esempio lo scarico automatico dei tassi (tassi.js)
   };
   // Una variante della pagina può sostituire l'avvio con M.allAvvio (ad esempio per chiedere prima quali dati caricare).

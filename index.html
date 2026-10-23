@@ -22,33 +22,33 @@
       <nav class="schede" role="tablist" aria-label="Sezioni" hidden>
         <button role="tab" data-scheda="prestiti" aria-selected="false" aria-controls="scheda-prestiti">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M6.5 4h11M3.5 12.5h17"/></svg>
-          <span>Prestiti</span></button>
+          <span>Prestiti</span><small class="spiega-scheda">Tutti i tuoi prestiti</small></button>
         <button role="tab" data-scheda="offerte" aria-selected="false" aria-controls="scheda-offerte">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M7 20h10M5 8h14"/><path d="M5 8l-2.5 6a2.5 2.5 0 0 0 5 0z"/><path d="M19 8l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>
-          <span>Offerte</span></button>
+          <span>Offerte</span><small class="spiega-scheda">Confronta prima di firmare</small></button>
         <button role="tab" data-scheda="piano" aria-selected="true" aria-controls="scheda-piano">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.8h17M9.5 9.5V20"/></svg>
-          <span>Piano</span></button>
+          <span>Piano</span><small class="spiega-scheda">Le rate mese per mese</small></button>
         <button role="tab" data-scheda="tassi" aria-selected="false" aria-controls="scheda-tassi">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 17.5l5-5.5 4 3 7.5-8"/><path d="M15 7h5v5"/></svg>
-          <span>Tassi</span></button>
-        <button role="tab" data-scheda="calendario" aria-selected="false" aria-controls="scheda-calendario">
+          <span>Tassi</span><small class="spiega-scheda">L'andamento dell'Euribor</small></button>
+        <button role="tab" class="solo-avanzata" data-scheda="calendario" aria-selected="false" aria-controls="scheda-calendario">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
-          <span>Calendario</span></button>
-        <button role="tab" data-scheda="festivita" aria-selected="false" aria-controls="scheda-festivita">
+          <span>Calendario</span><small class="spiega-scheda">Quando si legge l'indice</small></button>
+        <button role="tab" class="solo-avanzata" data-scheda="festivita" aria-selected="false" aria-controls="scheda-festivita">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 21V4M5.5 4.5h12l-2.5 4 2.5 4h-12"/></svg>
-          <span>Festività</span></button>
+          <span>Festività</span><small class="spiega-scheda">I giorni di chiusura delle banche</small></button>
         <button role="tab" data-scheda="pannello" aria-selected="false" aria-controls="scheda-pannello">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg>
-          <span>Pannello<span class="solo-largo"> di controllo</span></span></button>
+          <span>Pannello<span class="solo-largo"> di controllo</span></span><small class="spiega-scheda">Costi, rimborso, backup</small></button>
       </nav>
       <div class="azioni-testata">
-        <button type="button" class="secondario pulsante-icona" id="scegli-tema" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu-temi" title="Cambia i colori e l'aspetto della pagina">
-          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a8.8 8.8 0 1 0 0 17.6c1.2 0 1.9-1 1.5-2-.4-1.2.4-2.3 1.7-2.3h1.9a3.9 3.9 0 0 0 3.9-3.9c0-5.3-4-9.4-9-9.4z"/><circle cx="7.6" cy="11.2" r="1.2"/><circle cx="9.9" cy="7.2" r="1.2"/><circle cx="14.6" cy="7.4" r="1.2"/></svg>
-          <span class="testo-pulsante">Aspetto</span><span class="tema-attuale"></span></button>
-      <button type="button" class="secondario pulsante-icona" id="apri-configurazione" title="Rivedi o rifai la configurazione guidata del mutuo" hidden>
-        <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M5.5 18.5l2.1-2.1M16.4 7.6l2.1-2.1"/></svg>
-        <span class="testo-pulsante">Configurazione</span></button>
+        <button type="button" class="secondario pulsante-icona" id="scegli-tema" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu-temi" title="Impostazioni: versione semplice o avanzata, assistente, colori">
+          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M5.5 18.5l2.1-2.1M16.4 7.6l2.1-2.1"/></svg>
+          <span class="testo-pulsante">Impostazioni</span><span class="impostazione-attuale"></span></button>
+      <button type="button" class="secondario pulsante-icona" id="apri-configurazione" title="Rivedi o cambia i dati del prestito: importo, durata, tasso, regole del contratto" hidden>
+        <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5h4l10.2-10.2-4-4L4.5 15.5z"/><path d="M12.8 7.2l4 4"/></svg>
+        <span class="testo-pulsante">Dati del prestito</span></button>
       </div>
     </div>
   </header>
@@ -127,10 +127,10 @@
           <li><button type="button" class="voce-stato" data-stato="problema" title="Vai all'ultima"><span class="campione riga-problema">!</span>da controllare <b id="conta-problema"></b></button></li>
           <li><button type="button" class="voce-stato" data-stato="corso" title="Vai alla riga"><span class="campione riga-corso">●</span>in corso <b id="conta-corso"></b></button></li>
           <li id="legenda-copiata" hidden><span class="campione copiata">=</span>rata presa dal calcolo</li>
-          <li><span class="campione manuale"></span>inserito a mano</li>
+          <li class="solo-avanzata"><span class="campione manuale"></span>inserito a mano</li>
           <li data-solo-variabile><span class="campione previsione">1,23</span>valore stimato</li>
-          <li data-solo-variabile><span class="freccia su">▲</span><span class="freccia giu">▼</span>costo al giorno in aumento / in calo</li>
-          <li id="legenda-target" hidden><span class="freccia giu grande">↓</span>entro il target<span class="freccia medio grande">→</span>fino al +10%<span class="freccia su grande">↑</span>oltre</li>
+          <li class="solo-avanzata" data-solo-variabile><span class="freccia su">▲</span><span class="freccia giu">▼</span>costo al giorno in aumento / in calo</li>
+          <li id="legenda-target" class="solo-avanzata" hidden><span class="freccia giu grande">↓</span>entro il target<span class="freccia medio grande">→</span>fino al +10%<span class="freccia su grande">↑</span>oltre</li>
         </ul>
       </div>
       <div class="contenitore-tabella tabella-piano" id="contenitore-piano">
@@ -171,7 +171,7 @@
           <!-- Proiezione in avanti: modelli, scenari sulle rate, scelta per il piano (previsioni.js). Il disegno è nel grafico sopra.
                Il modulo sta richiuso in una riga di riepilogo (#riassunto-proiezione): si apre con «Cambia». -->
           <form class="pannello-proiezione" id="form-previsioni">
-            <details class="pieghevole" id="dettagli-proiezione">
+            <details class="pieghevole solo-avanzata" id="dettagli-proiezione">
               <summary>
                 <span class="testo-sommario">
                   <span class="titolo-sommario">Proiezione in avanti</span>
@@ -210,7 +210,7 @@
         <!-- Numeri del periodo scelto (tassi.js) -->
         <div class="statistiche" id="statistiche-tassi" aria-label="Statistiche del periodo"></div>
 
-        <form class="carta carta-pieghevole" id="form-confronto">
+        <form class="carta carta-pieghevole solo-avanzata" id="form-confronto">
           <details class="pieghevole">
             <summary>
               <span class="testo-sommario">
@@ -272,7 +272,7 @@
             </details>
           </div>
 
-          <div class="pila">
+          <div class="pila solo-avanzata">
             <div class="carta">
               <h2 data-icona="colonne">Riepilogo per anno</h2>
               <p class="nota">Calcolato sulle rilevazioni del periodo scelto. La media è pesata sui giorni.</p>
@@ -373,7 +373,17 @@
     <!-- Pannello di controllo -->
     <section id="scheda-pannello" class="scheda scorrevole" role="tabpanel" aria-label="Pannello di controllo" hidden>
       <div class="colonna pannello">
-        <div class="carta carta-dati">
+        <!-- Indice della pagina: porta alle sezioni (app.js); nella versione semplice mancano quelle avanzate -->
+        <nav class="indice-pannello" aria-label="In questa pagina">
+          <span class="nota">In questa pagina:</span>
+          <button type="button" class="secondario piccolo" data-vai-a="dati-pannello" data-icona="dati">Backup dei dati</button>
+          <button type="button" class="secondario piccolo" data-vai-a="costo-prestito" data-icona="euro">Quanto costa</button>
+          <button type="button" class="secondario piccolo" data-vai-a="estinzione" data-icona="calendario">Rimborso anticipato</button>
+          <button type="button" class="secondario piccolo solo-avanzata" data-vai-a="gruppo-regole" data-icona="regole">Regole del contratto</button>
+          <button type="button" class="secondario piccolo solo-avanzata" data-vai-a="gruppo-ritocchi" data-icona="matita">Ritocchi e obiettivi</button>
+          <button type="button" class="secondario piccolo" data-vai-a="gruppo-impostazioni" data-icona="pannello">Impostazioni</button>
+        </nav>
+        <div class="carta carta-dati" id="dati-pannello">
           <div class="testo-dati">
             <h2 data-icona="dati">I tuoi dati</h2>
             <p class="nota">Tutti i prestiti e le offerte restano in questo browser, sul tuo computer, e si salvano da soli a ogni modifica. Se però cancelli i dati di navigazione si perdono: ogni tanto salva un backup, cioè una copia di tutto in un file. Di solito finisce nella cartella Download: tienilo al sicuro, ad esempio su una chiavetta o in OneDrive o Google Drive. Con «Carica un backup» lo riapri qui, o su un altro computer o browser.</p>
@@ -391,7 +401,16 @@
         <!-- Estinzione anticipata, totale o parziale: risparmio, penale, costi restituiti (costi.js) -->
         <div class="carta carta-costo" id="estinzione"></div>
 
-        <section class="gruppo-pannello" aria-labelledby="titolo-gruppo-regole">
+        <!-- Nella versione semplice: che cosa c'è in più nell'avanzata -->
+        <div class="carta solo-semplice carta-versione">
+          <div>
+            <h2 data-icona="bacchetta">Altri strumenti, per chi conosce il contratto</h2>
+            <p class="nota">Nella versione avanzata trovi anche la taratura automatica delle regole, tutte le regole del contratto da cambiare a mano, i valori a mano per una rata, la rata ideale, il calendario delle rilevazioni, le festività, le previsioni dell'indice e le colonne di approfondimento del piano. Per controllare le rate non servono.</p>
+          </div>
+          <div class="azioni"><button type="button" class="secondario" id="passa-avanzata" data-passa-versione="avanzata">Passa alla versione avanzata</button></div>
+        </div>
+
+        <section class="gruppo-pannello solo-avanzata" id="gruppo-regole" aria-labelledby="titolo-gruppo-regole">
           <h2 class="titolo-gruppo" id="titolo-gruppo-regole">Le regole del contratto</h2>
           <p class="nota">Se nel piano restano righe rosse anche dove hai scritto la rata vera, di solito è una regola scelta male: la taratura la trova da sola.</p>
           <div class="griglia-pannello">
@@ -427,7 +446,7 @@
           </form>
         </section>
 
-        <section class="gruppo-pannello" aria-labelledby="titolo-gruppo-ritocchi">
+        <section class="gruppo-pannello solo-avanzata" id="gruppo-ritocchi" aria-labelledby="titolo-gruppo-ritocchi">
           <h2 class="titolo-gruppo" id="titolo-gruppo-ritocchi">Ritocchi e obiettivi</h2>
           <div class="griglia-pannello">
             <form class="carta" id="form-applicato">
@@ -471,10 +490,10 @@
           </div>
         </section>
 
-        <section class="gruppo-pannello" aria-labelledby="titolo-gruppo-aspetto">
-          <h2 class="titolo-gruppo" id="titolo-gruppo-aspetto">Aspetto della pagina</h2>
-          <p class="nota">Scegli i colori che preferisci: cambia solo l'aspetto, i dati e i calcoli restano uguali. Lo stesso elenco si apre dal pulsante «Aspetto» in alto.</p>
-          <div id="griglia-temi-pannello"></div>
+        <section class="gruppo-pannello" id="gruppo-impostazioni" aria-labelledby="titolo-gruppo-impostazioni">
+          <h2 class="titolo-gruppo" id="titolo-gruppo-impostazioni">Impostazioni</h2>
+          <p class="nota">Cambiano solo quello che vedi: i dati e i calcoli restano uguali. Le stesse scelte si aprono dal pulsante «Impostazioni».</p>
+          <div id="impostazioni-pannello"></div>
         </section>
 
         <p class="nota piede">È uno strumento di controllo, non una consulenza: i conti che fanno fede sono quelli della banca.</p>
@@ -482,7 +501,7 @@
     </section>
   </main>
 
-  <!-- Riquadro dei temi: si apre dal pulsante «Aspetto» (temi.js) -->
+  <!-- Riquadro delle impostazioni (versione, assistente, temi): si apre dal pulsante «Impostazioni» (temi.js) -->
   <div class="menu-temi" id="menu-temi" role="dialog" hidden></div>
 
   <div id="avviso" class="notifica" role="status" aria-live="polite" hidden></div>
