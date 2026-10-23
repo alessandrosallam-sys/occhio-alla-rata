@@ -472,13 +472,16 @@
 
   function disegnaBenvenuto(contenitore) {
     const documento = (nome, contenuto) => crea('li', {}, crea('strong', {}, nome), ' ' + contenuto);
-    const presentazione = 'Questo programma ricostruisce, rata per rata, il tuo mutuo o il tuo finanziamento, a tasso variabile o fisso: ti dice se la banca ti addebita la cifra giusta, quanto costa davvero il prestito, quanto hai pagato finora di interessi e, per il variabile, come potrebbero cambiare le rate future.';
+    const presentazione = 'Occhio alla Rata ricostruisce, rata per rata, il tuo mutuo o il tuo finanziamento, a tasso variabile o fisso: ti dice se la banca ti addebita la cifra giusta, quanto costa davvero il prestito, quanto hai pagato finora di interessi e, per il variabile, come potrebbero cambiare le rate future.';
     // Chi deve ancora firmare può confrontare le offerte delle banche, senza seguire ancora nessun prestito.
     const offerte = guida.riapertura || guida.nuovo || guida.daOfferte ? [] : [crea('div', { className: 'consiglio' },
       crea('p', {}, crea('strong', {}, 'Devi ancora firmare? '), 'Puoi confrontare le offerte di banche e finanziarie: rata, interessi, costo totale e TAEG, uno accanto all\'altro. Quando avrai scelto, la seguirai da qui.'),
       crea('button', { type: 'button', className: 'secondario', id: 'apri-offerte' }, 'Confronta delle offerte'))];
     if (guida.percorso === 'breve') {
       contenitore.replaceChildren(
+        // La prima volta, il logo grande con il nome.
+        ...(guida.nuovo ? [] : [crea('div', { className: 'benvenuto-logo' }, crea('span', { className: 'logo logo-grande', 'aria-hidden': 'true' }, Icone.logo()),
+          crea('div', {}, crea('p', { className: 'nome-logo' }, 'Occhio alla Rata'), crea('p', { className: 'nota' }, 'Il controllo delle rate del tuo mutuo o finanziamento.')))]),
         crea('p', {}, guida.nuovo ? 'Aggiungi un altro prestito. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».' : presentazione),
         crea('h3', {}, 'Come funziona'),
         crea('ul', { className: 'documenti' },

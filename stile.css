@@ -1729,7 +1729,37 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 .carta-offerta h3 { display: flex; align-items: center; gap: 12px; }
 .tabella-offerte thead .etichetta-aperto { display: inline-flex; align-items: center; }
 /* Il marchio: una casa con il segno di percentuale */
-.logo svg.icona { width: 20px; height: 20px; stroke-width: 2.1; }
+/* Il logo (icone.js, Icone.logo): l'occhio con la moneta. Lo sfondo è quello del riquadro .logo, le ciglia il suo testo. */
+.logo { cursor: pointer; }
+/* Nella prima pagina della guida: il logo grande con il nome */
+.benvenuto-logo { display: flex; align-items: center; gap: var(--s4); margin: 0 0 var(--s4); }
+.benvenuto-logo .nome-logo { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: var(--inchiostro); }
+.benvenuto-logo .nota { margin: 2px 0 0; }
+.logo.logo-grande { width: 76px; height: 76px; border-radius: 22px; box-shadow: var(--ombra-alta); }
+.logo .logo-occhio { display: block; width: 100%; height: 100%; }
+.logo-occhio .ciglia { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; opacity: 0.92; }
+.logo-occhio .moneta { stroke: #c27c00; stroke-width: 1; }
+.logo-occhio .contorno { fill: none; stroke: #1e1b4b; stroke-opacity: 0.25; stroke-width: 1.2; }
+.logo-occhio .anello { fill: none; stroke: #b97800; stroke-width: 0.9; opacity: 0.7; }
+.logo-occhio .euro { fill: none; stroke: #6b4300; stroke-width: 2; stroke-linecap: round; }
+.logo-occhio .riflesso { fill: #ffffff; opacity: 0.85; }
+.logo-occhio .scintilla { fill: #ffe680; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.logo-occhio .palpebra, .logo-occhio .iride, .logo-occhio .moneta-gira { transform-box: view-box; transform-origin: 32px 32px; }
+.logo-occhio .sguardo { transition: transform 0.18s ease-out; }
+@keyframes logo-apre { from { transform: scaleY(0.06); } to { transform: scaleY(1); } }
+@keyframes logo-batte { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
+@keyframes logo-moneta { from { transform: scaleX(0.08) rotate(-25deg); } to { transform: none; } }
+@keyframes logo-guarda { 0%, 38%, 100% { transform: translate(0, 0); } 46%, 56% { transform: translate(-4.5px, 0.6px); } 64%, 74% { transform: translate(4.5px, -0.6px); } 82% { transform: translate(0, 0); } }
+@keyframes logo-luccica { 0%, 74%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); } 80% { opacity: 1; transform: scale(1.15) rotate(45deg); } 88% { opacity: 0; transform: scale(0.4) rotate(90deg); } }
+@keyframes logo-occhiolino { 0%, 100% { transform: scaleY(1); } 40%, 55% { transform: scaleY(0.08); } }
+@media (prefers-reduced-motion: no-preference) {
+  .logo-occhio .palpebra { animation: logo-apre 0.55s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both, logo-batte 6s 1.4s infinite; }
+  .logo-occhio .moneta-gira { animation: logo-moneta 0.7s 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+  .logo-occhio .iride { animation: logo-guarda 9s 2.2s ease-in-out infinite; }
+  .logo-occhio .scintilla { animation: logo-luccica 9s 2.2s infinite both; }
+  .logo-occhio.segue-puntatore .iride { animation: none; }   /* mentre segue il mouse non si guarda intorno da solo */
+  .logo-occhio.occhiolino .palpebra { animation: logo-occhiolino 0.45s ease-in-out; }
+}
 .notifica { display: flex; align-items: center; gap: 10px; }
 .notifica .icona { width: 18px; height: 18px; flex: none; }
 /* Un pulsante al lavoro (scarico, taratura, proiezione): una rotella accanto al testo */

@@ -1,3 +1,5 @@
+<p align="center"><img src="logo.svg" width="120" height="120" alt="Il logo di Occhio alla Rata: un occhio che ha per iride una moneta con l'euro"></p>
+
 # Occhio alla Rata
 
 Una pagina web che ricostruisce, rata per rata, un mutuo (a tasso variabile o fisso) o un finanziamento e lo confronta con quello che la banca addebita. Dice se ogni rata è giusta al centesimo, quanto costa davvero il prestito (con spese, assicurazioni e TAEG), quanto si è pagato finora di interessi e, per il variabile, come potrebbero andare le rate future.
@@ -95,7 +97,8 @@ spiegazioni.js        le spiegazioni dell'assistente sulle cose importanti di og
 prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali e il principale
 costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione anticipata
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
-icone.js              le icone della pagina, disegnate a mano
+icone.js              le icone della pagina, disegnate a mano, e il logo animato (Icone.logo)
+logo.svg              il logo da solo (icona della scheda del browser, README)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
 crea-precaricati.js   genera tassi-precaricati.js dai CSV
