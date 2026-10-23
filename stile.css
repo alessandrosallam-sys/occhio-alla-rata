@@ -1761,9 +1761,17 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 /* La scena della prima apertura (intro.js): il bosco di notte, la luna, il gufo, il sacchetto e il ceppo; il nome in
    alto a sinistra. Senza animazioni si vede la fine: il gufo posato sul ceppo, le ali chiuse, le monete nell'erba. */
 .intro {
+  --mx: 0; --my: 0;   /* il mouse sulla scena, da -1 a 1 (intro.js): i piani si spostano in misura diversa, come guardando da una finestra */
   position: relative; container-type: inline-size; margin: 0 0 var(--s5); border-radius: var(--r3); overflow: hidden; cursor: pointer;
-  background: #06142b; box-shadow: var(--ombra);
+  background: #04101f; box-shadow: var(--ombra-alta);
 }
+.intro-strato { transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.intro-strato-cielo { transform: translate(calc(var(--mx) * 3px), calc(var(--my) * 1.5px)); }
+.intro-strato-lontano { transform: translate(calc(var(--mx) * -2px), calc(var(--my) * -1px)); }
+.intro-strato-medio { transform: translate(calc(var(--mx) * -5px), calc(var(--my) * -2.5px)); }
+.intro-strato-terra { transform: translate(calc(var(--mx) * -9px), calc(var(--my) * -4px)); }
+.intro-strato-vicino { transform-box: view-box; transform-origin: 320px 160px; transform: translate(calc(var(--mx) * -16px), calc(var(--my) * -7px)) scale(1.05); }
+.intro-raggi { transform-box: view-box; transform-origin: 500px 72px; }
 .intro-disegno { display: block; width: 100%; height: auto; }
 .intro-testo {
   position: absolute; top: 0; left: 0; max-width: 58%; padding: clamp(14px, 5cqw, 30px) clamp(18px, 7cqw, 48px) clamp(18px, 7cqw, 48px) clamp(14px, 5cqw, 30px);
@@ -1773,7 +1781,8 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 .intro-nome { font-size: clamp(21px, 6.4cqw, 38px); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55); }
 .intro-nome span { color: #ffd24a; }
 p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-height: 1.4; opacity: 0.92; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }
-.intro-ali-aperte, .intro-scintille path, .intro-ombra-terra { opacity: 0; }
+.intro-ali-aperte, .intro-scintille path, .intro-ombra-terra, .intro-ombra-volo { opacity: 0; }
+.intro-ombra-volo { transform-box: fill-box; transform-origin: center; }
 .intro-volo { transform-box: view-box; transform-origin: 0 -60px; }
 .intro-zampe { transform-box: view-box; transform-origin: 0 -30px; }
 .intro-ala, .intro-artigli, .intro-felce { transform-box: view-box; transform-origin: 0 0; }
@@ -1817,6 +1826,9 @@ p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-he
   .intro-lucciola { animation: intro-vaga var(--t) ease-in-out var(--d) infinite; }
   .intro-felce { animation: intro-ondeggia var(--t) ease-in-out infinite alternate; }
   .intro-nuvole { animation: intro-nuvole 28s ease-in-out infinite alternate; }
+  .intro-raggi { animation: intro-raggi 11s ease-in-out infinite alternate; }
+  .intro-foschia { animation: intro-nuvole 36s ease-in-out infinite alternate-reverse; }
+  .intro-pulsa { animation: respiro 4s ease-in-out infinite; }
   .intro-luccichi path { animation: logo-luccica 3.6s 5.6s infinite; }
   .intro-luccichi path + path { animation-delay: 7.4s; }
   .intro-palpebra { animation: logo-batte 5s 5.6s infinite; }
@@ -1831,6 +1843,7 @@ p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-he
   .in-volo .intro-sguardo { animation: intro-guarda-sacco 5s ease-in-out both; }
   .in-volo .intro-moneta { animation: intro-cade 5s both; }
   .in-volo .intro-ombra-terra { animation: intro-ombra-terra 5s both; }
+  .in-volo .intro-ombra-volo { animation: intro-ombra-volo 5s linear both; }
   .in-volo .intro-ombra-ceppo { animation: intro-ombra-ceppo 5s both; }
   .in-volo .intro-scintille path { animation: intro-brilla 5.4s both; }
   .in-volo .intro-scintille path:nth-child(2) { animation-delay: 0.12s; }
@@ -1839,15 +1852,26 @@ p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-he
   .in-volo .intro-motto { animation: sale 0.7s 4.95s both; }
   .intro.in-volo ~ .intro-punti > li { animation: sale 0.5s calc(5.2s + var(--i) * 0.09s) both; }
 }
-/* Il gufo scende da fuori in alto a sinistra lungo una parabola, inclinato in picchiata, e frena sul sacchetto (50%) */
+/* Il gufo arriva da lontano (piccolo) da fuori in alto a sinistra lungo una parabola, inclinato in picchiata, cresce
+   avvicinandosi e frena sul sacchetto (50%) */
 @keyframes intro-plana {
-  0%, 4% { transform: translate(-410px, -296px) rotate(22deg); }
-  15.5% { transform: translate(-307px, -166px) rotate(20deg); }
-  27% { transform: translate(-205px, -74px) rotate(15deg); }
-  38.5% { transform: translate(-102px, -18px) rotate(8deg); animation-timing-function: ease-out; }
-  50% { transform: translate(0, 0) rotate(-12deg); animation-timing-function: ease-in-out; }
-  60% { transform: translate(0, 0) rotate(-4deg); }
+  0%, 4% { transform: translate(-410px, -296px) rotate(22deg) scale(0.6); }
+  15.5% { transform: translate(-307px, -166px) rotate(20deg) scale(0.7); }
+  27% { transform: translate(-205px, -74px) rotate(15deg) scale(0.8); }
+  38.5% { transform: translate(-102px, -18px) rotate(8deg) scale(0.92); animation-timing-function: ease-out; }
+  50% { transform: translate(0, 0) rotate(-12deg) scale(1); animation-timing-function: ease-in-out; }
+  60% { transform: translate(0, 0) rotate(-4deg) scale(1); }
   100% { transform: none; }
+}
+/* La sua ombra sull'erba: lo segue, cresce e si fa netta mentre scende, sparisce quando risale con il sacchetto */
+@keyframes intro-ombra-volo {
+  0%, 4% { opacity: 0; transform: translateX(-410px) scale(0.3); }
+  20% { opacity: 0.08; transform: translateX(-280px) scale(0.45); }
+  38.5% { opacity: 0.28; transform: translateX(-102px) scale(0.8); }
+  50% { opacity: 0.45; transform: translateX(0) scale(1); }
+  60% { opacity: 0.3; transform: translateX(28px) scale(0.9); }
+  78% { opacity: 0.1; transform: translateX(130px) scale(0.6); }
+  90%, 100% { opacity: 0; transform: translateX(220px) scale(0.4); }
 }
 /* Poi lo porta con i colpi d'ala fino al ceppo e ci si posa, con un piccolo rimbalzo */
 @keyframes intro-porta {
@@ -1865,9 +1889,9 @@ p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-he
 /* Le ali (la destra è specchiata, basta un movimento solo): planata quasi ferma, frenata, colpi d'ala, frenata sul ceppo */
 @keyframes intro-batte {
   0%, 4% { transform: rotate(2deg); } 14% { transform: rotate(-4deg); } 24% { transform: rotate(3deg); } 34% { transform: rotate(-3deg); }
-  42% { transform: rotate(8deg); } 47% { transform: rotate(30deg); } 50% { transform: rotate(-38deg); }
-  54%, 62%, 70% { transform: rotate(36deg); } 58%, 66%, 74% { transform: rotate(-40deg); }
-  78% { transform: rotate(30deg); } 82% { transform: rotate(-30deg); } 86% { transform: rotate(34deg); } 90% { transform: rotate(48deg); } 93.5%, 100% { transform: rotate(52deg); }
+  42% { transform: rotate(8deg); } 47% { transform: rotate(30deg) scaleX(0.9); } 50% { transform: rotate(-38deg) scaleX(0.8); }
+  54%, 62%, 70% { transform: rotate(36deg) scaleX(0.92); } 58%, 66%, 74% { transform: rotate(-40deg) scaleX(0.78); }
+  78% { transform: rotate(30deg) scaleX(0.92); } 82% { transform: rotate(-30deg) scaleX(0.82); } 86% { transform: rotate(34deg) scaleX(0.92); } 90% { transform: rotate(48deg) scaleX(0.95); } 93.5%, 100% { transform: rotate(52deg); }
 }
 @keyframes intro-ali-aperte { 0%, 93.5% { opacity: 1; } 94.5%, 100% { opacity: 0; } }
 @keyframes intro-ali-chiuse { 0%, 93.5% { opacity: 0; } 94.5%, 100% { opacity: 1; } }
@@ -1892,6 +1916,7 @@ p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-he
 @keyframes intro-vaga { 0%, 100% { transform: translate(0, 0); opacity: 0.25; } 30% { opacity: 1; } 50% { transform: translate(var(--x), var(--y)); opacity: 0.45; } 75% { opacity: 1; } }
 @keyframes intro-ondeggia { from { transform: rotate(calc(var(--r) * -1)); } to { transform: rotate(var(--r)); } }
 @keyframes intro-nuvole { from { transform: translateX(0); } to { transform: translateX(-26px); } }
+@keyframes intro-raggi { from { transform: rotate(-2.5deg); opacity: 0.75; } 50% { opacity: 1; } to { transform: rotate(2.5deg); opacity: 0.8; } }
 @keyframes logo-apre { from { transform: scaleY(0.06); } to { transform: scaleY(1); } }
 @keyframes logo-batte { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
 @keyframes logo-occhiolino { 0%, 100% { transform: scaleY(1); } 40%, 55% { transform: scaleY(0.08); } }
