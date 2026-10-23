@@ -71,12 +71,47 @@
   const scenarioDi = dati => SCENARI[dati.parametri.previsione_scenario] ? dati.parametri.previsione_scenario : 'atteso';
   // Una proiezione per ogni prestito (la scheda «Prestiti» calcola il piano di tutti): le ultime otto restano in memoria.
   const cachePiano = new Map();
+  // Il metodo automatico: il modello che ha sbagliato di meno nel confronto all'indietro sull'indice del contratto
+  // (errore quadratico medio a 1, 2 e 3 anni, fino a 10 anni di prove), fra quelli che si calcolano in un attimo
+  // (ARIMA e GARCH chiedono secondi e nelle prove non vincono mai). Con lo storico dell'Euribor dal 1999 vincono di
+  // solito le attese del mercato, o il VAR per l'Euribor a 12 mesi; la media delle variazioni è fra le peggiori. Senza
+  // storico abbastanza lungo: «nessun cambiamento», che nelle prove viene subito dopo il migliore.
+  const MODELLI_AUTO = ['costante', 'media', 'curva', 'var', 'vasicek'];
+  const OPZIONI_PREDEFINITE = { arima: { auto: true, d: 1 }, var: { p: 1 } };
+  const cacheMigliore = new Map();
+  function migliore(codice, dati) {
+    const serie = Mod.mensile(valoriScelti(codice, dati)), u = serie[serie.length - 1];
+    const chiave = JSON.stringify([codice, serie.length, u && u.giorno]);
+    if (cacheMigliore.has(chiave)) return cacheMigliore.get(chiave);
+    const altre = codice === 'contratto' ? null : Internet.SERIE.map(s => Mod.mensile(valoriSerie(s.codice, dati)));
+    let scelto = 'costante', errore = Infinity;
+    for (const modello of MODELLI_AUTO) {
+      let opzioni = OPZIONI_PREDEFINITE[modello] || {};
+      if (modello === 'var' || modello === 'curva') {
+        if (!altre || altre.some(l => l.length < 36)) continue;
+        opzioni = { ...opzioni, altre, indice: Internet.SERIE.findIndex(s => s.codice === codice), tau: TAU };
+      }
+      try {
+        const validi = Mod.confronta(modello, serie, opzioni, { anni: 10, orizzonti: [12, 24, 36] }).perOrizzonte.filter(o => o.quanti);
+        if (validi.length < 3) continue;
+        const media = validi.reduce((s, o) => s + o.rmse, 0) / validi.length;
+        if (media < errore) { errore = media; scelto = modello; }
+      } catch { /* storico troppo corto per questo modello */ }
+    }
+    cacheMigliore.set(chiave, scelto);
+    if (cacheMigliore.size > 20) cacheMigliore.delete(cacheMigliore.keys().next().value);
+    return scelto;
+  }
+  const codiceDi = dati => { const propria = Internet.riconosci(dati.parametri.indice_nome); return propria ? propria.codice : 'contratto'; };
+  M.modelloMigliore = dati => migliore(codiceDi(dati), dati);
   M.perPiano = function perPiano(dati) {
-    const modello = dati.parametri.previsione_modello || 'media';
-    if (modello === 'media' || !Mod.MODELLI[modello] || (dati.parametri.tipo_prestito || 'variabile') !== 'variabile') return null;
+    if ((dati.parametri.tipo_prestito || 'variabile') !== 'variabile') return null;
+    const auto = (dati.parametri.previsione_modello || 'auto') === 'auto', modello = auto ? M.modelloMigliore(dati) : dati.parametri.previsione_modello;
+    if (modello === 'media' || !Mod.MODELLI[modello]) return null;   // la media delle variazioni la calcola il piano da sé
     let opzioni = {};
-    try { opzioni = JSON.parse(dati.parametri.previsione_opzioni || '{}'); } catch { opzioni = {}; }
-    const propria = Internet.riconosci(dati.parametri.indice_nome), codice = propria ? propria.codice : 'contratto', scenario = scenarioDi(dati);
+    if (auto) opzioni = OPZIONI_PREDEFINITE[modello] || {};
+    else try { opzioni = JSON.parse(dati.parametri.previsione_opzioni || '{}'); } catch { opzioni = {}; }
+    const codice = codiceDi(dati), scenario = scenarioDi(dati);
     const serie = Mod.mensile(valoriScelti(codice, dati));
     if (!serie.length) return null;
     const u = serie[serie.length - 1];
@@ -114,9 +149,20 @@
     }
     return cacheOfferte.get(chiave);
   };
+  // Il nome del modello che usa il piano (per il variabile): «Curva, scelto in automatico», «Vasicek, fascia alta…».
   M.nomeModelloPiano = dati => {
-    const modello = dati.parametri.previsione_modello || 'media', scenario = scenarioDi(dati);
-    return modello !== 'media' && Mod.MODELLI[modello] ? Mod.MODELLI[modello].breve + (scenario !== 'atteso' ? `, ${SCENARI[scenario].nome}` : '') : null;
+    const scelto = dati.parametri.previsione_modello || 'auto', scenario = scenarioDi(dati);
+    const modello = scelto === 'auto' ? M.modelloMigliore(dati) : scelto, nome = Mod.MODELLI[modello] ? Mod.MODELLI[modello].breve : 'Media';
+    return nome + (scelto === 'auto' ? ', scelto in automatico' : '') + (scenario !== 'atteso' ? `, ${SCENARI[scenario].nome}` : '');
+  };
+  // Come il piano stima l'indice delle rate future, in parole: metodo e orizzonte (i dati del prestito, la pagina «Tassi»).
+  M.descriviStima = p => {
+    const anni = Number.isFinite(p.previsione_anni) ? p.previsione_anni : 3;
+    if (anni === 0) return 'indice fermo al valore di oggi';
+    const scelto = p.previsione_modello || 'auto', modello = scelto === 'auto' ? M.modelloMigliore({ parametri: p, euribor: stato.dati && stato.dati.parametri === p ? stato.dati.euribor : [] }) : scelto;
+    const nome = Mod.MODELLI[modello] ? Mod.MODELLI[modello].nome : 'media delle variazioni';
+    return (scelto === 'auto' ? `il metodo che ha sbagliato di meno in passato (ora: ${nome})` : nome)
+      + (anni >= 99 ? ', fino alla fine del mutuo' : `, per ${anni === 1 ? '1 anno' : anni + ' anni'}; poi l'indice resta fermo`);
   };
 
   // ---------- Cosa vorrebbe dire per le rate ----------
@@ -189,10 +235,11 @@
     return o;
   }
   function disegnaStatoPiano() {
-    const nome = M.nomeModelloPiano(stato.dati), el = $('#stato-previsione');
-    el.textContent = nome ? `Oggi il piano stima l'indice delle rate future con il modello ${nome}. Per cambiare, calcola un'altra proiezione e premi «Usa …», oppure torna al metodo semplice.`
-      : 'Oggi il piano stima l\'indice delle rate future con il metodo semplice: la media delle variazioni passate. Calcola una proiezione qui sopra e premi «Usa …» per adottarla nel piano: le rate future (colonna «Rata calcolata») verranno ricalcolate con quei tassi.';
-    $('#togli-previsione').hidden = !nome;
+    const el = $('#stato-previsione'), auto = (stato.dati.parametri.previsione_modello || 'auto') === 'auto';
+    el.textContent = `Oggi il piano stima l'indice delle rate future con ${M.descriviStima(stato.dati.parametri)}. `
+      + (auto ? 'Per usare un altro modello, calcola una proiezione qui sopra e premi «Usa …»: le rate future (colonna «Rata calcolata») verranno ricalcolate. Fin dove vale la stima si sceglie nei dati del prestito.'
+        : 'Per cambiare, calcola un\'altra proiezione e premi «Usa …», oppure torna al metodo automatico.');
+    $('#togli-previsione').hidden = auto;
     const usa = $('#usa-previsione');
     usa.hidden = !ultimo || ultimo.modello === 'media' || ultimo.codice === 'contratto' && Internet.riconosci(M.indice());
     if (!usa.hidden) usa.textContent = `Usa ${Mod.MODELLI[ultimo.modello].breve} per le rate future del piano`;
@@ -210,7 +257,7 @@
     el.replaceChildren(
       voce('Grafico:', [modello ? modello.breve : '', scelto(modulo.orizzonte), SCENARI[modulo.scenario.value] ? SCENARI[modulo.scenario.value].nome : ''].filter(Boolean).join(', ')
         + (fine ? ` → ${perc(fine.valore, 2)} a ${MESI[+fine.mese.slice(5, 7) - 1].slice(0, 3)} ${fine.mese.slice(0, 4)}` : '')),
-      voce('Il piano usa:', M.nomeModelloPiano(stato.dati) || 'media delle variazioni'));
+      voce('Il piano usa:', M.descriviStima(stato.dati.parametri)));
   }
   modulo.scenario.replaceChildren(...Object.entries(SCENARI).map(([codice, s]) => crea('option', { value: codice }, s.nome)));
   modulo.scenario.addEventListener('change', () => { modulo.scenario.dataset.toccato = '1'; });
@@ -306,7 +353,7 @@
     esegui('PUT', 'parametri', { previsione_modello: ultimo.modello, previsione_opzioni: JSON.stringify(ultimo.opzioni), previsione_scenario: scenario },
       `Da ora il piano stima le rate future con il modello ${Mod.MODELLI[ultimo.modello].breve}${scenario !== 'atteso' ? ` (${SCENARI[scenario].nome})` : ''}`);
   });
-  $('#togli-previsione').addEventListener('click', () => esegui('PUT', 'parametri', { previsione_modello: 'media', previsione_opzioni: '', previsione_scenario: 'atteso' }, 'Il piano torna alla media delle variazioni'));
+  $('#togli-previsione').addEventListener('click', () => esegui('PUT', 'parametri', { previsione_modello: 'auto', previsione_opzioni: '', previsione_scenario: 'atteso' }, 'Il piano torna al metodo automatico: il modello che ha sbagliato di meno in passato'));
 
   // ---------- Confronto all'indietro: quale modello ha funzionato meglio ----------
   // Per ogni modello (con le opzioni predefinite; ARIMA con gli ordini scelti una volta sull'intera serie) si rifanno

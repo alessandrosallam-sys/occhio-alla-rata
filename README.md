@@ -52,7 +52,7 @@ Le regole del contratto si scelgono nella configurazione (o le trova la taratura
 
 Le festività considerate sono quelle del calendario TARGET (quello su cui si pubblica l'Euribor), modificabili.
 
-**Le rate future** sono stime: l'indice dei mesi a venire non lo conosce nessuno. All'inizio il programma lo proietta con la variazione media del passato; nella pagina Tassi si può scegliere un modello statistico al suo posto. Le fasce di incertezza dicono quanto l'indice è stato variabile finora, non cosa farà la BCE.
+**Le rate future** sono stime: l'indice dei mesi a venire non lo conosce nessuno. Di base il programma usa il **metodo automatico**: prova i modelli sugli anni passati (si mette in una data passata, stima, e confronta con quello che è successo davvero) e usa quello che ha sbagliato di meno sull'indice del contratto; con lo storico dell'Euribor di solito vincono le attese del mercato. La stima vale **3 anni**, poi l'indice resta fermo: nelle prove anche il modello migliore sbaglia di uno o due punti dopo due o tre anni, e prolungarla per tutto il mutuo darebbe rate e costi lontani dal vero. Nella guida (domanda «Come stimo le rate future?»), nella pagina «Dati del prestito» e nella pagina Tassi si può scegliere un altro modello e fin dove vale la stima (da «indice fermo al valore di oggi», come fa la banca per il TAEG, a «fino alla fine del mutuo»). Le fasce di incertezza dicono quanto l'indice è stato variabile finora, non cosa farà la BCE.
 
 **Non sono coperti**: preammortamento, rate non mensili; le estinzioni parziali si possono simulare nella pagina Costi e rimborso, ma non registrare nel piano; spread che cambia nel tempo (si può solo scrivere a mano, rata per rata, il tasso applicato).
 

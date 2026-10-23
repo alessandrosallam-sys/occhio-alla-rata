@@ -192,6 +192,14 @@
       cosa: 'Le quote capitale sono state fissate usando il tasso del giorno della firma, che può essere diverso da quello di oggi.',
       dove: 'In cima al piano di ammortamento («tasso» o «tasso di ingresso») oppure nel contratto («tasso iniziale»).',
       seNonSai: 'Lascialo vuoto e usa la casella qui sotto: basta la quota capitale della prima rata.' },
+    stima: { domanda: 'Come stimo le rate future?',
+      cosa: 'In un mutuo variabile le rate future dipendono dall\'indice dei prossimi anni, che nessuno conosce. Il programma lo stima con un metodo statistico: di base usa quello che, provato sugli anni passati, ha sbagliato di meno sul tuo indice. Anche il migliore però sbaglia di uno o due punti dopo pochi anni: per questo, finita la stima, tiene l\'indice fermo.',
+      perche: 'Serve a mostrarti le rate che verranno, gli interessi ancora da pagare e quanto costa in tutto il mutuo. Le rate già pagate non cambiano.',
+      seNonSai: 'Lascia la prima voce: è la più prudente fra quelle che guardano avanti. Puoi cambiare quando vuoi, nella pagina «Dati del prestito».' },
+    previsione_modello: { domanda: 'Con quale metodo stimo l\'indice delle rate future?',
+      cosa: 'Il metodo statistico per l\'indice dei prossimi anni. «Automatico» prova i metodi sugli anni passati e usa quello che ha sbagliato di meno sul tuo indice: di solito le attese del mercato.' },
+    previsione_anni: { domanda: 'Fin dove vale la stima?',
+      cosa: 'Per quanti anni le rate future seguono la stima: dopo, l\'indice resta fermo al valore stimato. Nelle prove sugli anni passati anche il metodo migliore sbaglia di uno o due punti a due o tre anni: oltre, è un\'ipotesi.' },
     rata_piano: { domanda: 'Rata del piano iniziale', cosa: 'La rata (capitale + interessi) scritta nel piano iniziale. Lascia 0: il programma la calcola dal tasso.' },
   };
   // La guida ha due percorsi.
@@ -217,6 +225,7 @@
     { fase: 2, tipo: 'rate', titolo: 'Le rate pagate', icona: 'calendario', se: () => periodiIniziati().length > 0 },
     { fase: 3, tipo: 'analisi', titolo: 'Ci penso io', icona: 'bacchetta' },
     { fase: 4, tipo: 'domanda', chiave: 'nome', titolo: 'Come vuoi chiamare questo prestito?', icona: 'matita' },
+    { fase: 4, tipo: 'domanda', chiave: 'stima', titolo: 'Come stimo le rate future?', icona: 'grafico', se: () => variabile(guida.bozza) },
     { fase: 4, tipo: 'domanda', chiave: 'dettagli', titolo: 'Vuoi aggiungere spese e assicurazioni?', icona: 'scudo' },
     // Solo se l'utente ha detto di sì, e solo quelle che hanno senso per il suo prestito.
     ...['spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'spese_annue', 'taeg_dichiarato', 'valore_riferimento', 'anticipo']
@@ -257,7 +266,7 @@
       testo: 'Cominciamo dai dati di base. Li trovi tutti nella prima pagina del contratto o nel piano di ammortamento.' },
     { titolo: 'Spese e assicurazioni', icona: 'scudo', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata'], avanzati: ['spese_annue'],
       testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
-    { titolo: 'Il tasso', se: variabile, icona: 'grafico', campi: ['indice_nome', 'spread', 'taeg_dichiarato'],
+    { titolo: 'Il tasso', se: variabile, icona: 'grafico', campi: ['indice_nome', 'spread', 'taeg_dichiarato', 'previsione_anni', 'previsione_modello'],
       testo: 'In un mutuo a tasso variabile il tasso di ogni rata è la somma di due numeri: un indice di mercato, che cambia nel tempo, e lo spread, che è fisso.' },
     { titolo: 'Il tasso', se: b => !variabile(b), icona: 'percento', campi: ['tasso_fisso', 'taeg_dichiarato'],
       testo: 'A tasso fisso il tasso è scritto nel contratto e non cambia mai. Nel contratto ne trovi due: il TAN, che serve a calcolare le rate, e il TAEG, che misura il costo totale.' },
@@ -736,6 +745,7 @@
     data_ultima: 'È la scadenza del prestito: la trovi nel contratto o nell\'ultima riga del piano di ammortamento.',
     ordine_rate: 'Le più recenti sono nell\'estratto conto online; le prime nelle ricevute dell\'inizio o nel piano di ammortamento. Te le chiedo una alla volta: ne bastano tre o quattro.',
     nome: 'Serve solo a riconoscerlo, soprattutto se segui più di un prestito.',
+    stima: 'Nessuno sa dove andrà l\'indice: provo i metodi sugli anni passati e uso quello che ci ha preso di più. Puoi cambiare idea quando vuoi, nei dati del prestito.',
     dettagli: 'Non cambiano le rate: servono a calcolare quanto costa davvero il prestito (costo totale e TAEG). Puoi aggiungerli anche dopo, con «Dati del prestito».',
     spese_iniziali: 'Istruttoria, perizia, imposte pagate alla firma. Se non le sai, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico pagato all\'inizio. Se non c\'è, lascia vuoto.',
@@ -782,6 +792,18 @@
       return crea('div', { className: 'scelte' },
         voce(chiave, 'recenti', 'Le più recenti', `Parto dall'ultima rata, di ${M.meseAnno(p[p.length - 1].inizio)}, e vado indietro.`, guida.ordineRate === 'recenti', null, 'calendario'),
         voce(chiave, 'prime', 'Dalla prima', `Parto dalla prima rata, di ${M.meseAnno(p[0].inizio)}, e vado avanti.`, guida.ordineRate === 'prime', null, 'documento'));
+    }
+    if (chiave === 'stima') {
+      const s = guida.stima || 'auto3', p = guida.bozza;
+      const tendina = (nome, campo, valore, togli = []) => crea('select', { name: nome, 'aria-label': CAMPI[campo].etichetta },
+        ...CAMPI[campo].opzioni.filter(o => !togli.includes(o.valore)).map(o => crea('option', { value: String(o.valore), selected: o.valore === valore }, o.etichetta)));
+      const scelgo = crea('div', { className: 'stima-scelgo' }, tendina('stima_modello', 'previsione_modello', p.previsione_modello !== 'auto' ? p.previsione_modello : 'curva', ['auto']),
+        tendina('stima_anni', 'previsione_anni', p.previsione_anni, [0]));
+      return crea('div', { className: 'scelte' },
+        voce(chiave, 'auto3', 'Con il metodo che ha sbagliato di meno, per 3 anni (consigliato)', 'Provo i metodi sugli anni passati e uso quello che ci ha preso di più. Dopo 3 anni tengo l\'indice fermo: più in là nessun metodo è affidabile.', s === 'auto3', null, 'stella'),
+        voce(chiave, 'autofine', 'Con il metodo che ha sbagliato di meno, fino alla fine del mutuo', 'La stima continua per tutta la durata: dopo qualche anno è poco più di un\'ipotesi, e il costo totale può venire molto diverso dal vero.', s === 'autofine', null, 'grafico'),
+        voce(chiave, 'fermo', 'No, tieni l\'indice fermo al valore di oggi', 'Tutte le rate future come quella di oggi: è come la banca calcola il TAEG.', s === 'fermo', null, 'orologio'),
+        voce(chiave, 'scelgo', 'Scelgo io il metodo e fin dove', 'I metodi sono spiegati nella pagina «Tassi» (versione avanzata), con il loro confronto sugli anni passati.', s === 'scelgo', scelgo, 'regole'));
     }
     if (chiave === 'dettagli') {
       return crea('div', { className: 'scelte' }, voce(chiave, 'si', 'Sì, li ho sotto mano', 'Te li chiedo uno alla volta: spese iniziali, assicurazioni, TAEG del contratto.', guida.conDettagli === true),
@@ -875,6 +897,15 @@
       return true;
     }
     if (chiave === 'dettagli') { guida.conDettagli = scelto === 'si'; return true; }
+    if (chiave === 'stima') {
+      guida.stima = scelto || 'auto3';
+      const b = guida.bozza;
+      if (guida.stima === 'scelgo') { b.previsione_modello = $('#campi-passo [name="stima_modello"]').value; b.previsione_anni = +$('#campi-passo [name="stima_anni"]').value; }
+      else { b.previsione_modello = 'auto'; b.previsione_anni = { auto3: 3, autofine: 99, fermo: 0 }[guida.stima]; }
+      b.previsione_opzioni = '';
+      b.previsione_scenario = 'atteso';
+      return true;
+    }
     if (chiave === 'riempi') { if (!scelto) return !severo || mostraErrore('Scegli una risposta.'); guida.riempi = scelto === 'si'; return true; }
     if (chiave === 'numero_rate') {
       const mesi = mesiDurata();
@@ -1401,6 +1432,7 @@
     data_addebito: 'Ultima domanda sul prestito: una data. Va bene anche approssimativa.',
     ordine_rate: 'Ora la parte più importante: le rate che hai già pagato. Da quelle capisco tutto il resto.',
     nome: 'Ci siamo quasi! Dagli un nome: ti servirà se segui più di un prestito.',
+    stima: 'Le rate future dipendono dall\'indice di domani: lo stimo con il metodo che in passato ha sbagliato di meno.',
     dettagli: 'Spese e assicurazioni sono facoltative: servono solo a calcolare il costo totale.',
     riempi: 'Una comodità: le rate che non hai scritto posso metterle io, così vedi subito il piano completo.',
     riepilogo: 'Ecco tutto. Se va bene, premi «Crea il prestito» e ti mostro il piano.',
@@ -1657,6 +1689,7 @@
     const tipo = passoAttuale().tipo, nome = evento.target.name;
     $('#errore-passo').hidden = true;   // l'avviso riguardava le risposte di prima
     if (!tipo) aggiornaDomande();
+    else if (nome === 'stima_modello' || nome === 'stima_anni') $('#campi-passo input[name="stima"][value="scelgo"]').checked = true;
     else if (tipo === 'domanda' && nome === 'data_ultima') {
       // Prima o ultima rata: cambiano la domanda e la spiegazione.
       raccogliDomandaBreve(passoAttuale(), false);
@@ -1831,7 +1864,8 @@
   // principali (le regole di dettaglio stanno nella pagina «Regole del contratto», versione avanzata) e il piano si
   // ricalcola appena si salva; «Rifai la configurazione guidata» ripete le domande dall'inizio, solo se lo si chiede.
   const CHIAVI_DATI = ['nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'maxirata', 'anticipo', 'valore_riferimento',
-    'tasso_fisso', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'spese_nel_prestito', 'taeg_dichiarato'];
+    'tasso_fisso', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'spese_nel_prestito', 'taeg_dichiarato',
+    'previsione_anni', 'previsione_modello'];
   let cambiaDati = false;
   const durata = n => { const anni = Math.floor(n / 12), mesi = n % 12;
     return [anni ? (anni === 1 ? '1 anno' : anni + ' anni') : '', mesi ? (mesi === 1 ? '1 mese' : mesi + ' mesi') : ''].filter(Boolean).join(' e '); };
@@ -1861,6 +1895,7 @@
       ...(p.spese_iniziali > 0 ? [['Spese iniziali', euro(p.spese_iniziali)]] : []),
       ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ')]] : []),
       ...(p.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(p.taeg_dichiarato, 2)]] : []),
+      ...(variabile(p) && M.descriviStima ? [['Rate future', 'stimate con ' + M.descriviStima(p)]] : []),
       ['Rate scritte', scritte + copiate ? (scritte === 1 ? '1 controllata' : `${scritte} controllate`) + ' sull\'estratto conto' + (copiate ? (copiate === 1 ? ', 1 presa dal calcolo' : `, ${copiate} prese dal calcolo`) : '') : 'nessuna, per ora'],
       ['Si apre da solo', principale ? 'sì, è il prestito principale' : 'no: lo apri dalla pagina «Prestiti»']];
     carta.replaceChildren(testa,
@@ -1896,6 +1931,8 @@
     if (letti.errore) return avvisa(letti.errore, true);
     const cambiati = Object.fromEntries(Object.entries(letti.valori).filter(([chiave, valore]) => valore !== stato.dati.parametri[chiave]));
     if (!Object.keys(cambiati).length) { cambiaDati = false; disegnaDati(); return avvisa('Nessun dato cambiato'); }
+    // Un altro metodo di stima riparte con le sue opzioni di base e lo scenario atteso.
+    if ('previsione_modello' in cambiati) Object.assign(cambiati, { previsione_opzioni: '', previsione_scenario: 'atteso' });
     if (document.activeElement) document.activeElement.blur();
     cambiaDati = false;
     if (!await esegui('PUT', 'parametri', cambiati, 'Dati salvati: il piano è ricalcolato')) { cambiaDati = true; disegnaDati(); }

@@ -82,8 +82,24 @@
 
     euribor_massimo: { tipo: 'percento', min: 0, max: 1, iniziale: 0.05, etichetta: 'Tetto alla previsione dell\'indice (%)', se: variabile, aiuto: 'Per i mesi futuri l\'indice stimato non supera questo valore. Lascia 0 per non mettere un tetto.' },
     rata_obiettivo: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, nascosto: true },
-    // Come il piano stima l'indice delle rate future: si sceglie nella scheda «Previsioni» (previsioni.js).
-    previsione_modello: { tipo: 'scelta', iniziale: 'media', nascosto: true, opzioni: ['media', 'costante', 'arima', 'var', 'garch', 'vasicek', 'curva'].map(valore => ({ valore })) },
+    // Come il piano stima l'indice delle rate future (previsioni.js): «auto» è il modello che ha sbagliato di meno nel
+    // confronto all'indietro sull'indice del contratto; gli altri si scelgono nella guida, nei dati del prestito o nella
+    // pagina «Tassi». previsione_anni: per quanti anni vale la stima, poi l'indice resta fermo (0 fermo da subito, 99
+    // fino alla fine): oltre pochi anni nessun metodo è affidabile.
+    previsione_modello: { tipo: 'scelta', iniziale: 'auto', nascosto: true, etichetta: 'Metodo per stimare l\'indice', se: variabile, opzioni: [
+      { valore: 'auto', etichetta: 'Automatico: quello che ha sbagliato di meno in passato' },
+      { valore: 'curva', etichetta: 'Attese del mercato (curva degli Euribor di oggi)' },
+      { valore: 'var', etichetta: 'VAR: tutti gli Euribor insieme' },
+      { valore: 'vasicek', etichetta: 'Vasicek: torna piano piano verso la media storica' },
+      { valore: 'arima', etichetta: 'ARIMA' },
+      { valore: 'garch', etichetta: 'GARCH: segue la variabilità recente' },
+      { valore: 'costante', etichetta: 'Nessun cambiamento: resta com\'è oggi' },
+      { valore: 'media', etichetta: 'Media delle variazioni passate' }] },
+    previsione_anni: { tipo: 'scelta', iniziale: 3, etichetta: 'Fin dove stimare l\'indice', se: variabile,
+      aiuto: 'Per quanti anni le rate future seguono la stima: dopo l\'indice resta fermo. Oltre pochi anni nessun metodo è affidabile.', opzioni: [
+      { valore: 0, etichetta: 'Indice fermo al valore di oggi' }, { valore: 1, etichetta: 'Stima per 1 anno, poi ferma' }, { valore: 2, etichetta: 'Stima per 2 anni, poi ferma' },
+      { valore: 3, etichetta: 'Stima per 3 anni, poi ferma (consigliato)' }, { valore: 5, etichetta: 'Stima per 5 anni, poi ferma' }, { valore: 10, etichetta: 'Stima per 10 anni, poi ferma' },
+      { valore: 99, etichetta: 'Stima fino alla fine del mutuo' }] },
     previsione_opzioni: { tipo: 'testo', iniziale: '', nascosto: true },
     previsione_scenario: { tipo: 'scelta', iniziale: 'atteso', nascosto: true, opzioni: ['atteso', 'alto80', 'basso80'].map(valore => ({ valore })) },
     // Le scelte del modulo della proiezione (serie, modello, parametri, orizzonte, scenario), così lo stesso file
@@ -187,7 +203,7 @@
   const daSalvare = () => ({ attivo: archivio.attivo, principale: archivio.principale, prestiti: archivio.prestiti.filter(configurato), offerte: archivio.offerte });
   function salva() {
     if (NEL_BROWSER) {
-      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 2, ...daSalvare() })); }
+      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 3, ...daSalvare() })); }
       catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva un backup» per non perderli.'); }
     }
     // La variante in un unico file tiene i dati solo in memoria: a ogni modifica aggiorna il suo file.
@@ -218,6 +234,9 @@
       visti.add(id);
       prestiti.push({ id, ...pulito });
     }
+    // Fino alla versione 2 la stima dell'indice predefinita era la media delle variazioni, la meno precisa: si passa al
+    // metodo automatico (chi la vuole davvero la sceglie di nuovo).
+    if (!(grezzo.versione >= 3)) for (const p of prestiti) if (p.parametri.previsione_modello === 'media') p.parametri.previsione_modello = 'auto';
     const attivo = prestiti.some(p => p.id === grezzo.attivo) ? grezzo.attivo : prestiti.length ? prestiti[0].id : null;
     // Il prestito principale si apre da solo. I salvataggi di prima non lo avevano: diventa quello aperto per ultimo.
     // Un null scritto vuol dire che l'utente l'ha tolto.
@@ -381,7 +400,7 @@
     // Le offerte da confrontare, con i parametri completi.
     offerte: () => (carica(), archivio.offerte.map(o => JSON.parse(JSON.stringify({ id: o.id, parametri: { ...predefiniti(), ...o.parametri } })))),
     // Testo del backup da scaricare come file.
-    esporta: () => (carica(), JSON.stringify({ programma: 'mutuo-variabile', versione: 2, salvato: new Date().toISOString(), ...daSalvare() }, null, 1)),
+    esporta: () => (carica(), JSON.stringify({ programma: 'mutuo-variabile', versione: 3, salvato: new Date().toISOString(), ...daSalvare() }, null, 1)),
     // Lo stesso salvataggio nella forma del file dei dati della versione in un unico file.
     esportaFile() { return PREFISSO_FILE + this.esporta() + ';\n'; },
     // Sostituisce tutti i dati con quelli di un salvataggio (va bene sia il .json sia il file dei dati, di ogni versione).

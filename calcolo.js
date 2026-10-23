@@ -242,6 +242,10 @@
     const quotaItaliana = centesimi(p.importo_iniziale / numeroRate);
     let debitoPiano = p.importo_iniziale;
 
+    // Orizzonte della stima: oltre «previsione_anni» anni dall'ultimo valore vero l'indice resta fermo (0: fermo da
+    // subito, 99: fino alla fine). Nessuno sa dove sarà l'indice fra molti anni: una stima lunga è solo un'ipotesi.
+    const anniStima = Number.isFinite(p.previsione_anni) ? p.previsione_anni : 3;
+    let limiteStima = null;
     // Secondo passaggio: previsione dei tassi futuri e tutte le colonne calcolate.
     let cumulato = 0, ultimoPunto = null;
     for (let i = 0; i < righe.length; i++) {
@@ -256,13 +260,21 @@
         else {
           // Previsione: con opzioni.previsione (una funzione giorno → indice, dalla scheda «Previsioni») si usa il valore
           // del modello; altrimenti ultimo valore più l'ultima variazione. Raggiunto il tetto impostato, non sale più.
-          const stimata = opzioni.previsione ? opzioni.previsione(r.riferimento) : null;
-          r.euribor = stimata != null ? stimata : ultimoPunto ? ultimoPunto.euribor + ultimoPunto.variazione : primaDelPiano != null ? primaDelPiano : 0;
+          // Oltre l'orizzonte della stima resta il valore che aveva all'orizzonte.
+          if (limiteStima == null) {
+            const base = ultimoPunto ? ultimoPunto.riferimento : r.riferimento;
+            limiteStima = anniStima >= 99 ? '9999-12-31' : `${+base.slice(0, 4) + anniStima}${base.slice(4)}`;
+          }
+          const oltre = r.riferimento > limiteStima;
+          const stimata = opzioni.previsione ? opzioni.previsione(oltre ? limiteStima : r.riferimento) : null;
+          r.euribor = stimata != null ? stimata : oltre && ultimoPunto ? ultimoPunto.euribor
+            : ultimoPunto ? ultimoPunto.euribor + ultimoPunto.variazione : primaDelPiano != null ? primaDelPiano : 0;
           if (p.floor_attivo > 0) r.euribor = Math.max(r.euribor, p.indice_minimo || 0);
           r.alTetto = tetto != null && r.euribor >= tetto;
           if (r.alTetto) r.euribor = tetto;
-          r.variazione = r.alTetto ? 0 : stimata != null ? (ultimoPunto ? r.euribor - ultimoPunto.euribor : 0) : mediaVariazioni;
+          r.variazione = r.alTetto || oltre ? (oltre && ultimoPunto ? r.euribor - ultimoPunto.euribor : 0) : stimata != null ? (ultimoPunto ? r.euribor - ultimoPunto.euribor : 0) : mediaVariazioni;
           r.daModello = stimata != null;
+          r.stimaFerma = oltre;
         }
         ultimoPunto = r;
       }

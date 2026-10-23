@@ -72,7 +72,7 @@
     if (altroPrestito) for (const f of M.cambioPrestito) f();
     // L'indice delle rate future viene dal modello scelto nella scheda «Previsioni», se c'è (previsioni.js).
     stato.piano = Calcolo.calcolaPiano(dati, { previsione: M.perPiano ? M.perPiano(dati) : null });
-    if (M.ORIGINI) M.ORIGINI.previsione = M.nomeModelloPiano && M.nomeModelloPiano(dati) ? `previsione (modello ${M.nomeModelloPiano(dati)})` : 'previsione';
+    if (M.ORIGINI) M.ORIGINI.previsione = M.nomeModelloPiano && variabile() ? `previsione (${M.nomeModelloPiano(dati)})` : 'previsione';
     disegnaMenu();   // il nome del prestito può essere cambiato
     disegnaRiepilogo();
     disegnaPiano();
@@ -342,7 +342,8 @@
       v: r => (tassoMancante(r) ? '⚠ ' : '') + (r.alTetto ? '<span class="tetto">max</span>' : '') + percT(r.euribor, 3),
       classe: previsione, manuale: r => r.origineEuribor === 'manuale',
       titolo: r => tassoMancante(r) ? `Manca il valore dell'indice del ${data(r.riferimento)}: quello mostrato è una stima`
-        : r.alTetto ? 'Previsione ferma al tetto massimo impostato nelle regole del contratto' : '' },
+        : r.alTetto ? 'Previsione ferma al tetto massimo impostato nelle regole del contratto'
+        : r.stimaFerma ? 'Stima ferma: oltre gli anni scelti nei dati del prestito l\'indice resta uguale (più in là nessun metodo è affidabile)' : '' },
     { extra: true, g: 4, t: 'Aumento mensile', x: 'Variazione dell\'indice', soloVariabile: true, aiuto: 'Differenza con la rilevazione precedente; per il futuro: secondo la proiezione scelta nella pagina «Previsioni» (all\'inizio: media delle variazioni passate)',
       v: r => percT(r.variazione), classe: r => 'minore ' + previsione(r) },
     { extra: true, g: 4, t: 'Spread', campo: 'spread', percento: true, soloVariabile: true, v: r => percT(r.spread, 3, 1), manuale: r => r.spreadManuale },

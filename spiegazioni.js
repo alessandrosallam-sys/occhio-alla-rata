@@ -102,6 +102,7 @@
     ['Spese iniziali', 'Le spese pagate una volta, all\'inizio: servono al costo totale e al TAEG.'],
     ['Assicurazioni', 'Le assicurazioni legate al prestito: servono al costo totale e al TAEG.'],
     ['Rate scritte', 'Le rate che hai scritto nel piano: quelle controllate sull\'estratto conto e quelle prese dal calcolo (segnate con «=»).'],
+    ['Rate future', 'Come stimo l\'indice delle rate che verranno: il metodo e per quanti anni. Si cambia con «Cambia i dati».'],
     ['Si apre da solo', 'Il prestito principale si apre da solo quando apri la pagina. Lo scegli con la stella nella pagina «Prestiti».'],
     // Il riepilogo di un'offerta nella guida
     ['Che cosa', 'Il tipo di finanziamento: decide come faccio i conti.'],

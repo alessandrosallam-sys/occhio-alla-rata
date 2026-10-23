@@ -1481,6 +1481,10 @@ label.opzione-assistente { display: flex; align-items: flex-start; gap: 10px; fo
 label.opzione-assistente input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accento); }
 @media (max-width: 520px) { .scelta-versione { grid-template-columns: minmax(0, 1fr); } }
 
+/* Guida: «Scelgo io il metodo e fin dove», due tendine sotto la voce */
+.stima-scelgo { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+.stima-scelgo select { flex: 1 1 220px; min-width: 0; }
+
 /* Dati del prestito: i dati in parole, poi il modulo per cambiarli */
 .carta-dati-prestito h2 { display: flex; align-items: center; gap: var(--s2); margin: 0; }
 .carta-dati-prestito .riepilogo-guida { margin: var(--s4) 0; }
