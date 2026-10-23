@@ -1,78 +1,234 @@
-// La scena della prima apertura: di notte il gufo, il logo del progetto, plana dall'alto, agguanta il sacchetto
-// delle monete, lo porta in volo sulla collina e ci si posa sopra; poi compare il nome. Sta in cima alla prima pagina
-// della guida quando si parte da zero (configura.js), con sotto la presentazione del progetto.
-// È tutta SVG e CSS (stile.css, «La scena della prima apertura»): l'animazione sta sotto la classe «in-volo», che
-// c'è solo la prima volta che la scena si disegna in questa apertura della pagina; un clic la fa ripartire. Senza
-// animazioni (o con «riduci movimento» nel sistema) si vede la scena finale: il gufo posato sul sacchetto.
+// La scena della prima apertura: di notte, nel bosco, il gufo plana dall'alto, agguanta il sacchetto delle monete
+// (qualcuna salta fuori e cade nell'erba), lo porta in volo sul ceppo davanti alla luna e ci si posa; poi compare il
+// nome. Sta in cima alla prima pagina della guida quando si parte da zero (configura.js), con sotto la presentazione.
+// È tutta SVG e CSS (stile.css, «La scena della prima apertura»): il volo sta sotto la classe «in-volo», che c'è solo
+// la prima volta che la scena si disegna in questa apertura della pagina; un clic lo fa ripartire. Lucciole, stelle,
+// felci e nuvole si muovono sempre. Senza animazioni (o con «riduci movimento» nel sistema) si vede la scena finale:
+// il gufo posato sul ceppo con il sacchetto, le monete nell'erba.
 (() => {
-  // Il gufo è quello del logo (loghi.js, «gufo»), con il corpo intero e le ali; si disegna con le misure del logo
-  // (64×64) e si porta sulla collina con translate e scale. Tutto è disegnato nella posizione finale: il volo sposta
-  // i gruppi .intro-insieme (gufo e sacchetto, da terra alla collina) e .intro-volo (il gufo, dal cielo al sacchetto).
-  const ORO = '#f7b500', SCURO = '#8a5a00';
-  const STELLE = [[36, 128, 1.3], [96, 112, 1], [150, 30, 1.6], [176, 92, 1.1], [214, 20, 1.3], [262, 52, 1.7], [318, 26, 1.1],
-    [286, 100, 1.2], [352, 64, 1.4], [460, 98, 1.2], [470, 14, 1.5], [226, 136, 1], [24, 40, 1.2], [118, 66, 1.4], [72, 16, 1]];
-  const stella = ([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}"${i % 3 === 0 ? ` class="brilla" style="animation-delay:${(i * 0.37) % 3}s"` : ''}/>`;
-  const scintilla = (x, y, s) => `<path d="M${x} ${y - s}l${s * 0.28} ${s * 0.72} ${s * 0.72} ${s * 0.28}-${s * 0.72} ${s * 0.28}-${s * 0.28} ${s * 0.72}-${s * 0.28}-${s * 0.72}-${s * 0.72}-${s * 0.28} ${s * 0.72}-${s * 0.28}Z"/>`;
-  const SCENA = `<svg class="intro-disegno" viewBox="0 0 480 200" aria-hidden="true" focusable="false">
-  <defs>
-    <radialGradient id="intro-oro" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#ffe680"/><stop offset="0.55" stop-color="${ORO}"/><stop offset="1" stop-color="#d48a00"/></radialGradient>
-    <radialGradient id="intro-alone"><stop offset="0.35" stop-color="#ffffff" stop-opacity="0.22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-    <linearGradient id="intro-tela" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2be4e"/><stop offset="1" stop-color="#c98a1c"/></linearGradient>
-  </defs>
-  <circle cx="440" cy="40" r="38" fill="url(#intro-alone)"/>
-  <path d="M437.4 25.2A15 15 0 1 0 454.2 44.8A13 13 0 0 1 437.4 25.2Z" fill="#fff3bf"/>
-  <g class="intro-stelle" fill="#ffffff" opacity="0.85">${STELLE.map(stella).join('')}</g>
-  <path d="M0 176C70 160 150 170 220 172S340 160 480 168V200H0Z" fill="#1c1458" opacity="0.3"/>
-  <path d="M0 186Q125 176 250 182T480 186V200H0Z" fill="#1c1458" opacity="0.45"/>
-  <path d="M326 200C340 170 364 155 392 155C420 155 444 170 458 200Z" fill="#1c1458" opacity="0.55"/>
-  <g class="intro-insieme">
-    <g class="intro-sacco">
-      <path d="M384 118C372 124 366 136 368 146C370 153 380 156.5 392 156.5S414 153 416 146C418 136 412 124 400 118Z" fill="url(#intro-tela)" stroke="${SCURO}" stroke-width="1.5"/>
-      <path d="M374 141C374 133 377.5 127 383 123.5" fill="none" stroke="#ffe08a" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
-      <path d="M399.5 132.6A7 7 0 1 0 399.5 143.4M385.5 136.5h9M385.5 140h9" fill="none" stroke="#7a4d00" stroke-width="1.8" stroke-linecap="round"/>
-      <path d="M383 115.5 378 106l8 3.5 6-6.5 6 6.5 8-3.5-5 9.5Z" fill="#e6ad3c" stroke="${SCURO}" stroke-width="1.2" stroke-linejoin="round"/>
-      <rect x="381.5" y="113.5" width="21" height="5.5" rx="2.75" fill="${SCURO}"/>
-    </g>
-    <g class="intro-volo">
-      <g transform="translate(350.4 35.5) scale(1.3)">
-        <g class="intro-gufo">
-          <g class="intro-ali-aperte" fill="#c3cbff" stroke="#ffffff" stroke-width="1" stroke-linejoin="round">
-            <g class="intro-ala intro-ala-sx"><path d="M17 26C8 16-8 9-22 11C-27 12-28 16-24 18C-26 20-25 23-20 23C-21 26-18 28-13 27C-13 30-9 32-5 30C-4 33 0 35 4 33C6 37 11 39 15 40Z"/>
-              <path d="M-18 16.5C-8 17.5 4 21.5 14 29M-10 23C-2 24 6 27 13 34" fill="none" stroke="#8f9cf5" stroke-width="1.1" stroke-linecap="round"/></g>
-            <g class="intro-ala intro-ala-dx"><path d="M47 26C56 16 72 9 86 11C91 12 92 16 88 18C90 20 89 23 84 23C85 26 82 28 77 27C77 30 73 32 69 30C68 33 64 35 60 33C58 37 53 39 49 40Z"/>
-              <path d="M82 16.5C72 17.5 60 21.5 50 29M74 23C66 24 58 27 51 34" fill="none" stroke="#8f9cf5" stroke-width="1.1" stroke-linecap="round"/></g>
-          </g>
-          <path d="M16.5 22 15 9.5l9.5 6.5ZM47.5 22 49 9.5 39.5 16Z" fill="#c9cffc" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"/>
-          <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="#eef0ff" stroke="#ffffff" stroke-width="1.4"/>
-          <ellipse cx="32" cy="46" rx="11" ry="8" fill="#ffffff"/>
-          <path d="M25.5 44.5q2.2 2.4 4.4 0M30 47.5q2 2.4 4 0M34.1 44.5q2.2 2.4 4.4 0" fill="none" stroke="#9aa5f5" stroke-width="1.4" stroke-linecap="round"/>
-          <g class="intro-ali-chiuse" fill="#c3cbff"><path d="M17 29C11.5 34 11.5 45 17.5 52.5C20.5 46 21 37 17 29Z"/><path d="M47 29C52.5 34 52.5 45 46.5 52.5C43.5 46 43 37 47 29Z"/></g>
-          <g class="intro-palpebra">
-            <circle cx="24.5" cy="29" r="7.8" fill="#ffffff" stroke="#c9cffc" stroke-width="1"/><circle cx="39.5" cy="29" r="7.8" fill="#ffffff" stroke="#c9cffc" stroke-width="1"/>
-            <g class="intro-sguardo">
-              <circle cx="24.5" cy="29" r="4.4" fill="url(#intro-oro)"/><circle cx="24.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="23.4" cy="27.8" r="0.9" fill="#ffffff"/>
-              <circle cx="39.5" cy="29" r="4.4" fill="url(#intro-oro)"/><circle cx="39.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="38.4" cy="27.8" r="0.9" fill="#ffffff"/>
-            </g>
-          </g>
-          <path d="M29.8 35.5h4.4L32 40.2Z" fill="${ORO}"/>
-          <path d="M26.5 54.5v4M29.5 54.5v4M34.5 54.5v4M37.5 54.5v4" stroke="${ORO}" stroke-width="2.2" stroke-linecap="round"/>
-        </g>
+  // Foglie, felci e fili d'erba sono sparsi a caso, ma con un seme fisso: la scena è sempre la stessa.
+  let seme = 20261023;
+  const caso = () => (seme = (seme * 16807) % 2147483647) / 2147483647;
+  const tra = (a, b) => a + (b - a) * caso();
+  const scegli = lista => lista[Math.floor(caso() * lista.length)];
+  const c = x => Math.round(x * 10) / 10;   // numeri corti nel disegno
+
+  // Una foglia appuntita lunga l e larga w che parte da (x, y), girata di a gradi (0 = verso l'alto)
+  const foglia = (x, y, l, w, a, colore) =>
+    `<path d="M0 0Q${c(w)} ${c(-l / 2)} 0 ${c(-l)}Q${c(-w)} ${c(-l / 2)} 0 0Z" transform="translate(${c(x)} ${c(y)}) rotate(${c(a)})" fill="${colore}"/>`;
+  // Un ciuffo di n foglie intorno a (cx, cy), ognuna rivolta verso l'esterno; s ingrandisce le foglie
+  function ciuffo(cx, cy, r, n, colori, s = 1) {
+    let foglie = '';
+    for (let i = 0; i < n; i++) {
+      const a = caso() * Math.PI * 2, d = Math.sqrt(caso()) * r;
+      foglie += foglia(cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.75, tra(10, 18) * s, tra(6, 10) * s, a * 180 / Math.PI + 90 + tra(-35, 35), scegli(colori));
+    }
+    return foglie;
+  }
+  // Una felce: il gambo curvo e le foglioline ai due lati, sempre più piccole verso la punta; ondeggia dalla base
+  function felce(x, y, l, angolo, curva, scuro, chiaro) {
+    let s = `<path d="M0 0Q${c(curva)} ${c(-l / 2)} ${c(curva * 0.6)} ${c(-l)}" fill="none" stroke="${scuro}" stroke-width="1.6"/>`;
+    for (let k = 1; k <= 12; k++) {
+      const t = k / 13.5, u = 1 - t;
+      const px = 2 * u * t * curva + t * t * curva * 0.6, py = -l * t;
+      const dir = Math.atan2(-l, 2 * u * curva - 0.8 * t * curva) * 180 / Math.PI + 90;
+      const lung = l * 0.26 * (1 - t * 0.8);
+      s += foglia(px, py, lung, lung * 0.42, dir - 62, k % 2 ? scuro : chiaro) + foglia(px, py, lung, lung * 0.42, dir + 62, k % 2 ? chiaro : scuro);
+    }
+    return `<g transform="translate(${x} ${y}) rotate(${angolo})"><g class="intro-felce" style="--t:${c(tra(4, 7))}s;--r:${c(tra(1.5, 3))}deg">${s}</g></g>`;
+  }
+  // Una stella a quattro punte di raggio s
+  const stella4 = (x, y, s) => `<path d="M${x} ${c(y - s)}Q${c(x + s * 0.15)} ${c(y - s * 0.15)} ${c(x + s)} ${y}Q${c(x + s * 0.15)} ${c(y + s * 0.15)} ${x} ${c(y + s)}Q${c(x - s * 0.15)} ${c(y + s * 0.15)} ${c(x - s)} ${y}Q${c(x - s * 0.15)} ${c(y - s * 0.15)} ${x} ${c(y - s)}Z"/>`;
+  // Una moneta d'oro distesa nell'erba
+  const moneta = (x, y, classe = '', stile = '') => `<g${classe ? ` class="${classe}"` : ''}${stile ? ` style="${stile}"` : ''}>
+    <ellipse cx="${x}" cy="${y}" rx="5.6" ry="3" fill="url(#intro-oro)" stroke="#9a6400" stroke-width="0.8"/><path d="M${x - 2.6} ${y - 0.9}q2 -1.2 4.4 -0.4" stroke="#fff3b0" stroke-width="0.9" fill="none"/></g>`;
+
+  // Una penna lunga l e larga w, attaccata in (x, y) e girata di a gradi (0 = verso il basso), con le barre scure
+  function penna(x, y, a, l, w, colore, barra, barre = [0.34, 0.58, 0.8]) {
+    const m = w / 2;
+    let s = `<path d="M${c(-m)} 0C${c(-m)} ${c(l * 0.55)} ${c(-m * 0.85)} ${c(l * 0.86)} 0 ${c(l)}C${c(m * 0.85)} ${c(l * 0.86)} ${c(m)} ${c(l * 0.55)} ${c(m)} 0Z" fill="${colore}" stroke="#3a2210" stroke-width="0.7"/>`;
+    for (const f of barre) {
+      const mezzo = f < 0.7 ? m - 1.2 : m * 0.6;
+      s += `<path d="M${c(-mezzo)} ${c(l * f + 1.2)}Q0 ${c(l * f - 1.6)} ${c(mezzo)} ${c(l * f + 1.2)}" stroke="${barra}" stroke-width="2" fill="none"/>`;
+    }
+    return `<g transform="translate(${c(x)} ${c(y)}) rotate(${c(a)})">${s}</g>`;
+  }
+  // L'ala sinistra aperta: la spalla in (0, 0), la punta verso sinistra, le penne che scendono; la destra è specchiata
+  function ala() {
+    let s = '';
+    // remiganti primarie a ventaglio, dalla punta verso il polso (le esterne stanno sotto)
+    for (const [x, y, a, l] of [[-104, -8, 76, 56], [-96, -8, 65, 62], [-87, -7, 54, 63], [-78, -6, 43, 61], [-68, -5, 33, 57], [-59, -4, 24, 53]])
+      s += penna(x, y, a, l, 11.5, '#a36d3a', '#5a3517');
+    // secondarie, dal polso verso la spalla
+    for (let i = 6; i >= 0; i--) s += penna(-6 - i * 8, -3, 8 + i * 2.2, 45 + i * 0.8, 11.5, '#b37d46', '#683f1d');
+    // copritrici: due file di penne corte e più chiare
+    for (let i = 11; i >= 0; i--) s += penna(-3 - i * 8.6, -6, 6 + i * 4.6, 22, 10, '#c4904f', '#7a4d26', [0.45]);
+    for (let i = 12; i >= 0; i--) s += penna(-1 - i * 8.4, -10, 4 + i * 4.2, 13, 9, '#d8aa6a', '#8a5a2e', [0.55]);
+    // il bordo d'attacco, più scuro
+    return s + `<path d="M8 -6C-18 -22-68 -25-117 -12C-100 -5-70 -6-46 -5C-28 -4-10 0 8 6Z" fill="#6e4422"/>
+      <path d="M2 -10C-24 -21-66 -22-108 -13" fill="none" stroke="#9a6534" stroke-width="2" stroke-linecap="round"/>`;
+  }
+  // L'ala sinistra chiusa, lungo il fianco
+  const ALA_CHIUSA = `<path d="M-31 -74C-45 -58-45 -30-33 -8C-30 -3-25 -5-23 -12C-19 -34-21 -58-31 -74Z" fill="#7a4d26" stroke="#3a2210" stroke-width="0.8"/>
+    <path d="M-40 -54q5 3 13 1M-41 -44q6 3 15 1M-40 -34q6 3 15 1M-37 -24q5 3 12 1" fill="none" stroke="#4f2f14" stroke-width="1.7" stroke-linecap="round"/>
+    <path d="M-35 -68q3 3 6 0M-38 -61q3 3 6 0M-32 -61q3 3 6 0M-36 -16l2 7M-31 -15l1 7" fill="none" stroke="#c8975a" stroke-width="1.4" stroke-linecap="round"/>`;
+
+  // Il gufo, con l'origine fra gli artigli (dove afferra il bordo del sacchetto): corpo e testa alti 124, ali di 250.
+  // Gli artigli sono a parte (ARTIGLI), perché stanno davanti al sacchetto.
+  function gufo() {
+    let barre = '';
+    for (const [y, mezzo] of [[-55, 16], [-47, 20], [-39, 21], [-31, 18], [-24, 11]])
+      for (let x = -mezzo + 3; x <= mezzo - 3; x += 6) barre += `M${x - 2.4} ${y}l2.4 1.8 2.4-1.8`;
+    const occhio = x => `<circle cx="${x}" cy="-84" r="10.6" fill="#24160a"/><circle cx="${x}" cy="-84" r="9" fill="url(#intro-iride)"/>`;
+    const pupilla = x => `<circle cx="${x}" cy="-84" r="4.6" fill="#120c06"/><circle cx="${x - 2.6}" cy="-87.4" r="2" fill="#ffffff"/><circle cx="${x + 2.4}" cy="-81.4" r="0.9" fill="#ffffff" opacity="0.8"/>`;
+    return `<g class="intro-gufo">
+      <g class="intro-ali-aperte">
+        <g transform="translate(-24 -66) rotate(28)"><g class="intro-ala">${ala()}</g></g>
+        <g transform="scale(-1 1)"><g transform="translate(-24 -66) rotate(28)"><g class="intro-ala">${ala()}</g></g></g>
       </g>
-    </g>
-    <g class="intro-monete" fill="url(#intro-oro)" stroke="#b07800" stroke-width="1">
-      <circle cx="388" cy="112" r="3.8" style="--x:-30px;--y:-24px"/><circle cx="392" cy="110" r="3.8" style="--x:30px;--y:-30px"/><circle cx="396" cy="112" r="3.8" style="--x:40px;--y:-6px"/>
+      <path d="M-22 -102C-26 -112-30 -120-34 -128C-24 -123-17 -115-12 -106ZM22 -102C26 -112 30 -120 34 -128C24 -123 17 -115 12 -106Z" fill="#5a381c"/>
+      <path d="M-24 -106-31 -122M24 -106 31 -122" stroke="#8a5a2e" stroke-width="1.4"/>
+      <path d="M-30 -76C-34 -98-18 -112 0 -112C18 -112 34 -98 30 -76C36 -58 34 -36 20 -24C12 -18-12 -18-20 -24C-34 -36-36 -58-30 -76Z" fill="url(#intro-piume)" stroke="#3a2210" stroke-width="0.9"/>
+      <path d="M-8 -109l2 5M0 -111v5M8 -109l-2 5M-29 -70q3 2 6 0M-31 -61q3 2 6 0M23 -70q3 2 6 0M25 -61q3 2 6 0" fill="none" stroke="#c49a62" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M-22 -62C-28 -44-21 -24 0 -20C21 -24 28 -44 22 -62C12 -56-12 -56-22 -62Z" fill="#e6cfa3"/>
+      <path d="${barre}" fill="none" stroke="#7a5230" stroke-width="1.3" stroke-linecap="round"/>
+      <g class="intro-ali-chiuse">${ALA_CHIUSA}<g transform="scale(-1 1)">${ALA_CHIUSA}</g></g>
+      <path d="M0 -66C-10 -60-33 -64-33 -84C-33 -100-14 -104 0 -94C14 -104 33 -100 33 -84C33 -64 10 -60 0 -66Z" fill="#c98f55" stroke="#3d2614" stroke-width="2.2"/>
+      <path d="M-15 -97C-8 -94-3 -90 0 -82C3 -90 8 -94 15 -97C8 -99.5 3 -97 0 -92.5C-3 -97-8 -99.5-15 -97Z" fill="#f3e3c3"/>
+      <path d="M-10 -68C-5 -64 5 -64 10 -68C6 -61-6 -61-10 -68Z" fill="#f6ead0"/>
+      <g class="intro-palpebra">${occhio(-14)}${occhio(14)}<g class="intro-sguardo">${pupilla(-14)}${pupilla(14)}</g></g>
+      <path d="M-4.5 -77C-4 -72-1.5 -67 0 -64.5C1.5 -67 4 -72 4.5 -77C2 -78.5-2 -78.5-4.5 -77Z" fill="#4a4540"/><path d="M-1.6 -75.5-0.4 -69" stroke="#8d8780" stroke-width="1" stroke-linecap="round"/>
+      <g class="intro-zampe"><rect x="-14" y="-30" width="9" height="27" rx="4.5" fill="#d9bd8c"/><rect x="5" y="-30" width="9" height="27" rx="4.5" fill="#d9bd8c"/>
+        <path d="M-12.5 -24h5M-12.5 -18h5M-12.5 -12h5M7.5 -24h5M7.5 -18h5M7.5 -12h5" stroke="#b39466" stroke-width="1.1"/></g>
+    </g>`;
+  }
+  const ARTIGLI = [-9.5, 9.5].map(x => `<path d="M${x} -5L${x - 5} 2M${x} -5L${x} 4M${x} -5L${x + 5} 2" stroke="#b39b6a" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M${x - 5} 2q-1.5 3 1 5.5M${x} 4q-1 3 1.5 5M${x + 5} 2q0 3 2.5 4.5" stroke="#241c16" stroke-width="1.8" fill="none" stroke-linecap="round"/>`).join('');
+  // Il sacchetto di iuta, aperto e pieno di monete, con il bordo dove il gufo lo afferra in (0, 0)
+  const SACCO = `<circle cx="0" cy="-2" r="34" fill="url(#intro-bagliore)" class="intro-bagliore"/>
+    <ellipse cx="0" cy="1" rx="17" ry="5.5" fill="#5e4a30"/>
+    <g fill="url(#intro-oro)" stroke="#9a6400" stroke-width="0.8"><ellipse cx="-8" cy="0" rx="5.6" ry="3.2"/><ellipse cx="7.5" cy="-0.5" rx="5.6" ry="3.2"/><ellipse cx="0" cy="-3.2" rx="5.6" ry="3.2"/><ellipse cx="-3" cy="2.6" rx="5.6" ry="3"/><ellipse cx="5" cy="2.8" rx="5.6" ry="3"/></g>
+    <path d="M-1.4 -4.4q1.6 -1 3.4 -0.3M-9.6 -1.2q1.6 -1 3.4 -0.3M6 -1.6q1.6 -1 3.4 -0.3" stroke="#fff3b0" stroke-width="0.9" fill="none"/>
+    <path d="M-18 1C-25 12-31 30-26 43C-21 52 21 52 26 43C31 30 25 12 18 1C12 7-12 7-18 1Z" fill="url(#intro-iuta)" stroke="#5e4a30" stroke-width="1"/>
+    <path d="M-22 18 20 14M-25 28 25 25M-25 38 24 36M-12 8l-4 40M0 8v42M12 8l4 40" stroke="#7a6444" stroke-width="0.7" opacity="0.35"/>
+    <path d="M10 8C18 18 22 34 18 47C22 46 25 44 26 43C31 30 25 12 18 1C16 4 13 6 10 8Z" fill="#8a7350" opacity="0.45"/>
+    <path d="M-19 0C-12 8 12 8 19 0C17 5 12 9.5 0 9.5C-12 9.5-17 5-19 0Z" fill="#c2ab7d" stroke="#5e4a30" stroke-width="0.8"/>
+    <path d="M-21 12C-10 17 10 17 21 12" fill="none" stroke="#6b5236" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M12 14.5q3 6 1 12M12 14.5q-2 7-6 11" fill="none" stroke="#6b5236" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="14.5" r="2.4" fill="#5a4329"/>
+    <g class="intro-luccichi" fill="#fffbe0">${stella4(-6, -6, 4)}${stella4(9, -3, 3.2)}</g>`;
+
+  function scena() {
+    seme = 20261023;
+    // il cielo e le stelle
+    const stelle = [[208, 22, 1.2], [262, 44, 1.6], [318, 18, 1.1], [356, 58, 1.4], [402, 26, 1.2], [600, 64, 1.3], [222, 96, 1.1], [300, 88, 1.3],
+      [380, 120, 1], [588, 116, 1.2], [250, 140, 1], [174, 70, 1.4], [440, 150, 1.1], [624, 130, 1]];
+    const STELLE = stelle.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}"${i % 3 === 0 ? ` class="brilla" style="animation-delay:${c((i * 0.47) % 3)}s"` : ''}/>`).join('')
+      + `<g class="brilla" style="animation-delay:1.1s">${stella4(286, 66, 6)}</g><g class="brilla" style="animation-delay:2.2s">${stella4(612, 92, 5)}</g><g class="brilla">${stella4(196, 120, 4.5)}</g>`;
+    // gli alberi lontani, sfumati nella notte
+    let lontani = '';
+    for (const [x, h] of [[96, 182], [168, 150], [250, 176], [392, 160], [446, 190], [596, 168]])
+      lontani += `<path d="M${x - 7} 300C${x - 6} 240 ${x - 4} ${300 - h * 0.6} ${x - 2} ${300 - h}L${x + 3} ${300 - h}C${x + 5} ${300 - h * 0.6} ${x + 7} 240 ${x + 8} 300Z" fill="#0d303c"/>`
+        + `<ellipse cx="${x}" cy="${300 - h + 4}" rx="30" ry="24" fill="#0d3540"/>` + ciuffo(x, 300 - h, 40, 60, ['#0f3a45', '#12434d', '#0c3340', '#14485a'], 1.25);
+    // i cespugli a metà
+    const CESPUGLI = ['#164a44', '#1b5a4f', '#226652', '#13403c'];
+    const cespugli = ciuffo(60, 268, 50, 60, CESPUGLI, 1.3) + ciuffo(170, 278, 44, 44, CESPUGLI, 1.25) + ciuffo(420, 278, 40, 40, CESPUGLI, 1.25) + ciuffo(480, 262, 36, 34, CESPUGLI, 1.2);
+    // i due alberi che fanno da cornice, con le foglie in alto
+    const FOGLIE = ['#123f40', '#17504a', '#1e6152', '#0f3537', '#27705a'];
+    const cornice = `<path d="M-8 320C6 262 26 214 20 160C15 112 26 70 56 34L68 42C44 74 36 112 42 158C49 214 40 266 36 320Z" fill="#0b2a31"/>
+      <path d="M64 40C42 74 34 112 40 158C47 212 38 266 34 320" fill="none" stroke="#1c4c52" stroke-width="2"/>
+      <path d="M50 44C86 26 130 18 176 20L175 26C132 26 92 34 58 54Z" fill="#0b2a31"/>
+      <path d="M648 320C630 268 618 220 624 168C628 120 618 74 594 34L606 26C634 62 646 110 642 160C640 214 652 268 660 320Z" fill="#0b2a31"/>
+      <path d="M598 32C622 66 632 112 628 162C624 214 634 266 646 320" fill="none" stroke="#1c4c52" stroke-width="2"/>`
+      + ciuffo(20, 16, 50, 80, FOGLIE, 1.4) + ciuffo(98, 10, 40, 56, FOGLIE, 1.35) + ciuffo(158, 16, 30, 34, FOGLIE, 1.25) + ciuffo(4, 92, 30, 34, FOGLIE, 1.3)
+      + ciuffo(626, 14, 48, 70, FOGLIE, 1.4) + ciuffo(568, 4, 34, 40, FOGLIE, 1.3) + ciuffo(642, 100, 26, 28, FOGLIE, 1.3);
+    // l'erba sul bordo della radura
+    let erba = '';
+    for (let i = 0; i < 46; i++) { const x = tra(150, 500); erba += foglia(x, 289 + Math.abs(x - 330) * 0.04 + tra(0, 4), tra(6, 13), tra(2, 3.2), tra(-25, 25), scegli(['#3f8a50', '#2f7444', '#4f9d5a'])); }
+    // il ceppo, con gli anelli, le schegge dietro e il muschio
+    const ceppo = `<path d="M560 214 566 188 574 206 584 178 592 202 604 192 607 216Z" fill="#45352f"/>
+      <path d="M486 300C492 286 494 262 492 240C491 228 492 220 492 216H608C607 226 606 238 607 252C609 272 616 290 628 302L612 304C600 296 590 294 580 300L520 302C508 296 498 298 486 300Z" fill="#3b2e2b"/>
+      <path d="M502 226C500 250 503 272 498 294M522 230C520 256 524 280 520 300M548 232C548 258 546 282 550 300M574 230C576 254 572 278 578 298M596 226C596 248 600 270 606 290" fill="none" stroke="#2a201e" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M494 236C496 258 494 276 490 296" fill="none" stroke="#5a4740" stroke-width="2"/>
+      <ellipse cx="550" cy="216" rx="58" ry="11" fill="#7a5f4c"/>
+      <ellipse cx="550" cy="216" rx="45" ry="8.4" fill="none" stroke="#5e4738" stroke-width="1.2"/><ellipse cx="550" cy="216" rx="31" ry="5.8" fill="none" stroke="#5e4738" stroke-width="1.2"/><ellipse cx="550" cy="216" rx="17" ry="3.2" fill="none" stroke="#5e4738" stroke-width="1.2"/>
+      <path d="M550 216 572 222" stroke="#4a372c" stroke-width="1.4"/>
+      <path d="M492 218q6-8 15-5q6-7 15-3q2 5-6 9q-12 4-24-1ZM596 222q6-5 12-2q2 5-4 8q-6 1-8-6Z" fill="#3f8f4f"/>
+      <path d="M486 300q8-10 20-6q8-6 16 0q-4 6-18 8ZM590 298q10-8 22-2q10-2 16 6q-14 4-38-4Z" fill="#2f7444"/>`;
+    // tre funghi che brillano ai piedi del ceppo
+    const funghi = [[478, 298, 1], [470, 302, 0.75], [488, 303, 0.6]].map(([x, y, s]) => `<g transform="translate(${x} ${y}) scale(${s})">
+      <circle cx="0" cy="-10" r="14" fill="url(#intro-fungo)"/><path d="M-2 0V-8H2V0Z" fill="#efe2c8"/><path d="M-8 -8Q0 -18 8 -8Z" fill="#ffb56b"/><circle cx="-2.5" cy="-11.5" r="1.2" fill="#fff1d6"/><circle cx="3" cy="-10.5" r="0.9" fill="#fff1d6"/></g>`).join('');
+    // le lucciole (alcune dietro, alcune davanti al gufo)
+    const lucciola = ([x, y, r, dx, dy, t, ritardo]) => `<circle class="intro-lucciola" cx="${x}" cy="${y}" r="${r}" fill="url(#intro-lucciola)" style="--x:${dx}px;--y:${dy}px;--t:${t}s;--d:-${ritardo}s"/>`;
+    const LUCCIOLE_DIETRO = [[90, 180, 7, 14, -10, 7, 1], [210, 150, 6, -12, 8, 9, 3], [300, 120, 6, 10, 12, 8, 5], [380, 170, 7, -16, -6, 10, 2], [460, 140, 6, 12, -12, 7.5, 4],
+      [150, 232, 7, 10, 8, 8.5, 6], [26, 238, 6, 12, -8, 9, 2.5], [612, 150, 6, -10, 10, 8, 1.5], [252, 212, 5, 8, -10, 6.5, 3.5]].map(lucciola).join('');
+    const LUCCIOLE_DAVANTI = [[120, 272, 8, -12, -10, 9, 0.5], [410, 250, 7, 14, -8, 8, 4.5], [470, 230, 6, -10, -12, 7, 2], [610, 246, 8, -14, -6, 9.5, 3], [262, 262, 6, 10, -10, 7.5, 6]].map(lucciola).join('');
+    // le felci davanti, ai due angoli
+    const felci = felce(14, 324, 104, 42, -14, '#1f6b4f', '#2c8a5e') + felce(-4, 322, 90, 62, -10, '#1a5c45', '#277a55') + felce(44, 326, 86, 18, 10, '#1f6b4f', '#2c8a5e')
+      + felce(86, 328, 70, 34, 12, '#1a5c45', '#2c8a5e') + felce(30, 330, 64, -8, -8, '#1f6b4f', '#277a55')
+      + felce(626, 324, 92, -40, 14, '#1f6b4f', '#2c8a5e') + felce(650, 322, 84, -62, 10, '#1a5c45', '#277a55') + felce(596, 330, 66, -16, -10, '#1f6b4f', '#2c8a5e');
+    // le monete che saltano dal sacchetto: disegnate dove cadono, il volo le porta lì dal bordo del sacchetto (330, 238)
+    const cadute = [[280, 299, 30, -92], [360, 303, -6, -96], [398, 297, -26, -88], [298, 309, 18, -102]]
+      .map(([x, y, px, py], i) => moneta(x, y, 'intro-moneta', `--x:${330 - x}px;--y:${238 - y}px;--px:${px}px;--py:${py}px;--g:${i % 2 ? -1 : 1}`)).join('');
+
+    return `<svg class="intro-disegno" viewBox="0 0 640 320" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="intro-cielo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06142b"/><stop offset="0.55" stop-color="#0c2d4f"/><stop offset="1" stop-color="#16505f"/></linearGradient>
+    <linearGradient id="intro-nebbia" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb7c4" stop-opacity="0"/><stop offset="0.55" stop-color="#6fb7c4" stop-opacity="0.16"/><stop offset="1" stop-color="#6fb7c4" stop-opacity="0"/></linearGradient>
+    <radialGradient id="intro-alone"><stop offset="0.3" stop-color="#ffe9a0" stop-opacity="0.38"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="intro-luna" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6c4"/><stop offset="1" stop-color="#ffc53d"/></linearGradient>
+    <radialGradient id="intro-lucciola"><stop offset="0" stop-color="#fbffc4"/><stop offset="0.22" stop-color="#e8ff7a" stop-opacity="0.9"/><stop offset="1" stop-color="#c8ff5a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="intro-fungo"><stop offset="0" stop-color="#ffc27a" stop-opacity="0.5"/><stop offset="1" stop-color="#ffc27a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="intro-bagliore"><stop offset="0.15" stop-color="#ffd84a" stop-opacity="0.55"/><stop offset="1" stop-color="#ffd84a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="intro-oro" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#fff0a0"/><stop offset="0.55" stop-color="#f7b500"/><stop offset="1" stop-color="#c98200"/></radialGradient>
+    <radialGradient id="intro-iride" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fff2a0"/><stop offset="0.6" stop-color="#ffc21a"/><stop offset="1" stop-color="#e07b00"/></radialGradient>
+    <linearGradient id="intro-piume" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6b4323"/><stop offset="0.5" stop-color="#9c6a3a"/><stop offset="1" stop-color="#6b4323"/></linearGradient>
+    <linearGradient id="intro-iuta" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2d0a4"/><stop offset="1" stop-color="#a88d62"/></linearGradient>
+  </defs>
+  <rect width="640" height="320" fill="url(#intro-cielo)"/>
+  <g class="intro-stelle" fill="#d6ecff">${STELLE}</g>
+  <circle cx="500" cy="72" r="120" fill="url(#intro-alone)"/>
+  <path d="M495.7 26.2A46 46 0 1 0 541.6 91.7A40 40 0 0 1 495.7 26.2Z" fill="url(#intro-luna)"/>
+  <g fill="#e9a92c" opacity="0.35"><circle cx="472" cy="78" r="5"/><circle cx="486" cy="100" r="3.4"/><circle cx="466" cy="56" r="2.6"/></g>
+  <g class="intro-nuvole" fill="#1d4a6e" opacity="0.6">
+    <path d="M410 128c10-14 34-14 42-2c12-8 32-2 32 12c10 2 12 14 0 16h-78c-12-2-10-20 4-26Z"/>
+    <path d="M196 158c8-10 26-10 32-1c9-6 24-1 24 9c8 2 9 11 0 12h-59c-9-2-8-15 3-20Z" opacity="0.7"/>
+  </g>
+  ${lontani}
+  <rect y="170" width="640" height="130" fill="url(#intro-nebbia)"/>
+  <path d="M0 300C90 280 200 282 300 286C400 290 470 276 540 268C590 262 620 268 640 272V320H0Z" fill="#102e2a"/>
+  ${cespugli}
+  ${cornice}
+  ${LUCCIOLE_DIETRO}
+  <path d="M120 320C170 300 240 290 330 290C420 290 470 296 520 308L540 320Z" fill="#1d4a35"/>
+  <path d="M150 306C200 294 260 289 330 289C410 289 460 294 505 304" fill="none" stroke="#3f8a50" stroke-width="2.5" opacity="0.8"/>
+  ${erba}
+  <ellipse class="intro-ombra-terra" cx="330" cy="292" rx="24" ry="4" fill="#031410" opacity="0.5"/>
+  ${moneta(288, 297)}${moneta(374, 300)}
+  ${ceppo}
+  ${funghi}
+  <ellipse class="intro-ombra-ceppo" cx="550" cy="219" rx="26" ry="4.5" fill="#1e1410" opacity="0.55"/>
+  <g transform="translate(550 169)">
+    <g class="intro-insieme">
+      <g class="intro-volo">${gufo()}</g>
+      <g class="intro-sacco">${SACCO}</g>
+      <g class="intro-volo"><g class="intro-artigli">${ARTIGLI}</g></g>
     </g>
   </g>
-  <g class="intro-scintille" fill="#fff3bf">${scintilla(356, 128, 7)}${scintilla(432, 116, 6)}${scintilla(424, 148, 5)}</g>
+  <g class="intro-monete">${cadute}</g>
+  ${felci}
+  ${LUCCIOLE_DAVANTI}
+  <g class="intro-scintille" fill="#fff3bf">${stella4(500, 196, 7)}${stella4(604, 178, 6)}${stella4(600, 224, 5)}</g>
 </svg>`;
+  }
 
-  let vista = false;   // la prima volta in questa apertura della pagina la scena si anima, poi resta ferma
+  let disegno = null;   // la scena si costruisce una volta sola
+  let vista = false;    // la prima volta in questa apertura della pagina si anima, poi resta ferma alla fine
   function crea() {
     const intro = document.createElement('div');
     intro.className = 'intro' + (vista ? '' : ' in-volo');
     intro.title = 'Clic per rivedere il volo del gufo';
-    intro.innerHTML = `<div class="intro-scena">${SCENA}</div>
-      <div class="intro-testo"><p class="intro-nome">Occhio alla Rata</p><p class="intro-motto">Tiene d'occhio le rate del tuo mutuo o finanziamento, al centesimo.</p></div>`;
+    intro.innerHTML = `<div class="intro-scena">${disegno || (disegno = scena())}</div>
+      <div class="intro-testo"><p class="intro-nome">Occhio alla <span>Rata</span></p><p class="intro-motto">Tiene d'occhio le rate del tuo mutuo o finanziamento, al centesimo.</p></div>`;
     intro.addEventListener('click', () => { intro.classList.remove('in-volo'); void intro.offsetWidth; intro.classList.add('in-volo'); });
     vista = true;
     return intro;
