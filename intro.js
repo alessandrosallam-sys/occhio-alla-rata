@@ -1,4 +1,9 @@
-// La scena della prima apertura: di notte, nel bosco, il gufo plana dall'alto, agguanta il sacchetto delle monete
+// La prima apertura, in due versioni a scelta nelle impostazioni (chiave «intro» nel browser; di base «linea»):
+//  - «Linea» (creaLinea, in fondo): niente sfondo, un gufo a tratto nel colore del tema che si disegna da solo, la
+//    scritta OCCHIO ALLA RATA che sorge lettera per lettera, una moneta (la rata) che rotola lungo la riga di base,
+//    il gufo che la segue con gli occhi e la agguanta. Dura due secondi e mezzo.
+//  - «Bosco» (creaBosco): la scena illustrata descritta qui sotto.
+// La scena del bosco: di notte, nel bosco, il gufo plana dall'alto, agguanta il sacchetto delle monete
 // (qualcuna salta fuori e cade nell'erba), lo porta in volo sul ceppo davanti alla luna e ci si posa; poi compare il
 // nome. Sta in cima alla prima pagina della guida quando si parte da zero (configura.js), con sotto la presentazione.
 // È tutta SVG e CSS (stile.css, «La scena della prima apertura»): il volo sta sotto la classe «in-volo», che c'è solo
@@ -74,44 +79,74 @@
       <path d="M8 -6C-18 -22-68 -25-117 -12C-100 -5-70 -6-46 -5C-28 -4-10 0 8 6Z" fill="#5a3619"/>
       <path d="M2 -10C-24 -21-66 -22-108 -13" fill="none" stroke="#ffe6b0" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>`;
   }
-  // L'ala sinistra chiusa, lungo il fianco
-  const ALA_CHIUSA = `<path d="M-31 -74C-45 -58-45 -30-33 -8C-30 -3-25 -5-23 -12C-19 -34-21 -58-31 -74Z" fill="url(#intro-ala-chiusa)" stroke="#2e1a0b" stroke-width="0.8"/>
-    <path d="M-40 -54q5 3 13 1M-41 -44q6 3 15 1M-40 -34q6 3 15 1M-37 -24q5 3 12 1" fill="none" stroke="#4f2f14" stroke-width="1.7" stroke-linecap="round"/>
-    <path d="M-35 -68q3 3 6 0M-38 -61q3 3 6 0M-32 -61q3 3 6 0M-36 -16l2 7M-31 -15l1 7" fill="none" stroke="#d9a86a" stroke-width="1.4" stroke-linecap="round"/>`;
-
-  // Il gufo, con l'origine fra gli artigli (dove afferra il bordo del sacchetto): corpo e testa alti 124, ali di 250.
-  // Gli artigli sono a parte (ARTIGLI), perché stanno davanti al sacchetto. Il corpo è sfumato con la luce che
-  // arriva da destra in alto (la luna) e ha un filo di luce sul profilo destro.
-  function gufo() {
-    let barre = '';
-    for (const [y, mezzo] of [[-55, 16], [-47, 20], [-39, 21], [-31, 18], [-24, 11]])
-      for (let x = -mezzo + 3; x <= mezzo - 3; x += 6) barre += `M${x - 2.4} ${y}l2.4 1.8 2.4-1.8`;
-    const occhio = x => `<circle cx="${x}" cy="-84" r="10.6" fill="#24160a"/><circle cx="${x}" cy="-84" r="9" fill="url(#intro-iride)"/>`;
-    const pupilla = x => `<circle cx="${x}" cy="-84" r="4.6" fill="#120c06"/><circle cx="${x - 2.6}" cy="-87.4" r="2" fill="#ffffff"/><circle cx="${x + 2.4}" cy="-81.4" r="0.9" fill="#ffffff" opacity="0.8"/>`;
-    return `<g class="intro-gufo" filter="url(#intro-ombra-gufo)">
-      <g class="intro-ali-aperte">
-        <g transform="translate(-24 -66) rotate(28)"><g class="intro-ala">${ala()}</g></g>
-        <g transform="scale(-1 1)"><g transform="translate(-24 -66) rotate(28)"><g class="intro-ala">${ala()}</g></g></g>
-      </g>
-      <path d="M-22 -102C-26 -112-30 -120-34 -128C-24 -123-17 -115-12 -106ZM22 -102C26 -112 30 -120 34 -128C24 -123 17 -115 12 -106Z" fill="#4a2c14"/>
-      <path d="M-24 -106-31 -122M24 -106 31 -122" stroke="#9a6534" stroke-width="1.4"/>
-      <path d="M-30 -76C-34 -98-18 -112 0 -112C18 -112 34 -98 30 -76C36 -58 34 -36 20 -24C12 -18-12 -18-20 -24C-34 -36-36 -58-30 -76Z" fill="url(#intro-corpo)" stroke="#2e1a0b" stroke-width="0.9"/>
-      <path d="M-8 -109l2 5M0 -111v5M8 -109l-2 5M-29 -70q3 2 6 0M-31 -61q3 2 6 0M23 -70q3 2 6 0M25 -61q3 2 6 0" fill="none" stroke="#d6ad76" stroke-width="1.3" stroke-linecap="round"/>
-      <path d="M-22 -62C-28 -44-21 -24 0 -20C21 -24 28 -44 22 -62C12 -56-12 -56-22 -62Z" fill="url(#intro-petto)"/>
-      <path d="${barre}" fill="none" stroke="#7a5230" stroke-width="1.3" stroke-linecap="round"/>
-      <path d="M22 -100C32 -88 36 -62 24 -32" fill="none" stroke="#ffe6b0" stroke-opacity="0.5" stroke-width="2.2" stroke-linecap="round"/>
-      <g class="intro-ali-chiuse">${ALA_CHIUSA}<g transform="scale(-1 1)">${ALA_CHIUSA}</g></g>
-      <path d="M0 -66C-10 -60-33 -64-33 -84C-33 -100-14 -104 0 -94C14 -104 33 -100 33 -84C33 -64 10 -60 0 -66Z" fill="url(#intro-viso)" stroke="#3d2614" stroke-width="2.2"/>
-      <path d="M-15 -97C-8 -94-3 -90 0 -82C3 -90 8 -94 15 -97C8 -99.5 3 -97 0 -92.5C-3 -97-8 -99.5-15 -97Z" fill="#f3e3c3"/>
-      <path d="M-10 -68C-5 -64 5 -64 10 -68C6 -61-6 -61-10 -68Z" fill="#f6ead0"/>
-      <g class="intro-palpebra">${occhio(-14)}${occhio(14)}<g class="intro-sguardo">${pupilla(-14)}${pupilla(14)}</g></g>
-      <path d="M-28 -99C-20 -97-12 -94-4 -90M28 -99C20 -97 12 -94 4 -90" fill="none" stroke="#2e1a0b" stroke-width="3.4" stroke-linecap="round"/>
-      <path d="M-27 -101C-19 -99-12 -96-6 -93M27 -101C19 -99 12 -96 6 -93" fill="none" stroke="#9a6534" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M-4.5 -77C-4 -72-1.5 -67 0 -64.5C1.5 -67 4 -72 4.5 -77C2 -78.5-2 -78.5-4.5 -77Z" fill="#4a4540"/><path d="M-1.6 -75.5-0.4 -69" stroke="#8d8780" stroke-width="1" stroke-linecap="round"/>
-      <g class="intro-zampe"><rect x="-14" y="-30" width="9" height="27" rx="4.5" fill="url(#intro-zampa)"/><rect x="5" y="-30" width="9" height="27" rx="4.5" fill="url(#intro-zampa)"/>
-        <path d="M-12.5 -24h5M-12.5 -18h5M-12.5 -12h5M7.5 -24h5M7.5 -18h5M7.5 -12h5" stroke="#b39466" stroke-width="1.1"/></g>
+  // File di scaglie (le piume del petto): archetti sfalsati fra x0 e x1, dalla riga y0 in giù
+  function scaglie(x0, x1, y0, righe, passo = 6, colore = '#7a5230') {
+    let d = '';
+    for (let r = 0; r < righe; r++) for (let x = x0 + (r % 2) * passo / 2; x + passo <= x1; x += passo) d += `M${c(x)} ${c(y0 + r * 5)}q${passo / 2} 4.5 ${passo} 0`;
+    return `<path d="${d}" fill="none" stroke="${colore}" stroke-width="1.1" stroke-linecap="round"/>`;
+  }
+  // La coda a ventaglio: n penne dal punto (x, y), fra gli angoli a0 e a1 (gradi, 0 = verso il basso)
+  function coda(x, y, a0, a1, n, l) {
+    let s = '';
+    for (let k = 0; k < n; k++) s += penna(x, y, a0 + (a1 - a0) * k / (n - 1), l - Math.abs(k - (n - 1) / 2) * 3, 10, 'intro-secondaria', '#5a3415', [0.4, 0.7]);
+    return s;
+  }
+  // La testa, vista di tre quarti (girata verso destra), con il centro in (cx, cy): ciuffi, disco facciale, occhi
+  // gialli con le sopracciglia severe, becco. Gli occhi sono in .intro-palpebra (sbattono) e .intro-sguardo (si muovono).
+  function testa(cx, cy) {
+    const occhio = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${c(r + 1.8)}" fill="#24160a"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#intro-iride)"/>`;
+    const pupilla = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${c(r * 0.5)}" fill="#120c06"/><circle cx="${c(x - r * 0.3)}" cy="${c(y - r * 0.36)}" r="${c(r * 0.22)}" fill="#ffffff"/><circle cx="${c(x + r * 0.26)}" cy="${c(y + r * 0.28)}" r="${c(r * 0.1)}" fill="#ffffff" opacity="0.8"/>`;
+    return `<g transform="translate(${cx} ${cy})">
+      <path d="M-20 -18C-24 -28-28 -36-34 -46C-24 -40-16 -32-10 -22ZM22 -18C26 -28 30 -36 34 -46C26 -40 18 -32 14 -22Z" fill="#4a2c14"/>
+      <path d="M-22 -22-31 -40M22 -22 30 -40" stroke="#9a6534" stroke-width="1.4"/>
+      <circle cx="0" cy="0" r="27" fill="url(#intro-corpo)" stroke="#2e1a0b" stroke-width="0.9"/>
+      <path d="M-27 -2C-26 -16-14 -24-2 -22C8 -26 22 -22 26 -8C30 6 22 20 4 20C-14 22-28 12-27 -2Z" fill="url(#intro-viso)" stroke="#3d2614" stroke-width="2"/>
+      <path d="M-16 -16C-10 -14-6 -10-3 -4C0 -10 6 -14 14 -16C8 -18 3 -16-3 -12C-8 -16-12 -18-16 -16Z" fill="#f3e3c3"/>
+      <path d="M-9 14C-4 18 4 18 9 14C6 20-6 20-9 14Z" fill="#f6ead0"/>
+      <g class="intro-palpebra">${occhio(-9, -3, 8)}${occhio(13, -1, 9.5)}<g class="intro-sguardo">${pupilla(-9, -3, 8)}${pupilla(13, -1, 9.5)}</g></g>
+      <path d="M-24 -18C-16 -16-10 -13-3 -9M28 -17C20 -15 13 -12 7 -9" fill="none" stroke="#2e1a0b" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M-23 -20C-15 -18-10 -15-5 -12M27 -19C19 -17 13 -14 9 -12" fill="none" stroke="#9a6534" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M-1 1C0 6 3 10 6 13C8 9 9 4 8 -1C5 -3 2 -3-1 1Z" fill="#4a4540"/><path d="M3 2 5 9" stroke="#8d8780" stroke-width="1" stroke-linecap="round"/>
+      <path d="M18 -24C24 -20 28 -12 30 -2" fill="none" stroke="#ffe6b0" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/>
     </g>`;
   }
+  // Il gufo posato (.intro-ali-chiuse): dritto, di tre quarti, le ali ripiegate lungo i fianchi, la coda dietro.
+  // L'origine è fra gli artigli; la testa è un po' a destra, perché è girata verso chi guarda.
+  function gufoPosato() {
+    return `<g class="intro-ali-chiuse">
+      ${coda(-14, -34, 200, 236, 5, 30)}
+      <path d="M-32 -70C-40 -44-32 -22-4 -14C24 -16 38 -36 32 -66C26 -92-24 -94-32 -70Z" fill="url(#intro-corpo)" stroke="#2e1a0b" stroke-width="0.9"/>
+      <path d="M-20 -62C-24 -44-18 -26 0 -20C18 -26 24 -44 20 -62C12 -56-10 -56-20 -62Z" fill="url(#intro-petto)"/>
+      ${scaglie(-17, 19, -58, 7)}
+      <path d="M-30 -78C-46 -62-44 -36-30 -16C-24 -22-20 -42-22 -66Z" fill="url(#intro-ala-chiusa)" stroke="#2e1a0b" stroke-width="0.8"/>
+      <path d="M-40 -58q6 3 14 0M-41 -48q6 3 16 0M-40 -38q6 3 15 0M-36 -28q5 3 12 0" fill="none" stroke="#4f2f14" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M-37 -70q3 3 6 0M-40 -64q3 3 6 0M-33 -64q3 3 6 0" fill="none" stroke="#d9a86a" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M30 -76C40 -62 40 -40 32 -22C28 -34 26 -54 24 -70Z" fill="url(#intro-ala-chiusa)" stroke="#2e1a0b" stroke-width="0.8"/>
+      <path d="M28 -58q4 2 8 0M29 -48q4 2 9 0M29 -38q4 2 8 0" fill="none" stroke="#4f2f14" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M30 -80C38 -66 40 -48 36 -30" fill="none" stroke="#ffe6b0" stroke-opacity="0.5" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="intro-zampe"><path d="M-11 -24 -9 -4M7 -24 8 -4" stroke="url(#intro-zampa)" stroke-width="9" stroke-linecap="round"/><path d="M-13 -18h5M-13 -12h5M5 -18h5M5 -12h5" stroke="#b39466" stroke-width="1.1"/></g>
+      ${testa(4, -96)}
+    </g>`;
+  }
+  // Il gufo in volo (.intro-ali-aperte): di tre quarti, il corpo orizzontale con la testa a destra girata verso il
+  // sacchetto, l'ala lontana alzata in alto a destra, quella vicina distesa a sinistra, la coda a ventaglio dietro,
+  // le zampe tese in avanti verso gli artigli (origine).
+  function gufoInVolo() {
+    return `<g class="intro-ali-aperte">
+      <g transform="translate(-22 -92) scale(-1 1) rotate(58)"><g class="intro-ala">${ala()}</g></g>
+      ${coda(-78, -58, 86, 128, 6, 40)}
+      <path d="M-86 -66C-80 -94-40 -100 6 -92C30 -88 34 -62 10 -46C-20 -36-70 -40-86 -66Z" fill="url(#intro-corpo)" stroke="#2e1a0b" stroke-width="0.9"/>
+      <path d="M-70 -56C-50 -40-10 -38 12 -50C8 -42-6 -36-30 -36C-54 -38-66 -44-70 -56Z" fill="url(#intro-petto)"/>
+      ${scaglie(-62, 10, -58, 4)}
+      <path d="M-80 -74C-50 -90-10 -94 20 -84" fill="none" stroke="#ffe6b0" stroke-opacity="0.45" stroke-width="2.2" stroke-linecap="round"/>
+      <g transform="translate(-40 -70) rotate(-14)"><g class="intro-ala">${ala()}</g></g>
+      <g class="intro-zampe"><path d="M-18 -46 -10 -6M-4 -44 8 -6" stroke="url(#intro-zampa)" stroke-width="9" stroke-linecap="round"/><path d="M-17 -34l5 1M-15 -24l5 1M-1 -34l5 1M1 -24l5 1" stroke="#b39466" stroke-width="1.1"/></g>
+      ${testa(6, -78)}
+    </g>`;
+  }
+  // Il gufo: le due pose nello stesso gruppo (stile.css mostra l'una o l'altra), con l'ombra portata. Gli artigli
+  // sono a parte (ARTIGLI), perché stanno davanti al sacchetto.
+  const gufo = () => `<g class="intro-gufo" filter="url(#intro-ombra-gufo)">${gufoPosato()}${gufoInVolo()}</g>`;
   const ARTIGLI = [-9.5, 9.5].map(x => `<path d="M${x} -5L${x - 5} 2M${x} -5L${x} 4M${x} -5L${x + 5} 2" stroke="#b39b6a" stroke-width="3.2" stroke-linecap="round"/>
     <path d="M${x - 5} 2q-1.5 3 1 5.5M${x} 4q-1 3 1.5 5M${x + 5} 2q0 3 2.5 4.5" stroke="#241c16" stroke-width="1.8" fill="none" stroke-linecap="round"/>`).join('');
   // Il sacchetto di iuta, aperto e pieno di monete, con il bordo dove il gufo lo afferra in (0, 0): le monete fanno
@@ -295,13 +330,14 @@
   let disegno = null;   // la scena si costruisce una volta sola
   let vista = false;    // la prima volta in questa apertura della pagina si anima, poi resta ferma alla fine
   const movimento = () => !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function crea() {
+  const riparti = (el, classe) => { el.classList.remove(classe); void el.offsetWidth; el.classList.add(classe); };
+  function creaBosco() {
     const intro = document.createElement('div');
     intro.className = 'intro' + (vista ? '' : ' in-volo');
     intro.title = 'Clic per rivedere il volo del gufo';
     intro.innerHTML = `<div class="intro-scena">${disegno || (disegno = scena())}</div>
       <div class="intro-testo"><p class="intro-nome">Occhio alla <span>Rata</span></p><p class="intro-motto">Tiene d'occhio le rate del tuo mutuo o finanziamento, al centesimo.</p></div>`;
-    intro.addEventListener('click', () => { intro.classList.remove('in-volo'); void intro.offsetWidth; intro.classList.add('in-volo'); });
+    intro.addEventListener('click', () => riparti(intro, 'in-volo'));
     // Parallasse: i piani del bosco seguono il mouse (--mx e --my da -1 a 1; stile.css li sposta in misura diversa)
     intro.addEventListener('pointermove', evento => {
       if (!movimento() || evento.pointerType === 'touch') return;
@@ -313,5 +349,65 @@
     vista = true;
     return intro;
   }
-  window.Intro = { crea };
+
+  // La versione «Linea». Il gufo è un SVG a tratto (classe linea-tratto: si disegna con stroke-dashoffset, pathLength
+  // 1), i pieni compaiono dopo; la scritta è HTML, una lettera per span con il suo ritardo (--i); la moneta è uno
+  // span assoluto sulla riga di base che parte dal bordo destro (--corsa, misurata con un ResizeObserver) e si ferma
+  // fra le zampe (--x-moneta). Tutti i tempi stanno in stile.css («La prima apertura, versione Linea»).
+  const LINEA_GUFO = `<svg class="linea-gufo" viewBox="0 0 160 172" aria-hidden="true" focusable="false">
+    <g class="linea-corpo" fill="none" stroke="var(--accento)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path class="linea-pieno linea-sagoma" d="M40 60L28 28L58 48C70 42 90 42 102 48L132 28L120 60C134 80 134 110 122 132C110 148 50 148 38 132C26 110 26 80 40 60Z" fill="var(--accento-tenue)" stroke="none"/>
+      <path class="linea-tratto" pathLength="1" style="--d:0" d="M40 60L28 28L58 48C70 42 90 42 102 48L132 28L120 60C134 80 134 110 122 132C110 148 50 148 38 132C26 110 26 80 40 60Z"/>
+      <path class="linea-tratto" pathLength="1" style="--d:0.45" d="M46 108Q62 122 56 138M114 108Q98 122 104 138"/>
+      <path class="linea-tratto" pathLength="1" style="--d:0.6" d="M70 118l10 6 10-6M74 130l6 4 6-4" stroke-width="3.5"/>
+      <g class="linea-occhi">
+        <circle class="linea-pieno" cx="60" cy="84" r="17" fill="var(--superficie)" stroke="none"/><circle class="linea-pieno" cx="100" cy="84" r="17" fill="var(--superficie)" stroke="none"/>
+        <circle class="linea-tratto" pathLength="1" style="--d:0.3" cx="60" cy="84" r="17"/><circle class="linea-tratto" pathLength="1" style="--d:0.38" cx="100" cy="84" r="17"/>
+        <g class="linea-sguardo linea-pieno" fill="var(--inchiostro)" stroke="none"><circle cx="60" cy="84" r="7"/><circle cx="100" cy="84" r="7"/><circle cx="57.5" cy="81.5" r="2.2" fill="var(--superficie)"/><circle cx="97.5" cy="81.5" r="2.2" fill="var(--superficie)"/></g>
+      </g>
+      <path class="linea-pieno" d="M80 106L72 94H88Z" fill="var(--accento)" stroke="none"/>
+      <g class="linea-zampe linea-tratto" pathLength="1" style="--d:0.7" stroke-width="4"><path d="M62 148l-7 12M62 148v14M62 148l7 12M98 148l-7 12M98 148v14M98 148l7 12"/></g>
+    </g>
+  </svg>`;
+  const lettere = (parola, da) => [...parola].map((l, k) => `<span class="linea-lettera" style="--i:${da + k}">${l}</span>`).join('');
+  function creaLinea() {
+    const intro = document.createElement('div');
+    intro.className = 'intro-linea' + (vista ? '' : ' in-volo');
+    intro.title = 'Clic per rivedere l\'animazione';
+    intro.innerHTML = `<span class="linea-moneta" aria-hidden="true">€</span>${LINEA_GUFO}
+      <div class="linea-testo">
+        <p class="linea-titolo" aria-label="Occhio alla Rata"><span class="linea-parola" aria-hidden="true">${lettere('OCCHIO', 0)}</span> <span class="linea-parola" aria-hidden="true">${lettere('ALLA', 6)}</span><br><span class="linea-parola linea-rata" aria-hidden="true">${lettere('RATA', 10)}</span></p>
+        <p class="linea-motto">Tiene d'occhio le rate del tuo mutuo o finanziamento, al centesimo.</p>
+      </div>`;
+    // Dove si ferma la moneta (fra le zampe) e da dove parte (il bordo destro): si rimisura a ogni cambio di larghezza
+    const misura = () => {
+      const r = intro.getBoundingClientRect(), g = intro.querySelector('.linea-gufo').getBoundingClientRect();
+      const x = g.left - r.left + g.width * 0.5 - 14;
+      intro.style.setProperty('--x-moneta', x.toFixed(1) + 'px');
+      intro.style.setProperty('--corsa', Math.max(0, r.width - x - 28).toFixed(1) + 'px');
+    };
+    new ResizeObserver(misura).observe(intro);
+    intro.addEventListener('click', () => riparti(intro, 'in-volo'));
+    vista = true;
+    return intro;
+  }
+
+  // La scelta fra le due versioni, ricordata nel browser
+  const VERSIONI = [
+    { codice: 'linea', nome: 'Linea', descrizione: 'Un gufo a tratto che si disegna da solo e agguanta la rata che rotola sotto la scritta. Veloce, nei colori del tema.' },
+    { codice: 'bosco', nome: 'Bosco', descrizione: 'Un\'illustrazione: di notte nel bosco il gufo plana, agguanta il sacchetto delle monete e lo porta sul ceppo.' },
+  ];
+  const leggi = () => { try { return localStorage.getItem('intro'); } catch { return null; } };
+  let scelta = VERSIONI.some(v => v.codice === leggi()) ? leggi() : 'linea';
+  const crea = () => scelta === 'bosco' ? creaBosco() : creaLinea();
+  // Cambia versione e, se la prima apertura è a schermo, la ridisegna (animata)
+  function scegliVersione(codice) {
+    if (!VERSIONI.some(v => v.codice === codice)) return;
+    scelta = codice;
+    try { localStorage.setItem('intro', codice); } catch { /* vale solo per questa volta */ }
+    for (const pulsante of document.querySelectorAll('[data-scelta-intro]')) pulsante.setAttribute('aria-pressed', String(pulsante.dataset.sceltaIntro === codice));
+    const aperta = document.querySelector('.intro, .intro-linea');
+    if (aperta) { vista = false; aperta.replaceWith(crea()); }
+  }
+  window.Intro = { crea, scegli: scegliVersione, scelta: () => scelta, VERSIONI };
 })();

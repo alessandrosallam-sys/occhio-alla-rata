@@ -148,7 +148,8 @@
     ['label:has([data-opzione-assistente="segue"])', 'Se lo spegni resto in cima alla pagina e non ti seguo quando scorri.'],
     ['[data-scelta-logo]', el => el.title + ' Clic per usarlo come logo.'],
     ['[data-scelta-avatar]', el => el.title + ' Clic e divento così: è solo il disegno, quello che dico resta uguale.'],
-    ['.intro', 'È il gufo di Occhio alla Rata: tiene d\'occhio le tue rate e i tuoi soldi. Clic e rifà il volo.'],
+    ['.intro, .intro-linea', 'È il gufo di Occhio alla Rata: tiene d\'occhio le tue rate e i tuoi soldi. Clic e rifà l\'animazione.'],
+    ['[data-scelta-intro]', el => el.querySelector('.descrizione-tema').textContent + ' Clic per vederla: se la prima pagina è aperta, riparte subito.'],
     ['#passa-avanzata', 'Mostra anche gli strumenti per esperti. Si torna alla semplice dalle «Impostazioni».'],
     // Riepilogo in testa
     ['#riepilogo .dato', el => perEtichetta(RIEPILOGO, etichetta(el)) || (/euribor|indice/i.test(etichetta(el)) ? 'Il valore dell\'indice per la rata di questo mese, e il giorno in cui la banca l\'ha letto.' : '')],
