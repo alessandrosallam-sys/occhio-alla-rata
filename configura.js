@@ -504,6 +504,18 @@
     return { vere: vere.length, uguali, senzaIndice, quote: quote.length, quoteUguali, consiglio, dubbio };
   }
 
+  // La presentazione del progetto, sotto la scena della prima apertura: che cosa fa, in sei riquadri.
+  const PUNTI = [
+    ['piano', 'Controlla ogni rata', 'Ricostruisce il piano del tuo mutuo o finanziamento, variabile o fisso, e ti dice se la banca addebita la cifra giusta, al centesimo.'],
+    ['euro', 'Il costo vero', 'Gli interessi già pagati e quelli ancora da pagare, le spese, le assicurazioni e il TAEG ricalcolato.'],
+    ['discesa', 'Rimborso anticipato', 'Quanto risparmi restituendo una parte prima: con la rata più bassa, oppure con la stessa rata finendo prima.'],
+    ['grafico', 'Le rate future', 'Per il tasso variabile, una stima di come potrebbero cambiare, con il metodo che in passato ha sbagliato di meno.'],
+    ['offerte', 'Confronta le offerte', 'Prima di firmare: rata, interessi, costo totale e TAEG di banche diverse, uno accanto all\'altro.'],
+    ['lucchetto', 'I tuoi dati restano qui', 'Niente account e niente server: tutto resta in questo browser, e ne fai un backup su file. Da internet arriva solo l\'Euribor.'],
+  ];
+  const presentazioneProgetto = () => crea('ul', { className: 'intro-punti' }, ...PUNTI.map(([icona, titolo, testo], i) =>
+    crea('li', { style: '--i:' + i }, Icone.distintivo(icona, 'piccolo'), crea('div', {}, crea('strong', {}, titolo), crea('p', {}, testo)))));
+
   function disegnaBenvenuto(contenitore) {
     const documento = (nome, contenuto) => crea('li', {}, crea('strong', {}, nome), ' ' + contenuto);
     const presentazione = 'Occhio alla Rata ricostruisce, rata per rata, il tuo mutuo o il tuo finanziamento, a tasso variabile o fisso: ti dice se la banca ti addebita la cifra giusta, quanto costa davvero il prestito, quanto hai pagato finora di interessi e, per il variabile, come potrebbero cambiare le rate future.';
@@ -513,10 +525,9 @@
       crea('button', { type: 'button', className: 'secondario', id: 'apri-offerte' }, 'Confronta delle offerte'))];
     if (guida.percorso === 'breve') {
       contenitore.replaceChildren(
-        // La prima volta, il logo grande con il nome.
-        ...(guida.nuovo ? [] : [crea('div', { className: 'benvenuto-logo' }, crea('span', { className: 'logo logo-grande', 'aria-hidden': 'true' }, Icone.logo()),
-          crea('div', {}, crea('p', { className: 'nome-logo' }, 'Occhio alla Rata'), crea('p', { className: 'nota' }, 'Il controllo delle rate del tuo mutuo o finanziamento.')))]),
-        crea('p', {}, guida.nuovo ? 'Aggiungi un altro prestito. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».' : presentazione),
+        // Da zero, la scena del gufo (intro.js) e sotto la presentazione del progetto.
+        ...(guida.nuovo ? [crea('p', {}, 'Aggiungi un altro prestito. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».')]
+          : [Intro.crea(), crea('h3', {}, 'Che cosa fa'), presentazioneProgetto()]),
         crea('h3', {}, 'Come funziona'),
         crea('ul', { className: 'documenti' },
           crea('li', {}, 'Ti faccio qualche domanda facile sul prestito, una alla volta: che tipo è, quanto ti hanno prestato, in quante rate, quando hai pagato la prima.'),

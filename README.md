@@ -11,7 +11,7 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 ## Come si usa
 
 1. Scarica il progetto (pulsante **Code → Download ZIP** su GitHub, oppure `git clone`) e apri `index.html` con un doppio clic. Provato con Microsoft Edge; dovrebbe funzionare con qualunque browser recente.
-2. Alla prima apertura parte la **configurazione guidata**: una domanda per pagina, con una spiegazione corta sotto (e una più lunga a richiesta), e un piccolo assistente animato che commenta ogni pagina. Tieni a portata di mano l'estratto conto o qualche ricevuta delle rate.
+2. Alla prima apertura il gufo del logo plana nella notte, agguanta un sacchetto di monete e ci si posa sopra (un clic sulla scena la fa ripartire; con «riduci movimento» nelle impostazioni del sistema la vedi ferma); sotto, sei riquadri dicono che cosa fa il programma. Poi parte la **configurazione guidata**: una domanda per pagina, con una spiegazione corta sotto (e una più lunga a richiesta), e un piccolo assistente animato che commenta ogni pagina. Tieni a portata di mano l'estratto conto o qualche ricevuta delle rate.
    - **Il prestito**: che cos'è (mutuo per la casa a tasso fisso o variabile, prestito personale, finanziamento per l'auto, auto con maxirata finale, acquisto a rate in un negozio, cessione del quinto), importo, durata (in anni o in rate, come la trovi nel contratto: il conto lo fa il programma), data della prima rata (se non la ricordi, va bene quella dell'ultima). Per un mutuo c'è anche la risposta «non so se è fisso o variabile».
    - **Le rate pagate**: prima scegli se partire dalle più recenti o dalla prima, poi scrivi le rate una alla volta, ognuna con il mese e la data dell'addebito per esteso; quelle che non hai si saltano. Dopo ogni rata il programma rifà i conti in sottofondo: una barra dice quanto è sicuro, e un «robottino» racconta, riga per riga, che cosa sta provando.
    - **Ci penso io**: dice che cosa ha capito («Euribor 3 mesi + 1,30%, nessuna spesa, rata ricalcolata ogni mese… le 12 rate tornano al centesimo»). Se non è sicuro chiede solo il dato che manca, con le risposte possibili già pronte; se non lo trovi, chiede un dato che lo sostituisce (le spese scritte sulla ricevuta, la quota capitale di una rata) o altre rate, finché le rate tornano al centesimo. Una rata che non torna si corregge o si toglie (un mese con un addebito in più). Se il prestito non è ancora partito, chiede il tasso del contratto.
@@ -99,6 +99,7 @@ costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione a
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
 icone.js              le icone della pagina, disegnate a mano
 loghi.js              gli undici loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse
+intro.js              la scena della prima apertura: il gufo che plana e agguanta il sacchetto delle monete
 logo.svg              il logo del gufo da solo (README)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
@@ -106,7 +107,7 @@ crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`.
+Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, principale, prestiti: [...], offerte: [...] }` (`principale`: il prestito che si apre da solo, `null` se nessuno) (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `PUT principale/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
 

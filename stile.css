@@ -1758,9 +1758,29 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 /* Il marchio: una casa con il segno di percentuale */
 .logo { cursor: pointer; }
 /* Nella prima pagina della guida: il logo grande con il nome */
-.benvenuto-logo { display: flex; align-items: center; gap: var(--s4); margin: 0 0 var(--s4); }
-.benvenuto-logo .nome-logo { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; color: var(--inchiostro); }
-.benvenuto-logo .nota { margin: 2px 0 0; }
+/* La scena della prima apertura (intro.js): un cielo di notte nei colori del logo, il gufo e il sacchetto; il nome
+   sopra a sinistra. Senza animazioni si vede la fine: il gufo posato sul sacchetto, le ali chiuse. */
+.intro {
+  position: relative; container-type: inline-size; margin: 0 0 var(--s5); border-radius: var(--r3); overflow: hidden; cursor: pointer;
+  background: radial-gradient(circle at 92% 18%, rgba(255, 255, 255, 0.16), transparent 42%), linear-gradient(160deg, #3b5bdb 0%, #5f3dc4 55%, #7048e8 100%);
+  box-shadow: var(--ombra);
+}
+.intro-disegno { display: block; width: 100%; height: auto; }
+.intro-testo { position: absolute; top: 0; left: 0; max-width: 60%; padding: clamp(14px, 5cqw, 30px); color: #ffffff; pointer-events: none; }
+.intro-testo p { margin: 0; }
+.intro-nome { font-size: clamp(21px, 6.4cqw, 36px); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; text-shadow: 0 2px 14px rgba(20, 10, 70, 0.4); }
+p.intro-motto { margin-top: 6px; font-size: clamp(12.5px, 2.5cqw, 16px); line-height: 1.4; opacity: 0.9; }
+.intro-ali-aperte, .intro-monete circle, .intro-scintille path { opacity: 0; }
+.intro-volo { transform-box: view-box; transform-origin: 392px 80px; }
+.intro-gufo { transform-box: fill-box; transform-origin: 50% 100%; }
+.intro-ala-sx { transform-box: fill-box; transform-origin: 100% 60%; }
+.intro-ala-dx { transform-box: fill-box; transform-origin: 0 60%; }
+.intro-palpebra, .intro-stelle .brilla, .intro-monete circle, .intro-scintille path { transform-box: fill-box; transform-origin: center; }
+/* La presentazione sotto la scena: sei riquadri */
+.intro-punti { list-style: none; margin: 0 0 var(--s5); padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s3); }
+.intro-punti li { display: flex; align-items: flex-start; padding: var(--s3) var(--s4); border: 1px solid var(--linea); border-radius: var(--r2); background: var(--superficie-2); }
+.intro-punti strong { display: block; font-size: 15px; color: var(--inchiostro); }
+.intro-punti p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: var(--tenue); }
 .logo.logo-grande { width: 76px; height: 76px; border-radius: 22px; box-shadow: var(--ombra-alta); }
 /* I loghi (loghi.js): undici disegni, ognuno con le sue animazioni; quello scelto sta in ogni riquadro .logo.
    Lo sfondo è quello del riquadro, il colore principale il suo testo (currentColor), le monete d'oro. */
@@ -1788,6 +1808,70 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 .logo-sveglia .ore, .logo-sveglia .minuti { transform-box: view-box; transform-origin: 32px 35px; }
 .logo-sveglia .squillo { opacity: 0; }
 
+/* La scena della prima apertura: sempre le stelle e le palpebre; con «in-volo» il volo (4 secondi), poi il nome e la presentazione */
+@media (prefers-reduced-motion: no-preference) {
+  .intro-stelle .brilla { animation: respiro 3.2s ease-in-out infinite; }
+  .intro-palpebra { animation: logo-batte 4.5s 4.6s infinite; }
+  .intro-gufo { animation: logo-inclina 8s 6s ease-in-out infinite; }
+  .in-volo .intro-volo { animation: intro-plana 4s linear both; }
+  .in-volo .intro-insieme { animation: intro-porta 4s ease-in-out both; }
+  .in-volo .intro-ali-aperte { animation: intro-ali-aperte 4s both; }
+  .in-volo .intro-ali-chiuse { animation: intro-ali-chiuse 4s both; }
+  .in-volo .intro-sguardo { animation: intro-guarda-sacco 4s ease-in-out both; }
+  .in-volo .intro-ala-sx { animation: intro-batte-sx 4s ease-in-out both; }
+  .in-volo .intro-ala-dx { animation: intro-batte-dx 4s ease-in-out both; }
+  .in-volo .intro-monete circle { animation: intro-salta 4s both; }
+  .in-volo .intro-scintille path { animation: intro-brilla 4.4s both; }
+  .in-volo .intro-scintille path:nth-child(2) { animation-delay: 0.12s; }
+  .in-volo .intro-scintille path:nth-child(3) { animation-delay: 0.24s; }
+  .in-volo .intro-nome { animation: sale 0.6s 3.6s both; }
+  .in-volo .intro-motto { animation: sale 0.6s 3.85s both; }
+  .intro.in-volo ~ .intro-punti > li { animation: sale 0.5s calc(4.1s + var(--i) * 0.09s) both; }
+}
+/* Il gufo arriva dall'alto a sinistra lungo una parabola, inclinato in picchiata, e frena sul sacchetto (55%) */
+@keyframes intro-plana {
+  0%, 5% { transform: translate(-310px, -176px) rotate(24deg); }
+  17.5% { transform: translate(-232px, -99px) rotate(20deg); }
+  30% { transform: translate(-155px, -44px) rotate(14deg); }
+  42.5% { transform: translate(-78px, -11px) rotate(7deg); animation-timing-function: ease-out; }
+  55% { transform: translate(0, 0) rotate(-10deg); animation-timing-function: ease-in-out; }
+  66% { transform: translate(0, 0) rotate(-3deg); }
+  100% { transform: none; }
+}
+/* Poi porta il sacchetto in volo fino alla collina e ci si posa */
+@keyframes intro-porta {
+  0%, 55% { transform: translate(-142px, 28px); }
+  58% { transform: translate(-139px, 31px); }
+  66% { transform: translate(-114px, 6px); }
+  76% { transform: translate(-70px, -16px); }
+  86% { transform: translate(-24px, -15px); }
+  93% { transform: translate(0, -3px); }
+  96.5% { transform: translate(0, 1.5px); }
+  100% { transform: none; }
+}
+/* In picchiata guarda il sacchetto (in basso a destra); quando lo prende torna a guardare avanti */
+@keyframes intro-guarda-sacco { 0%, 48% { transform: translate(1.6px, 1.9px); } 58%, 100% { transform: none; } }
+@keyframes intro-ali-aperte { 0%, 92.5% { opacity: 1; } 94%, 100% { opacity: 0; } }
+@keyframes intro-ali-chiuse { 0%, 92.5% { opacity: 0; } 94%, 100% { opacity: 1; } }
+/* Le ali: planata quasi ferma, poi colpi d'ala con il sacchetto (gli angoli dell'ala destra sono gli opposti) */
+@keyframes intro-batte-sx {
+  0%, 5% { transform: rotate(6deg); } 20% { transform: rotate(-2deg); } 35% { transform: rotate(7deg); } 50% { transform: rotate(0deg); }
+  55% { transform: rotate(-24deg); } 59%, 67%, 75% { transform: rotate(38deg); } 63%, 71%, 79% { transform: rotate(-22deg); }
+  83% { transform: rotate(30deg); } 87% { transform: rotate(-16deg); } 91% { transform: rotate(18deg); } 94%, 100% { transform: rotate(-30deg); }
+}
+@keyframes intro-batte-dx {
+  0%, 5% { transform: rotate(-6deg); } 20% { transform: rotate(2deg); } 35% { transform: rotate(-7deg); } 50% { transform: rotate(0deg); }
+  55% { transform: rotate(24deg); } 59%, 67%, 75% { transform: rotate(-38deg); } 63%, 71%, 79% { transform: rotate(22deg); }
+  83% { transform: rotate(-30deg); } 87% { transform: rotate(16deg); } 91% { transform: rotate(-18deg); } 94%, 100% { transform: rotate(30deg); }
+}
+/* Quando lo agguanta, tre monete saltano fuori dal sacchetto girando; quando si posa, tre scintille */
+@keyframes intro-salta {
+  0%, 55% { opacity: 0; transform: none; }
+  57% { opacity: 1; transform: none; }
+  64% { opacity: 1; transform: translate(var(--x), var(--y)) scaleX(0.3); }
+  72%, 100% { opacity: 0; transform: translate(calc(var(--x) * 1.4), 10px) scaleX(1); }
+}
+@keyframes intro-brilla { 0%, 92% { opacity: 0; transform: scale(0.2) rotate(0deg); } 96% { opacity: 1; transform: scale(1.15) rotate(45deg); } 100% { opacity: 0; transform: scale(0.4) rotate(90deg); } }
 @keyframes logo-apre { from { transform: scaleY(0.06); } to { transform: scaleY(1); } }
 @keyframes logo-batte { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
 @keyframes logo-occhiolino { 0%, 100% { transform: scaleY(1); } 40%, 55% { transform: scaleY(0.08); } }
