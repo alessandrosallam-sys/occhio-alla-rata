@@ -1,5 +1,6 @@
-// Scheda «Prestiti»: tutti i prestiti seguiti, ognuno con i suoi numeri del mese, e i totali. Da qui se ne apre uno
-// (le altre schede lavorano sul prestito aperto), se ne aggiunge uno nuovo con la configurazione guidata o lo si elimina.
+// Scheda «Prestiti»: tutti i prestiti seguiti, ognuno con i suoi numeri del mese, e i totali. Da qui si entra in uno
+// (compare il suo sottomenu: le sue pagine lavorano sul prestito aperto), si sceglie il principale (si apre da solo
+// all'avvio), se ne aggiunge uno nuovo con la configurazione guidata o lo si elimina.
 (function () {
   'use strict';
   const M = window.Mutuo, { stato, $, crea, euro, perc, meseAnno, avvisa } = M;
@@ -35,7 +36,7 @@
     return `${tipo} · TAN ${perc(p.tasso_fisso || 0, 3, 1)}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
   }
 
-  function cartaPrestito(r, aperto) {
+  function cartaPrestito(r, aperto, principale) {
     const p = r.d.parametri;
     const voce = (etichetta, valore, dettaglio) => crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, etichetta),
       crea('span', { className: 'valore' }, valore), ...(dettaglio ? [crea('span', { className: 'dettaglio' }, dettaglio)] : []));
@@ -43,6 +44,8 @@
     const barra = crea('span');
     barra.style.width = (Math.max(0, Math.min(1, r.rimborsato)) * 100).toFixed(1) + '%';
     const apri = crea('button', { type: 'button', className: aperto ? 'secondario' : '', 'data-apri': r.d.id }, aperto ? 'Vai al piano' : 'Apri');
+    const stella = crea('button', { type: 'button', className: 'secondario piccolo scelta-principale', 'data-principale': r.d.id, 'aria-pressed': String(principale) },
+      principale ? '★ Principale' : '☆ Rendi principale');
     const elimina = crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina': r.d.id }, 'Elimina');
     return crea('article', { className: 'carta carta-prestito' + (aperto ? ' aperto' : '') },
       crea('header', {}, Icone.distintivo(iconaTipo(p)), crea('div', { className: 'testa-prestito' }, crea('h3', {}, p.nome || 'Prestito senza nome'), crea('p', { className: 'nota' }, descriviTipo(r))),
@@ -52,13 +55,22 @@
         voce('Debito residuo', euro(r.debito), `di ${euro(p.importo_iniziale)}`),
         voce('Ultima rata', fine, r.stato === 'finito' ? null : `${r.rateRestanti} rate da pagare`)),
       crea('div', { className: 'avanzamento', title: `Rimborsato il ${perc(r.rimborsato, 1)}` }, barra),
-      crea('div', { className: 'azioni' }, apri, elimina));
+      crea('div', { className: 'azioni' }, apri, stella, elimina));
   }
 
   function disegna() {
-    if ($('#scheda-prestiti').hidden || !Archivio.configurato()) return;
-    const attivo = Archivio.attivo(), tutti = Archivio.elenco().map(riassunto);
-    const contenuto = [crea('div', { className: 'elenco-prestiti' }, ...tutti.map(r => cartaPrestito(r, r.d.id === attivo)))];
+    if ($('#scheda-prestiti').hidden) return;
+    // Nessun prestito (si seguono solo le offerte): come cominciare.
+    if (!Archivio.configurato()) return $('#contenuto-prestiti').replaceChildren(crea('div', { className: 'carta prestiti-vuoto' },
+      crea('h2', {}, Icone.crea('casa', 'icona icona-titolo'), 'Non segui ancora nessun prestito'),
+      crea('p', { className: 'nota' }, 'Hai già un mutuo o un finanziamento? Aggiungilo: ti servono l\'importo, la durata e qualche rata pagata. Il programma rifà il piano e controlla che la banca faccia i conti giusti.'),
+      crea('div', { className: 'azioni' }, Icone.decora(crea('button', { type: 'button', id: 'primo-prestito', 'data-icona': 'piu' }, 'Aggiungi il tuo prestito')))));
+    const attivo = M.stato.aperto ? Archivio.attivo() : null, principale = Archivio.principale(), tutti = Archivio.elenco().map(riassunto);
+    const contenuto = [crea('div', { className: 'elenco-prestiti' }, ...tutti.map(r => cartaPrestito(r, r.d.id === attivo, r.d.id === principale)))];
+    // Più prestiti: quale si apre da solo.
+    if (tutti.length > 1) contenuto.unshift(crea('p', { className: 'nota guida-principale' }, principale
+      ? `«${tutti.find(r => r.d.id === principale).d.parametri.nome || 'Prestito senza nome'}» è il prestito principale: si apre da solo quando apri la pagina. Con la stella ne scegli un altro.`
+      : 'Scegli il prestito principale con la stella: si aprirà da solo quando apri la pagina. Per entrare in un prestito premi «Apri».'));
     if (tutti.length > 1) {
       const somma = valore => tutti.reduce((s, r) => s + valore(r), 0);
       const inCorso = tutti.filter(r => r.stato !== 'finito');
@@ -77,22 +89,28 @@
 
   $('#contenuto-prestiti').addEventListener('click', async evento => {
     const apri = evento.target.closest('button[data-apri]'), elimina = evento.target.closest('button[data-elimina]');
-    if (apri) {
-      if (apri.dataset.apri !== Archivio.attivo()) await Archivio.richiesta('PUT', 'attivo/' + apri.dataset.apri);
-      await M.avvia();
-      M.mostraScheda('piano');
-      return;
+    const stella = evento.target.closest('button[data-principale]');
+    if (evento.target.closest('#primo-prestito')) return M.apriGuida(false);
+    if (apri) return M.entra(apri.dataset.apri);
+    if (stella) {
+      // Di nuovo sulla stella del principale: non ce n'è più nessuno, e all'avvio si vede l'elenco.
+      const togli = stella.dataset.principale === Archivio.principale();
+      await Archivio.richiesta(togli ? 'DELETE' : 'PUT', 'principale/' + (togli ? '' : stella.dataset.principale));
+      M.disegnaMenu();
+      disegna();
+      return avvisa(togli ? 'Nessun prestito principale: all\'avvio vedrai l\'elenco dei prestiti.' : 'Prestito principale scelto: si aprirà da solo.');
     }
     if (elimina) {
       const d = Archivio.elenco().find(x => x.id === elimina.dataset.elimina), nome = d ? d.parametri.nome || 'Prestito senza nome' : '';
       if (!d || !confirm(`Eliminare «${nome}»?\n\nLe rate e i tassi inseriti per questo prestito si perdono. Gli altri prestiti restano. Se vuoi tenerne una copia, prima usa «Salva un backup» nel pannello di controllo.`)) return;
+      const eraAperto = d.id === Archivio.attivo();
       try {
         await Archivio.richiesta('DELETE', 'prestiti/' + d.id);
       } catch (errore) {
         return avvisa(errore.message, true);
       }
-      await M.avvia();
-      if (Archivio.configurato()) M.mostraScheda('prestiti');
+      if (eraAperto) M.stato.aperto = null;   // eliminato quello aperto: si apre il principale (o l'unico che resta), come all'avvio
+      await M.avvia('prestiti');
       avvisa(`«${nome}» eliminato`);
     }
   });

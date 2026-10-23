@@ -146,7 +146,7 @@
   }
   function carica() {
     if (archivio) return dati;
-    archivio = { attivo: null, prestiti: [], offerte: [] };
+    archivio = { attivo: null, principale: null, prestiti: [], offerte: [] };
     let testo = null;
     if (NEL_BROWSER) try { testo = localStorage.getItem(CHIAVE); } catch { /* archivio del browser non disponibile: si lavora in memoria */ }
     if (testo) {
@@ -157,7 +157,7 @@
     return dati;
   }
   // L'archivio da salvare o da confrontare: solo i prestiti configurati.
-  const daSalvare = () => ({ attivo: archivio.attivo, prestiti: archivio.prestiti.filter(configurato), offerte: archivio.offerte });
+  const daSalvare = () => ({ attivo: archivio.attivo, principale: archivio.principale, prestiti: archivio.prestiti.filter(configurato), offerte: archivio.offerte });
   function salva() {
     if (NEL_BROWSER) {
       try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 2, ...daSalvare() })); }
@@ -192,6 +192,9 @@
       prestiti.push({ id, ...pulito });
     }
     const attivo = prestiti.some(p => p.id === grezzo.attivo) ? grezzo.attivo : prestiti.length ? prestiti[0].id : null;
+    // Il prestito principale si apre da solo. I salvataggi di prima non lo avevano: diventa quello aperto per ultimo.
+    // Un null scritto vuol dire che l'utente l'ha tolto.
+    const principale = 'principale' in grezzo ? (prestiti.some(p => p.id === grezzo.principale) ? grezzo.principale : null) : attivo;
     const offerte = [];
     for (const voce of Array.isArray(grezzo.offerte) ? grezzo.offerte : []) {
       if (!voce || typeof voce !== 'object' || !voce.parametri || typeof voce.parametri !== 'object') continue;
@@ -199,7 +202,7 @@
       visti.add(id);
       offerte.push({ id, parametri: controllaParametri(voce.parametri, false) });
     }
-    return { attivo, prestiti, offerte };
+    return { attivo, principale, prestiti, offerte };
   }
   // Rende valido un prestito.
   function pulisci(grezzo) {
@@ -273,12 +276,19 @@
         if (nuovi.length) salvaTassi(nuovi);
         // Rate già pagate inserite nella guida.
         for (const r of corpo.rate || []) salvaRata(r.n, { rata_vera: r.rata_vera, quota_capitale: r.quota_capitale });
+        // Il primo prestito diventa il principale.
+        if (archivio.prestiti.filter(configurato).length === 1) archivio.principale = dati.id;
       }
       else if (metodo === 'PUT' && risorsa === 'attivo') { richiedi(esiste(chiave), 'Prestito non trovato'); scegli(chiave); }
+      // Il prestito principale: PUT con il suo id per sceglierlo, DELETE per toglierlo (all'avvio non se ne apre nessuno).
+      else if (metodo === 'PUT' && risorsa === 'principale') { richiedi(esiste(chiave), 'Prestito non trovato'); archivio.principale = chiave; }
+      else if (metodo === 'DELETE' && risorsa === 'principale') archivio.principale = null;
       else if (metodo === 'DELETE' && risorsa === 'prestiti') {
         richiedi(esiste(chiave), 'Prestito non trovato');
         archivio.prestiti = archivio.prestiti.filter(p => p.id !== chiave);
         scegli(archivio.attivo === chiave ? null : archivio.attivo);
+        // Eliminato il principale, lo diventa il primo che resta.
+        if (archivio.principale === chiave) archivio.principale = archivio.prestiti.find(configurato) ? archivio.prestiti.find(configurato).id : null;
       }
       // Offerte: { parametri } per aggiungerne una, i parametri cambiati per modificarla.
       else if (metodo === 'POST' && risorsa === 'offerte') archivio.offerte.push({ id: nuovoId(), parametri: controllaParametri(corpo.parametri || {}, false) });
@@ -337,6 +347,8 @@
     // Il prestito aperto è configurato (se non lo è, non ce n'è nessuno: parte la guida).
     configurato: () => configurato(carica()),
     attivo: () => (carica(), archivio.attivo),
+    // Il prestito che si apre da solo all'avvio (null: nessuno).
+    principale: () => (carica(), esiste(archivio.principale) ? archivio.principale : null),
     // Tutti i prestiti, come li dà "GET dati" (parametri completi), nell'ordine in cui sono stati creati.
     elenco: () => (carica(), archivio.prestiti.filter(configurato).map(copiaDi)),
     // Le offerte da confrontare, con i parametri completi.
@@ -359,7 +371,7 @@
       try { const { archivio: a, salvato } = leggiSalvataggio(testo); return { ...descrivi(a), salvato }; } catch { return null; }
     },
     azzera() {
-      archivio = { attivo: null, prestiti: [], offerte: [] };
+      archivio = { attivo: null, principale: null, prestiti: [], offerte: [] };
       scegli(null);
       if (NEL_BROWSER) try { localStorage.removeItem(CHIAVE); } catch { /* niente da cancellare */ }
     },

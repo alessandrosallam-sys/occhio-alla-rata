@@ -1,4 +1,4 @@
-// Configurazione del mutuo: guida iniziale a passi, modulo delle regole nel pannello di controllo,
+// Configurazione del mutuo: guida iniziale a passi, modulo delle regole (pagina «Regole del contratto» del prestito),
 // taratura automatica delle regole sulle rate vere, backup dei dati su file.
 (function () {
   'use strict';
@@ -550,7 +550,7 @@
       const lasciate = [...guida.nonSo].map(c => `«${titoloDomanda(c)}»`).join(', ');
       if (!esito) {
         blocchi.push(crea('p', { className: 'nota evidenza' }, `Hai lasciato a me ${guida.nonSo.size === 1 ? 'una risposta' : guida.nonSo.size + ' risposte'} (${lasciate}), ma senza rate già pagate non posso ricavarle: per ora ho messo le scelte più diffuse. `
-          + 'Torna al passo «Le rate già pagate» e inseriscine almeno tre; oppure conferma, e quando avrai le rate usa la taratura automatica nel pannello di controllo.'));
+          + 'Torna al passo «Le rate già pagate» e inseriscine almeno tre; oppure conferma, e quando avrai le rate usa la taratura automatica nella pagina «Regole del contratto» (versione avanzata).'));
       } else {
         if (esito.consiglio) { guida.dubbio = esito.consiglio.dubbio || null; Object.assign(b, esito.consiglio.parametri); esito = controllaBozza(); }
         guida.ricavate = lasciate;
@@ -595,10 +595,10 @@
     if (conIndice && !pronti.length) dopo.push(scaricabile ? 'Nella pagina «Tassi» premi «Scarica gli ultimi valori»: i valori dell\'indice arrivano da internet, senza scriverli a mano.'
       : 'Nella pagina «Tassi» inserisci o incolla i valori dell\'indice: bastano quelli dei giorni di rilevazione, che il programma ti indica.');
     else if (scaricabile) dopo.push('I valori nuovi dell\'indice arrivano da soli: a ogni apertura la pagina «Tassi» scarica quelli che mancano (se c\'è la connessione).');
-    if (!conIndice) dopo.push('Nel «Pannello di controllo» trovi quanto costa davvero il prestito: interessi, spese, assicurazioni e TAEG' + (b.taeg_dichiarato > 0 ? ', confrontato con quello del contratto.' : '.'));
+    if (!conIndice) dopo.push('Nella pagina «Costi e rimborso» trovi quanto costa davvero il prestito: interessi, spese, assicurazioni e TAEG' + (b.taeg_dichiarato > 0 ? ', confrontato con quello del contratto.' : '.'));
     dopo.push(inserite ? 'Nella pagina «Piano» aggiungi le altre rate già addebitate (colonna «Rata vera») e, ogni mese, quella nuova: le righe diventano verdi se i conti tornano.'
       : 'Nella pagina «Piano» scrivi le rate che la banca ti ha già addebitato (colonna «Rata vera»): le righe diventano verdi se i conti tornano.');
-    dopo.push('Se una riga diventa rossa, nel «Pannello di controllo» c\'è la taratura automatica, che cerca le regole che riproducono le tue rate.');
+    dopo.push('Se una riga diventa rossa, nella pagina «Regole del contratto» (versione avanzata) c\'è la taratura automatica, che cerca le regole che riproducono le tue rate.');
     contenitore.replaceChildren(
       crea('dl', { className: 'riepilogo-guida' }, ...voci.flatMap(([etichetta, valore]) => [crea('dt', {}, etichetta), crea('dd', {}, valore)])),
       ...blocchi, crea('h3', {}, 'Cosa fare dopo'), crea('ol', { className: 'dopo' }, ...dopo.map(testo => crea('li', {}, testo))));
@@ -629,7 +629,7 @@
     data_ultima: 'È la scadenza del prestito: la trovi nel contratto o nell\'ultima riga del piano di ammortamento.',
     ordine_rate: 'Le più recenti sono nell\'estratto conto online; le prime nelle ricevute dell\'inizio o nel piano di ammortamento. Te le chiedo una alla volta: ne bastano tre o quattro.',
     nome: 'Serve solo a riconoscerlo, soprattutto se segui più di un prestito.',
-    dettagli: 'Non cambiano le rate: servono a calcolare quanto costa davvero il prestito (costo totale e TAEG). Puoi aggiungerli anche dopo, dal «Pannello di controllo».',
+    dettagli: 'Non cambiano le rate: servono a calcolare quanto costa davvero il prestito (costo totale e TAEG). Puoi aggiungerli anche dopo, con «Dati del prestito».',
     spese_iniziali: 'Istruttoria, perizia, imposte pagate alla firma. Se non le sai, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico pagato all\'inizio. Se non c\'è, lascia vuoto.',
     spese_nel_prestito: 'Se la somma che ti hanno accreditato era più bassa dell\'importo prestato, le spese sono dentro il prestito.',
@@ -1122,11 +1122,11 @@
     } else if (s.tipo === 'pronto') {
       const c = s.candidato, p = { ...guida.bozza, ...c.parametri };
       blocchi.push(titoloEsito(s.dichiarato ? 'Ecco il tuo prestito' : 'Ho capito come funziona il tuo prestito', 'spunta', 'riuscito'), capito(p));
-      if (s.dichiarato) blocchi.push(crea('p', { className: 'nota' }, 'Il tasso l\'hai scritto tu; le altre regole del contratto le ho messe come le più diffuse. Quando avrai pagato qualche rata, scrivila nella pagina «Piano»: se i conti non tornano, la taratura automatica nel «Pannello di controllo» corregge le regole.'));
+      if (s.dichiarato) blocchi.push(crea('p', { className: 'nota' }, 'Il tasso l\'hai scritto tu; le altre regole del contratto le ho messe come le più diffuse. Quando avrai pagato qualche rata, scrivila nella pagina «Piano»: se i conti non tornano, la taratura automatica nella pagina «Regole del contratto» (versione avanzata) corregge le regole.'));
       else {
         const tutte = c.rate != null && c.rate === c.suRate && c.quote === c.suQuote;
         blocchi.push(crea('p', { className: 'nota ' + (tutte ? 'conferma' : 'evidenza') }, tutte ? (c.suRate === 1 ? '✓ La rata che hai scritto torna al centesimo con questo calcolo.' : `✓ Le ${c.suRate} rate che hai scritto tornano tutte al centesimo con questo calcolo.`)
-          : 'Hai scelto di andare avanti anche se non tutte le rate tornano: controlla il piano, e usa la taratura nel «Pannello di controllo» quando avrai altre rate.'));
+          : 'Hai scelto di andare avanti anche se non tutte le rate tornano: controlla il piano, e usa la taratura nella pagina «Regole del contratto» (versione avanzata) quando avrai altre rate.'));
         if (c.senza) blocchi.push(crea('p', { className: 'nota' }, `Per ${c.senza === 1 ? 'una rata' : `${c.senza} rate`} non ho ancora il valore dell'Euribor del giorno in cui la banca l'ha letto${guida.serieErrore ? ` (${guida.serieErrore})` : ''}: ${c.senza === 1 ? 'la controllerò' : 'le controllerò'} quando arriva.`));
         if (c.suRate < 3 && altreRate()) blocchi.push(crea('div', { className: 'consiglio' }, crea('p', {}, 'Con meno di tre rate non posso esserne del tutto sicuro: se ne hai altre, scrivile e ricontrollo.'),
           crea('button', { type: 'button', className: 'secondario', id: 'altre-rate-analisi' }, 'Aggiungo altre rate')));
@@ -1491,10 +1491,9 @@
       bozza: { ...Archivio.predefiniti(), ...(riapertura ? stato.dati.parametri : partenza || {}) },
       ...STATO_BREVE(), tipoBreve: partenza ? partenza.tipo_prestito || 'variabile' : null, noti });
     $('#configurazione').hidden = false;
-    for (const id of ['#principale', '.schede', '#riepilogo', '#apri-configurazione']) $(id).hidden = true;
+    for (const id of ['#principale', '.schede', '#riepilogo', '#sottomenu']) $(id).hidden = true;
     disegnaPasso();
   };
-  $('#apri-configurazione').addEventListener('click', () => M.apriGuida(true));
   $('#campi-passo').addEventListener('change', evento => {
     const tipo = passoAttuale().tipo, nome = evento.target.name;
     $('#errore-passo').hidden = true;   // l'avviso riguardava le risposte di prima
@@ -1630,6 +1629,7 @@
       return mostraErrore(errore.message);
     }
     const prima = !guida.riapertura;
+    stato.aperto = true;   // si entra nel prestito appena creato (o rivisto)
     await M.avvia();
     if (!prima) return avvisa('Configurazione salvata');
     // Le rate passate che l'utente non ha scritto, riempite con il calcolo se ha risposto di sì (segnate con «=»).
@@ -1645,7 +1645,7 @@
   // I moduli costruiti dalla descrizione dei campi servono anche alla scheda «Offerte».
   M.campi = { crea: creaCampo, leggi: leggiCampi, aggiornaVisibili };
 
-  // ---------- Regole del contratto nel pannello ----------
+  // ---------- Regole del contratto (pagina del prestito, versione avanzata) ----------
   const CHIAVI_REGOLE = Object.keys(CAMPI).filter(c => !CAMPI[c].nascosto);
   function disegnaRegole() {
     const contenitore = $('#campi-regole'), p = stato.dati.parametri;
@@ -1756,6 +1756,7 @@
       return false;
     }
     ricordaBackup(salvato);
+    stato.aperto = null;   // si riparte come all'avvio: si apre il prestito principale, o l'unico
     await M.avvia();
     avvisa(`Caricato ${delBackup}`);
     return true;
@@ -1776,4 +1777,5 @@
   });
 
   M.viste.push(disegnaRegole, disegnaTaratura, disegnaBackup);
+  M.allApertura.pannello = disegnaBackup;   // anche senza prestiti, quando si seguono solo le offerte
 })();

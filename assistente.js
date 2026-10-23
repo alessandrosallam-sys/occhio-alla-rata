@@ -226,28 +226,29 @@
   $('.avatar', nelProgramma).addEventListener('click', () => { if (chiuso()) richiudi(false); });
   $('.avatar', nelProgramma).addEventListener('keydown', evento => { if ((evento.key === 'Enter' || evento.key === ' ') && chiuso()) { evento.preventDefault(); richiudi(false); } });
 
-  const schedaAperta = () => { const b = document.querySelector('.schede button[aria-selected="true"]'); return b ? b.dataset.scheda : null; };
+  const schedaAperta = () => M.stato.scheda || null;
   // Un consiglio per la pagina aperta, con i numeri del prestito dove servono.
   function consiglioPer(nome) {
-    const s = M.stato, righe = s.piano ? s.piano.righe : [];
-    if (nome === 'prestiti') return [Archivio.elenco().length > 1 ? 'Qui vedi tutti i tuoi prestiti, con il totale delle rate del mese. Premi «Apri» per lavorare su uno di loro.'
+    const s = M.stato, righe = s.piano ? s.piano.righe : [], quanti = Archivio.elenco().length;
+    if (nome === 'prestiti') return [!quanti ? 'Qui compariranno i prestiti che segui. Se ne hai già uno, aggiungilo: bastano pochi numeri.'
+      : quanti > 1 && !s.aperto ? 'Qui vedi tutti i tuoi prestiti, con il totale delle rate del mese. Premi «Apri» per entrare in uno: a sinistra compaiono le sue pagine.'
+      : quanti > 1 ? 'Qui vedi tutti i tuoi prestiti, con il totale delle rate del mese. Con la stella scegli quello principale, che si apre da solo.'
       : 'Qui vedi il tuo prestito. Se ne hai un altro, con «Aggiungi un prestito» lo segui insieme a questo.', 'parla'];
+    if (nome === 'costi') return ['Qui vedi quanto costa davvero il prestito, oltre alla somma ricevuta, e quanto risparmieresti rimborsandolo prima.', 'parla'];
+    if (nome === 'contratto') return ['Le regole del contratto: cambiale solo se sai che cosa dice il contratto. Se le rate non tornano, la taratura le cerca da sola.', 'parla'];
     if (nome === 'offerte') return ['Devi ancora firmare? Scrivi le offerte delle banche: ti dico quanto costa davvero ciascuna, e quale costa meno.', 'parla'];
     if (nome === 'piano' && righe.length) {
       const nonTornano = righe.filter(r => r.rataVera != null && Math.abs(r.differenza) >= 0.005).length;
       const r = M.rataDelMese(righe), rata = `La rata di ${meseAnno(r.inizio)} è di ${euro(r.rataEffettiva)}.`;
-      if (nonTornano) return [`${rata} Attenzione: ${nonTornano === 1 ? 'una rata non torna' : `${nonTornano} rate non tornano`} con il calcolo (le righe rosse). Clicca la cifra per correggerla, oppure prova la taratura nel «Pannello di controllo».`, 'dubbio'];
+      if (nonTornano) return [`${rata} Attenzione: ${nonTornano === 1 ? 'una rata non torna' : `${nonTornano} rate non tornano`} con il calcolo (le righe rosse). Clicca la cifra per correggerla${M.semplice() ? '' : ', oppure prova la taratura nella pagina «Regole del contratto»'}.`, 'dubbio'];
       return [`${rata} Quando ti arriva una rata nuova, scrivila nella colonna «Rata vera»: se la riga diventa verde, la banca ha fatto i conti giusti.`, 'felice'];
     }
     if (nome === 'tassi') return [M.semplice() ? 'Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Passa sul grafico per leggere il valore di un giorno.'
       : 'Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Sotto il grafico puoi provare le previsioni per le rate future.', 'parla'];
     if (nome === 'calendario') return ['Il calendario mostra in che giorno la banca legge l\'indice per ogni rata. Clicca un giorno per vedere i dettagli.', 'parla'];
     if (nome === 'festivita') return ['Le festività servono a contare i giorni lavorativi. Di solito non c\'è niente da cambiare.', 'parla'];
-    if (nome === 'pannello') {
-      const cosa = M.semplice() ? 'Qui trovi quanto costa davvero il prestito, il rimborso anticipato e il backup. Le regole del contratto e la taratura sono nella versione avanzata.'
-        : 'Qui trovi quanto costa davvero il prestito, il rimborso anticipato, il backup e le regole del contratto.';
-      return [cosa + (M.ricordo.leggi('ultimo-backup') ? '' : ' Un consiglio: salva ogni tanto un backup dei tuoi dati.'), 'parla'];
-    }
+    if (nome === 'pannello') return [M.ricordo.leggi('ultimo-backup') ? 'Qui salvi o ricarichi il backup di tutti i tuoi dati e scegli le impostazioni: versione semplice o avanzata, assistente, colori.'
+      : 'Qui scegli le impostazioni e salvi il backup di tutti i tuoi dati. Un consiglio: salvane uno adesso, i dati del browser si possono perdere.', 'parla'];
     return ['', 'parla'];
   }
   function consiglia() {

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Mutuo variabile</title>
+  <title>Occhio alla Rata</title>
   <link rel="stylesheet" href="stile.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%228%22%20fill%3D%22%233b5bdb%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20transform%3D%22translate(4%204)%22%3E%3Cpath%20d%3D%22M3.8%2011%2012%204.3l8.2%206.7%22%2F%3E%3Cpath%20d%3D%22M5.8%209.4V19.5h12.4V9.4%22%2F%3E%3Cpath%20d%3D%22m14.6%2011.6-5.2%206%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22%23fff%22%20transform%3D%22translate(4%204)%22%3E%3Ccircle%20cx%3D%229.9%22%20cy%3D%2212.3%22%20r%3D%221.2%22%2F%3E%3Ccircle%20cx%3D%2214.1%22%20cy%3D%2216.9%22%20r%3D%221.2%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#ffffff">
@@ -12,45 +12,35 @@
   <script src="temi.js"></script>
 </head>
 <body>
-  <!-- Testata: nome del mutuo, schede (in basso sui telefoni), configurazione -->
+  <!-- Testata: nome del programma, menù generale (in basso sui telefoni) con il ramo del prestito aperto (barra laterale),
+       impostazioni; sotto, sugli schermi stretti, il sottomenu del prestito aperto (app.js, disegnaMenu) -->
   <header class="testata">
     <div class="testata-interno">
       <div class="marchio">
         <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" class="icona"><path d="M3.8 11 12 4.3l8.2 6.7"/><path d="M5.8 9.4V19.5h12.4V9.4"/><path d="m14.6 11.6-5.2 6"/><circle cx="9.9" cy="12.3" r="1"/><circle cx="14.1" cy="16.9" r="1"/></svg></span>
-        <h1 id="titolo-mutuo">Mutuo variabile</h1>
+        <h1 id="titolo-programma">Occhio alla Rata</h1>
       </div>
       <nav class="schede" role="tablist" aria-label="Sezioni" hidden>
         <button role="tab" data-scheda="prestiti" aria-selected="false" aria-controls="scheda-prestiti">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M6.5 4h11M3.5 12.5h17"/></svg>
           <span>Prestiti</span><small class="spiega-scheda">Tutti i tuoi prestiti</small></button>
+        <!-- Il prestito aperto, con le sue pagine, e gli altri prestiti: solo nella barra laterale (app.js) -->
+        <div class="ramo-prestito" id="ramo-prestito" hidden></div>
         <button role="tab" data-scheda="offerte" aria-selected="false" aria-controls="scheda-offerte">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M7 20h10M5 8h14"/><path d="M5 8l-2.5 6a2.5 2.5 0 0 0 5 0z"/><path d="M19 8l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>
           <span>Offerte</span><small class="spiega-scheda">Confronta prima di firmare</small></button>
-        <button role="tab" data-scheda="piano" aria-selected="true" aria-controls="scheda-piano">
-          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.8h17M9.5 9.5V20"/></svg>
-          <span>Piano</span><small class="spiega-scheda">Le rate mese per mese</small></button>
-        <button role="tab" data-scheda="tassi" aria-selected="false" aria-controls="scheda-tassi">
-          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 17.5l5-5.5 4 3 7.5-8"/><path d="M15 7h5v5"/></svg>
-          <span>Tassi</span><small class="spiega-scheda">L'andamento dell'Euribor</small></button>
-        <button role="tab" class="solo-avanzata" data-scheda="calendario" aria-selected="false" aria-controls="scheda-calendario">
-          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
-          <span>Calendario</span><small class="spiega-scheda">Quando si legge l'indice</small></button>
-        <button role="tab" class="solo-avanzata" data-scheda="festivita" aria-selected="false" aria-controls="scheda-festivita">
-          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 21V4M5.5 4.5h12l-2.5 4 2.5 4h-12"/></svg>
-          <span>Festività</span><small class="spiega-scheda">I giorni di chiusura delle banche</small></button>
         <button role="tab" data-scheda="pannello" aria-selected="false" aria-controls="scheda-pannello">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg>
-          <span>Pannello<span class="solo-largo"> di controllo</span></span><small class="spiega-scheda">Costi, rimborso, backup</small></button>
+          <span>Pannello<span class="solo-largo"> di controllo</span></span><small class="spiega-scheda">Backup e impostazioni</small></button>
       </nav>
       <div class="azioni-testata">
         <button type="button" class="secondario pulsante-icona" id="scegli-tema" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu-temi" title="Impostazioni: versione semplice o avanzata, assistente, colori">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M5.5 18.5l2.1-2.1M16.4 7.6l2.1-2.1"/></svg>
           <span class="testo-pulsante">Impostazioni</span><span class="impostazione-attuale"></span></button>
-      <button type="button" class="secondario pulsante-icona" id="apri-configurazione" title="Rivedi o cambia i dati del prestito: importo, durata, tasso, regole del contratto" hidden>
-        <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5h4l10.2-10.2-4-4L4.5 15.5z"/><path d="M12.8 7.2l4 4"/></svg>
-        <span class="testo-pulsante">Dati del prestito</span></button>
       </div>
     </div>
+    <!-- Sugli schermi stretti: il prestito aperto e le sue pagine (app.js) -->
+    <nav class="sottomenu" id="sottomenu" aria-label="Il prestito aperto" hidden></nav>
   </header>
 
   <!-- I numeri del mese (app.js, disegnaRiepilogo) -->
@@ -83,7 +73,7 @@
         <div class="intestazione-prestiti">
           <div>
             <h2 data-icona="prestiti">I tuoi prestiti</h2>
-            <p class="nota">Mutui e finanziamenti che segui. Le altre pagine (Piano, Tassi, Pannello…) riguardano quello aperto: per passare a un altro premi «Apri».</p>
+            <p class="nota">Mutui e finanziamenti che segui. Con «Apri» entri in un prestito: compaiono le sue pagine (il piano, i costi, i tassi…), a sinistra o sotto la testata.</p>
           </div>
           <button type="button" id="aggiungi-prestito" data-icona="piu">Aggiungi un prestito</button>
         </div>
@@ -370,47 +360,20 @@
       </div>
     </section>
 
-    <!-- Pannello di controllo -->
-    <section id="scheda-pannello" class="scheda scorrevole" role="tabpanel" aria-label="Pannello di controllo" hidden>
+    <!-- Pagine del prestito aperto: costi e rimborso anticipato (costi.js) -->
+    <section id="scheda-costi" class="scheda scorrevole" role="tabpanel" aria-label="Costi e rimborso" hidden>
       <div class="colonna pannello">
-        <!-- Indice della pagina: porta alle sezioni (app.js); nella versione semplice mancano quelle avanzate -->
-        <nav class="indice-pannello" aria-label="In questa pagina">
-          <span class="nota">In questa pagina:</span>
-          <button type="button" class="secondario piccolo" data-vai-a="dati-pannello" data-icona="dati">Backup dei dati</button>
-          <button type="button" class="secondario piccolo" data-vai-a="costo-prestito" data-icona="euro">Quanto costa</button>
-          <button type="button" class="secondario piccolo" data-vai-a="estinzione" data-icona="calendario">Rimborso anticipato</button>
-          <button type="button" class="secondario piccolo solo-avanzata" data-vai-a="gruppo-regole" data-icona="regole">Regole del contratto</button>
-          <button type="button" class="secondario piccolo solo-avanzata" data-vai-a="gruppo-ritocchi" data-icona="matita">Ritocchi e obiettivi</button>
-          <button type="button" class="secondario piccolo" data-vai-a="gruppo-impostazioni" data-icona="pannello">Impostazioni</button>
-        </nav>
-        <div class="carta carta-dati" id="dati-pannello">
-          <div class="testo-dati">
-            <h2 data-icona="dati">I tuoi dati</h2>
-            <p class="nota">Tutti i prestiti e le offerte restano in questo browser, sul tuo computer, e si salvano da soli a ogni modifica. Se però cancelli i dati di navigazione si perdono: ogni tanto salva un backup, cioè una copia di tutto in un file. Di solito finisce nella cartella Download: tienilo al sicuro, ad esempio su una chiavetta o in OneDrive o Google Drive. Con «Carica un backup» lo riapri qui, o su un altro computer o browser.</p>
-            <p class="nota" id="ultimo-backup"></p>
-          </div>
-          <div class="azioni">
-            <button type="button" id="salva-file" data-icona="scarica">Salva un backup</button>
-            <label class="carica-file secondario" id="carica-file" data-icona="carica">Carica un backup<input type="file" accept=".json,.txt,.js,application/json,text/plain" hidden></label>
-            <button type="button" class="pericoloso" id="cancella-tutto" data-icona="cestino">Cancella tutto</button>
-          </div>
-        </div>
-
         <!-- Costo totale, spese, assicurazioni e TAEG del prestito aperto (costi.js) -->
         <div class="carta carta-costo" id="costo-prestito"></div>
         <!-- Estinzione anticipata, totale o parziale: risparmio, penale, costi restituiti (costi.js) -->
         <div class="carta carta-costo" id="estinzione"></div>
+      </div>
+    </section>
 
-        <!-- Nella versione semplice: che cosa c'è in più nell'avanzata -->
-        <div class="carta solo-semplice carta-versione">
-          <div>
-            <h2 data-icona="bacchetta">Altri strumenti, per chi conosce il contratto</h2>
-            <p class="nota">Nella versione avanzata trovi anche la taratura automatica delle regole, tutte le regole del contratto da cambiare a mano, i valori a mano per una rata, la rata ideale, il calendario delle rilevazioni, le festività, le previsioni dell'indice e le colonne di approfondimento del piano. Per controllare le rate non servono.</p>
-          </div>
-          <div class="azioni"><button type="button" class="secondario" id="passa-avanzata" data-passa-versione="avanzata">Passa alla versione avanzata</button></div>
-        </div>
-
-        <section class="gruppo-pannello solo-avanzata" id="gruppo-regole" aria-labelledby="titolo-gruppo-regole">
+    <!-- Pagine del prestito aperto, versione avanzata: le regole del contratto e i ritocchi (configura.js, app.js) -->
+    <section id="scheda-contratto" class="scheda scorrevole" role="tabpanel" aria-label="Regole del contratto" hidden>
+      <div class="colonna pannello">
+        <section class="gruppo-pannello" id="gruppo-regole" aria-labelledby="titolo-gruppo-regole">
           <h2 class="titolo-gruppo" id="titolo-gruppo-regole">Le regole del contratto</h2>
           <p class="nota">Se nel piano restano righe rosse anche dove hai scritto la rata vera, di solito è una regola scelta male: la taratura la trova da sola.</p>
           <div class="griglia-pannello">
@@ -446,7 +409,7 @@
           </form>
         </section>
 
-        <section class="gruppo-pannello solo-avanzata" id="gruppo-ritocchi" aria-labelledby="titolo-gruppo-ritocchi">
+        <section class="gruppo-pannello" id="gruppo-ritocchi" aria-labelledby="titolo-gruppo-ritocchi">
           <h2 class="titolo-gruppo" id="titolo-gruppo-ritocchi">Ritocchi e obiettivi</h2>
           <div class="griglia-pannello">
             <form class="carta" id="form-applicato">
@@ -489,6 +452,33 @@
             </form>
           </div>
         </section>
+      </div>
+    </section>
+
+    <!-- Pannello di controllo: per tutti i prestiti, backup e impostazioni -->
+    <section id="scheda-pannello" class="scheda scorrevole" role="tabpanel" aria-label="Pannello di controllo" hidden>
+      <div class="colonna pannello">
+        <div class="carta carta-dati" id="dati-pannello">
+          <div class="testo-dati">
+            <h2 data-icona="dati">I tuoi dati</h2>
+            <p class="nota">Tutti i prestiti e le offerte restano in questo browser, sul tuo computer, e si salvano da soli a ogni modifica. Se però cancelli i dati di navigazione si perdono: ogni tanto salva un backup, cioè una copia di tutto in un file. Di solito finisce nella cartella Download: tienilo al sicuro, ad esempio su una chiavetta o in OneDrive o Google Drive. Con «Carica un backup» lo riapri qui, o su un altro computer o browser.</p>
+            <p class="nota" id="ultimo-backup"></p>
+          </div>
+          <div class="azioni">
+            <button type="button" id="salva-file" data-icona="scarica">Salva un backup</button>
+            <label class="carica-file secondario" id="carica-file" data-icona="carica">Carica un backup<input type="file" accept=".json,.txt,.js,application/json,text/plain" hidden></label>
+            <button type="button" class="pericoloso" id="cancella-tutto" data-icona="cestino">Cancella tutto</button>
+          </div>
+        </div>
+
+        <!-- Nella versione semplice: che cosa c'è in più nell'avanzata -->
+        <div class="carta solo-semplice carta-versione">
+          <div>
+            <h2 data-icona="bacchetta">Altri strumenti, per chi conosce il contratto</h2>
+            <p class="nota">Nella versione avanzata ogni prestito ha anche le pagine «Regole del contratto» (taratura automatica, tutte le regole da cambiare a mano, valori a mano per una rata, rata ideale), «Calendario» e «Festività»; il piano ha le colonne di approfondimento e i tassi le previsioni dell'indice. Per controllare le rate non servono.</p>
+          </div>
+          <div class="azioni"><button type="button" class="secondario" id="passa-avanzata" data-passa-versione="avanzata">Passa alla versione avanzata</button></div>
+        </div>
 
         <section class="gruppo-pannello" id="gruppo-impostazioni" aria-labelledby="titolo-gruppo-impostazioni">
           <h2 class="titolo-gruppo" id="titolo-gruppo-impostazioni">Impostazioni</h2>

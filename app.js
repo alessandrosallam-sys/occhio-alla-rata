@@ -49,8 +49,6 @@
   const indice = () => (stato.dati && stato.dati.parametri.indice_nome) || 'indice';
   // Mutuo a tasso variabile (con indice, rilevazioni, Euribor) oppure a tasso fisso (mutuo fisso, finanziamento).
   const variabile = () => !stato.dati || (stato.dati.parametri.tipo_prestito || 'variabile') === 'variabile';
-  // Schede che servono solo a chi ha un indice da seguire, e schede che ci sono solo nella versione avanzata.
-  const SCHEDE_VARIABILE = ['tassi', 'calendario', 'festivita'], SCHEDE_AVANZATE = ['calendario', 'festivita'];
   // Versione della pagina, scelta nelle impostazioni (temi.js la mette su <html>): la semplice nasconde gli strumenti
   // per esperti (in stile.css la classe «solo-avanzata», qui schede e colonne del piano).
   const semplice = () => document.documentElement.dataset.versione === 'semplice';
@@ -75,7 +73,7 @@
     // L'indice delle rate future viene dal modello scelto nella scheda «Previsioni», se c'è (previsioni.js).
     stato.piano = Calcolo.calcolaPiano(dati, { previsione: M.perPiano ? M.perPiano(dati) : null });
     if (M.ORIGINI) M.ORIGINI.previsione = M.nomeModelloPiano && M.nomeModelloPiano(dati) ? `previsione (modello ${M.nomeModelloPiano(dati)})` : 'previsione';
-    $('#titolo-mutuo').textContent = document.title = dati.parametri.nome || 'Mutuo variabile';
+    disegnaMenu();   // il nome del prestito può essere cambiato
     disegnaRiepilogo();
     disegnaPiano();
     for (const disegna of M.viste) disegna();
@@ -324,7 +322,7 @@
       titolo: r => r.rataCopiata ? 'Presa dal calcolo, non controllata. Clic: Invio la conferma come controllata, un\'altra cifra la sostituisce, vuota la toglie' : '' },
     { g: 2, t: 'Variazione sul mese prima', soloVariabile: true, avanzata: true, aiuto: 'Confronto in percentuale del costo al giorno: rata divisa per i giorni del mese, rispetto al mese precedente',
       v: cellaVariazione, classe: r => r.rataVera == null ? previsione(r) : '', titolo: titoloVariazione },
-    { g: 2, t: 'Distanza dal target', avanzata: true, visibile: () => obiettivo() != null, aiuto: 'Rata del mese − rata ideale impostata nel pannello di controllo',
+    { g: 2, t: 'Distanza dal target', avanzata: true, visibile: () => obiettivo() != null, aiuto: 'Rata del mese − rata ideale impostata nella pagina «Regole del contratto»',
       v: cellaObiettivo, classe: r => r.rataVera == null ? previsione(r) : '', titolo: titoloObiettivo },
     { g: 2, t: 'Quota capitale', campo: 'quota_capitale', aiuto: 'Dal piano di rimborso scelto nelle regole del contratto, oppure inserita a mano',
       v: r => euroT(r.quotaCapitale), manuale: r => r.quotaCapitaleManuale, titolo: titoloQuota },
@@ -344,7 +342,7 @@
       v: r => (tassoMancante(r) ? '⚠ ' : '') + (r.alTetto ? '<span class="tetto">max</span>' : '') + percT(r.euribor, 3),
       classe: previsione, manuale: r => r.origineEuribor === 'manuale',
       titolo: r => tassoMancante(r) ? `Manca il valore dell'indice del ${data(r.riferimento)}: quello mostrato è una stima`
-        : r.alTetto ? 'Previsione ferma al tetto massimo impostato nel pannello di controllo' : '' },
+        : r.alTetto ? 'Previsione ferma al tetto massimo impostato nelle regole del contratto' : '' },
     { extra: true, g: 4, t: 'Aumento mensile', x: 'Variazione dell\'indice', soloVariabile: true, aiuto: 'Differenza con la rilevazione precedente; per il futuro: secondo la proiezione scelta nella pagina «Previsioni» (all\'inizio: media delle variazioni passate)',
       v: r => percT(r.variazione), classe: r => 'minore ' + previsione(r) },
     { extra: true, g: 4, t: 'Spread', campo: 'spread', percento: true, soloVariabile: true, v: r => percT(r.spread, 3, 1), manuale: r => r.spreadManuale },
@@ -494,7 +492,7 @@
     const avvertenza = diverse ? `ATTENZIONE: ${quanteRate(diverse)} che hai scritto tu non coincid${diverse === 1 ? 'e' : 'ono'} con il calcolo. Forse le regole non sono ancora giuste: conviene sistemarle prima.\n\n`
       : !controllate.length ? 'ATTENZIONE: non hai ancora scritto nessuna rata vera, quindi non c\'è modo di sapere se il calcolo è giusto. Conviene controllarne prima almeno due o tre.\n\n' : '';
     if (chiedi && !confirm(`${avvertenza}Segno come pagat${righe.length === 1 ? 'a' : 'e'} ${quanteRate(righe.length)} (${intervallo(righe)}) con la cifra calcolata dal programma?\n\n`
-      + 'Resteranno riconoscibili dal segno «=» perché non sono state controllate sull\'estratto conto. Potrai correggerle una per una, oppure toglierle tutte dal pannello di controllo.')) return;
+      + 'Resteranno riconoscibili dal segno «=» perché non sono state controllate sull\'estratto conto. Potrai correggerle una per una, oppure toglierle tutte dalla pagina «Regole del contratto» (versione avanzata).')) return;
     await esegui('POST', 'rate', { righe: righe.map(r => ({ n: r.n, rata_copiata: Number(r.rataCalcolata.toFixed(2)) })) },
       `${quanteRate(righe.length)} compilat${righe.length === 1 ? 'a' : 'e'} dal calcolo`);
   }
@@ -530,7 +528,7 @@
   $('#legenda-piano').addEventListener('click', vaiAlloStato);
   $('#esito-conti').addEventListener('click', vaiAlloStato);
 
-  // ---------- Pannello di controllo ----------
+  // ---------- Regole del contratto: valori a mano per una rata, rata ideale ----------
   const formApplicato = $('#form-applicato');
 
   function disegnaPannello() {
@@ -751,61 +749,134 @@
     if (await esegui('POST', 'euribor', { righe }, salvati + ignorate)) evento.target.reset();
   });
 
+  // ---------- Menù ----------
+  // Il menù generale ha tre voci: «Prestiti» (tutti i prestiti), «Offerte», «Pannello di controllo» (backup e
+  // impostazioni). Quando si entra in un prestito compare il suo sottomenu con le sue pagine: nella barra laterale
+  // sotto «Prestiti», insieme agli altri prestiti per passare dall'uno all'altro; sugli schermi stretti in una barra
+  // sotto la testata. Le pagine cambiano con il prestito (a tasso fisso niente tassi né calendario) e con la versione.
+  const NOME_PROGRAMMA = 'Occhio alla Rata';
+  const SCHEDE_GENERALI = ['prestiti', 'offerte', 'pannello'];
+  const PAGINE_PRESTITO = [
+    { scheda: 'piano', nome: 'Piano', breve: 'Piano', spiega: 'Le rate mese per mese', icona: 'piano' },
+    { scheda: 'costi', nome: 'Costi e rimborso', breve: 'Costi', spiega: 'Quanto costa, rimborso anticipato', icona: 'euro' },
+    { scheda: 'tassi', nome: 'Tassi', breve: 'Tassi', spiega: 'L\'andamento dell\'Euribor', icona: 'grafico', soloVariabile: true },
+    { scheda: 'calendario', nome: 'Calendario', breve: 'Calendario', spiega: 'Quando si legge l\'indice', icona: 'calendario', soloVariabile: true, avanzata: true },
+    { scheda: 'festivita', nome: 'Festività', breve: 'Festività', spiega: 'I giorni di chiusura delle banche', icona: 'bandiera', soloVariabile: true, avanzata: true },
+    { scheda: 'contratto', nome: 'Regole del contratto', breve: 'Regole', spiega: 'Taratura, regole, ritocchi', icona: 'regole', avanzata: true },
+  ];
+  const aperto = () => !!(stato.aperto && stato.dati);
+  const paginaPossibile = p => aperto() && (!p.soloVariabile || variabile()) && !(p.avanzata && semplice());
+  const schedaPossibile = nome => SCHEDE_GENERALI.includes(nome) || PAGINE_PRESTITO.some(p => p.scheda === nome && paginaPossibile(p));
+  const nomeDi = d => d.parametri.nome || 'Prestito senza nome';
+
+  function disegnaMenu() {
+    const principale = Archivio.principale(), pagine = PAGINE_PRESTITO.filter(paginaPossibile);
+    document.title = aperto() ? `${nomeDi(stato.dati)} · ${NOME_PROGRAMMA}` : NOME_PROGRAMMA;
+    const icona = d => Icone.crea(M.iconaTipo ? M.iconaTipo(d.parametri) : 'casa', 'icona');
+    const stella = d => d.id === principale ? [crea('span', { className: 'stella', title: 'Prestito principale: si apre da solo' }, '★')] : [];
+    const voce = (pagina, breve) => crea('button', { type: 'button', role: 'tab', 'data-scheda': pagina.scheda, 'aria-controls': 'scheda-' + pagina.scheda,
+      'aria-selected': String(stato.scheda === pagina.scheda) }, Icone.crea(pagina.icona, 'icona'), crea('span', {}, breve ? pagina.breve : pagina.nome),
+      ...(breve ? [] : [crea('small', { className: 'spiega-scheda' }, pagina.spiega)]));
+    const datiPrestito = breve => crea('button', { type: 'button', className: 'voce-azione', 'data-azione': 'dati' },
+      Icone.crea('matita', 'icona'), crea('span', {}, breve ? 'Dati' : 'Dati del prestito'), ...(breve ? [] : [crea('small', { className: 'spiega-scheda' }, 'Importo, durata, tasso')]));
+    const chiudi = () => crea('button', { type: 'button', className: 'chiudi-prestito', 'data-azione': 'chiudi', 'aria-label': 'Chiudi il prestito' }, '×');
+    // Barra laterale: il prestito aperto con le sue pagine, poi gli altri (un clic li apre).
+    const ramo = $('#ramo-prestito'), sotto = $('#sottomenu');
+    ramo.hidden = sotto.hidden = !aperto();
+    if (!aperto()) { ramo.replaceChildren(); sotto.replaceChildren(); return; }
+    ramo.replaceChildren(
+      crea('div', { className: 'prestito-aperto' },
+        crea('div', { className: 'testa-ramo' },
+          crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'piano' }, icona(stato.dati), crea('span', {}, nomeDi(stato.dati)), ...stella(stato.dati)),
+          chiudi()),
+        crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, false)), datiPrestito(false))),
+      ...Archivio.elenco().filter(d => d.id !== stato.dati.id).map(d =>
+        crea('button', { type: 'button', className: 'altro-prestito', 'data-apri-prestito': d.id }, icona(d), crea('span', {}, nomeDi(d)), ...stella(d))));
+    // Schermi stretti: una barra sotto la testata con il prestito aperto e le sue pagine.
+    sotto.replaceChildren(
+      crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'prestiti' }, icona(stato.dati), crea('span', {}, nomeDi(stato.dati))),
+      crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, true)), datiPrestito(true)),
+      chiudi());
+  }
+
   // ---------- Schede ----------
   function mostraScheda(nome) {
+    if (!schedaPossibile(nome)) nome = aperto() ? 'piano' : 'prestiti';
     const nuova = $('#scheda-' + nome);
-    if (nuova && nuova.hidden) { window.scrollTo(0, 0); rianima(nuova, 'entra'); }   // la pagina scorre tutta insieme: una scheda nuova parte dall'alto
-    for (const pulsante of document.querySelectorAll('.schede button')) {
-      const attiva = pulsante.dataset.scheda === nome;
-      pulsante.setAttribute('aria-selected', attiva);
-      $('#scheda-' + pulsante.dataset.scheda).hidden = !attiva;
-    }
-    // I numeri del mese in testa riguardano il prestito aperto: nelle schede con tutti i prestiti e con le offerte non servono.
-    $('#riepilogo').hidden = nome === 'prestiti' || nome === 'offerte' || !stato.dati;
+    if (nuova.hidden) { window.scrollTo(0, 0); rianima(nuova, 'entra'); }   // la pagina scorre tutta insieme: una scheda nuova parte dall'alto
+    stato.scheda = nome;
+    for (const scheda of document.querySelectorAll('#principale > .scheda')) scheda.hidden = scheda !== nuova;
+    for (const pulsante of document.querySelectorAll('.schede [data-scheda], .sottomenu [data-scheda]')) pulsante.setAttribute('aria-selected', String(pulsante.dataset.scheda === nome));
+    // I numeri del mese in testa riguardano il prestito aperto: solo nelle sue pagine.
+    $('#riepilogo').hidden = !PAGINE_PRESTITO.some(p => p.scheda === nome);
     history.replaceState(null, '', '#' + nome);   // ricaricando la pagina si resta sulla stessa scheda
     if (M.allApertura[nome]) M.allApertura[nome]();
     if (nome === 'piano' && !stato.schedaVista.piano) vaiAlMeseCorrente();
     stato.schedaVista[nome] = true;
     for (const f of M.alCambioScheda) f(nome);
   }
-  // Schede che si possono aprire: senza prestiti solo le offerte; a tasso fisso niente tassi né calendario;
-  // nella versione semplice niente calendario e festività.
-  const schedaPossibile = nome => !!$('#scheda-' + nome) && (stato.dati ? variabile() || !SCHEDE_VARIABILE.includes(nome) : nome === 'offerte')
-    && !(semplice() && SCHEDE_AVANZATE.includes(nome));
-  function aggiornaSchede() {
-    for (const pulsante of document.querySelectorAll('.schede button[data-scheda]')) pulsante.hidden = !schedaPossibile(pulsante.dataset.scheda);
-  }
-  // Cambiata la versione nelle impostazioni: schede, piano e pagine si ridisegnano; se la scheda aperta non c'è più,
+  // Cambiata la versione nelle impostazioni: menù, piano e pagine si ridisegnano; se la pagina aperta non c'è più,
   // si torna al piano.
   document.addEventListener('cambio-versione', () => {
     if ($('#principale').hidden) return;
-    aggiornaSchede();
+    disegnaMenu();
     if (stato.dati) { disegnaPiano(); for (const disegna of M.viste) disegna(); }
-    const aperta = document.querySelector('.schede button[aria-selected="true"]');
-    if (aperta && aperta.hidden) mostraScheda(stato.dati ? 'piano' : 'offerte');
+    if (!schedaPossibile(stato.scheda)) mostraScheda(aperto() ? 'piano' : 'prestiti');
   });
-  // Indice in cima al pannello: porta alla sezione scelta.
-  $('.indice-pannello').addEventListener('click', evento => {
-    const pulsante = evento.target.closest('[data-vai-a]');
-    if (pulsante) $('#' + pulsante.dataset.vaiA).scrollIntoView({ behavior: movimento() ? 'smooth' : 'auto', block: 'start' });
+
+  // Entra in un prestito (dall'elenco o dalla barra laterale): diventa quello aperto e compare il suo sottomenu.
+  M.entra = async function entra(id, scheda = 'piano') {
+    try {
+      if (id !== Archivio.attivo()) await api('PUT', 'attivo/' + id);
+    } catch (errore) {
+      return avvisa(errore.message, true);
+    }
+    stato.aperto = true;
+    await M.avvia(scheda);
+  };
+  // Chiude il prestito: resta il menù generale, con l'elenco dei prestiti.
+  M.esci = function esci() {
+    stato.aperto = false;
+    disegnaMenu();
+    mostraScheda('prestiti');
+  };
+  for (const menu of [$('.schede'), $('#sottomenu')]) menu.addEventListener('click', evento => {
+    const pulsante = evento.target.closest('button');
+    if (!pulsante) return;
+    if (pulsante.dataset.scheda || pulsante.dataset.vai) mostraScheda(pulsante.dataset.scheda || pulsante.dataset.vai);
+    else if (pulsante.dataset.apriPrestito) M.entra(pulsante.dataset.apriPrestito);
+    else if (pulsante.dataset.azione === 'dati') M.apriGuida(true);
+    else if (pulsante.dataset.azione === 'chiudi') M.esci();
   });
 
   // ---------- Avvio ----------
-  // Senza una configurazione parte la guida (configura.js); altrimenti si mostra il programma.
-  // Senza prestiti ma con delle offerte (o se lo si è chiesto dalla guida) c'è solo la scheda «Offerte»: serve a chi
-  // deve ancora firmare.
-  M.avvia = async function avvia() {
+  // Senza prestiti parte la guida (configura.js); altrimenti si mostra il programma. Senza prestiti ma con delle
+  // offerte (o se lo si è chiesto dalla guida) c'è il menù generale, con l'elenco dei prestiti vuoto: serve a chi deve
+  // ancora firmare. «scheda»: la pagina da mostrare (altrimenti quella dell'indirizzo, o la prima).
+  M.avvia = async function avvia(scheda) {
     const pronto = Archivio.configurato();
     const soloOfferte = !pronto && (stato.soloOfferte || Archivio.offerte().length > 0);
     $('#configurazione').hidden = pronto || soloOfferte;
     for (const id of ['#principale', '.schede']) $(id).hidden = !pronto && !soloOfferte;
-    for (const id of ['#riepilogo', '#apri-configurazione']) $(id).hidden = !pronto;
+    $('#riepilogo').hidden = !pronto;
     if (soloOfferte) {
-      stato.dati = stato.piano = null;
-      aggiornaSchede();
-      return mostraScheda('offerte');
+      // Nessun prestito: niente da aprire. Quando ne arriva uno si decide come all'avvio (il principale, o l'unico).
+      stato.dati = stato.piano = stato.aperto = null;
+      disegnaMenu();
+      return mostraScheda(SCHEDE_GENERALI.includes(scheda) ? scheda : 'offerte');
     }
-    if (!pronto) return M.apriGuida(false);
+    if (!pronto) { stato.aperto = null; disegnaMenu(); return M.apriGuida(false); }
+    // Quale prestito è aperto: all'avvio (e dopo aver caricato un backup) il principale, o l'unico; ricaricando la
+    // pagina mentre si guarda un prestito, quello.
+    if (stato.aperto == null) {
+      const elenco = Archivio.elenco(), principale = Archivio.principale();
+      const dallIndirizzo = PAGINE_PRESTITO.some(p => p.scheda === location.hash.slice(1)) ? Archivio.attivo() : null;
+      const daAprire = dallIndirizzo || principale || (elenco.length === 1 ? elenco[0].id : null);
+      try {
+        if (daAprire && daAprire !== Archivio.attivo()) await api('PUT', 'attivo/' + daAprire);
+      } catch { /* resta quello di prima */ }
+      stato.aperto = !!daAprire;
+    }
     try {
       aggiorna(await api('GET', 'dati'));
     } catch (errore) {
@@ -813,16 +884,13 @@
     }
     formApplicato.giorno.value = stato.oggi;
     caricaValoriRata();
-    aggiornaSchede();
-    const scheda = location.hash.slice(1);
-    mostraScheda(/^[a-z]+$/.test(scheda) && schedaPossibile(scheda) ? scheda : 'piano');
+    disegnaMenu();
+    const voluta = scheda || location.hash.slice(1);
+    mostraScheda(/^[a-z]+$/.test(voluta) && schedaPossibile(voluta) ? voluta : aperto() ? 'piano' : 'prestiti');
     for (const f of M.dopoAvvio) f();   // ad esempio lo scarico automatico dei tassi (tassi.js)
   };
+  M.disegnaMenu = disegnaMenu;
+  M.NOME_PROGRAMMA = NOME_PROGRAMMA;
   // Una variante della pagina può sostituire l'avvio con M.allAvvio (ad esempio per chiedere prima quali dati caricare).
   window.addEventListener('DOMContentLoaded', () => (M.allAvvio || M.avvia)());
-
-  $('.schede').addEventListener('click', evento => {
-    const pulsante = evento.target.closest('button[data-scheda]');
-    if (pulsante) mostraScheda(pulsante.dataset.scheda);
-  });
 })();

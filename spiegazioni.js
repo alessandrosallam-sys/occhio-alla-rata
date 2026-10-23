@@ -24,7 +24,7 @@
     const quando = `Rata ${r.n}, ${meseAnno(r.inizio)}: `, oggi = M.stato.oggi;
     const parti = `${euro(r.quotaCapitale)} di capitale e ${euro(r.rataCalcolata - r.quotaCapitale - (M.stato.dati.parametri.spese_rata || 0))} di interessi`;
     const scarto = r.rataVera != null ? Math.round((r.rataVera - r.rataCalcolata) * 100) / 100 : 0;
-    if (r.rataVera != null && scarto !== 0) return `${quando}non torna. La rata scritta è ${euro(r.rataVera)}, il calcolo dice ${euro(r.rataCalcolata)}: ${euro(Math.abs(scarto))} ${scarto > 0 ? 'in più' : 'in meno'}. Controlla l'importo sull'estratto conto, oppure prova la taratura nel «Pannello di controllo».`;
+    if (r.rataVera != null && scarto !== 0) return `${quando}non torna. La rata scritta è ${euro(r.rataVera)}, il calcolo dice ${euro(r.rataCalcolata)}: ${euro(Math.abs(scarto))} ${scarto > 0 ? 'in più' : 'in meno'}. Controlla l'importo sull'estratto conto, oppure, nella versione avanzata, prova la taratura nella pagina «Regole del contratto».`;
     if (r.rataCopiata) return `${quando}presa dal calcolo (${euro(r.rataVera)}), non ancora controllata sull'estratto conto. Clic sulla cifra per confermarla o correggerla.`;
     if (r.rataVera != null) return `${quando}torna al centesimo: la banca ha addebitato ${euro(r.rataVera)}, come dice il calcolo (${parti}).`;
     if (r.fine < oggi) return `${quando}è già passata ma manca l'importo addebitato: scrivilo nella colonna «Rata vera» (secondo il calcolo, ${euro(r.rataCalcolata)}).`;
@@ -96,20 +96,29 @@
     ['TAEG', 'Il costo vero in percentuale all\'anno, come lo scrive il contratto.'],
   ];
   const SCHEDE = {
-    prestiti: 'Tutti i prestiti che segui, con il totale delle rate del mese e del debito.',
+    prestiti: 'Tutti i prestiti che segui, con il totale delle rate del mese e del debito. Da qui entri in uno e scegli il principale.',
     offerte: 'Devi ancora firmare? Qui confronti le offerte delle banche: ti dico quale costa meno.',
+    pannello: 'Per tutti i prestiti: il backup dei dati e le impostazioni (versione semplice o avanzata, assistente, colori).',
     piano: 'Il piano rata per rata: scrivi le rate addebitate e vedi se tornano con i conti.',
+    costi: 'Quanto costa davvero questo prestito, e quanto risparmi rimborsandolo prima.',
     tassi: 'I valori dell\'Euribor, con il grafico e le previsioni per le rate future.',
     calendario: 'In che giorno la banca legge l\'indice per ogni rata.',
     festivita: 'I giorni di chiusura delle banche, che non contano come lavorativi.',
-    pannello: 'Quanto costa il prestito, il rimborso anticipato, il backup dei dati e le regole del contratto.',
+    contratto: 'Le regole del contratto di questo prestito: taratura automatica, regole a mano, ritocchi, rata ideale.',
   };
 
   const VOCI = [
     ['[data-spiega]', el => el.dataset.spiega],
     // Navigazione e testata
-    ['.schede button[data-scheda]', el => SCHEDE[el.dataset.scheda]],
-    ['#apri-configurazione', 'Rivedi o cambia i dati del prestito: importo, durata, tasso, regole del contratto. Le rate che hai scritto restano.'],
+    ['.schede button[data-scheda], .sottomenu button[data-scheda]', el => SCHEDE[el.dataset.scheda]],
+    ['[data-azione="dati"]', 'Rivedi o cambia i dati di questo prestito: importo, durata, tasso, regole del contratto. Le rate che hai scritto restano.'],
+    ['[data-azione="chiudi"]', 'Chiude il prestito: resta il menù generale, con l\'elenco di tutti i prestiti.'],
+    ['.ramo-prestito .nome-prestito', el => `Il prestito aperto, «${el.textContent.replace('★', '').trim()}»: sotto ci sono le sue pagine. Clic per il suo piano.`],
+    ['.sottomenu .nome-prestito', el => `Il prestito aperto, «${el.textContent.trim()}». Clic per vedere tutti i prestiti.`],
+    ['[data-apri-prestito]', el => `Apri «${el.textContent.replace('★', '').trim()}»: le sue pagine prendono il posto di quelle di adesso.`],
+    ['.stella', 'Il prestito principale: si apre da solo quando apri la pagina.'],
+    ['[data-principale]', el => el.getAttribute('aria-pressed') === 'true' ? 'Questo è il prestito principale: si apre da solo quando apri la pagina. Clic per toglierlo.' : 'Rendilo il prestito principale: si aprirà da solo quando apri la pagina.'],
+    ['#primo-prestito', 'Comincia a seguire il tuo prestito: ti chiedo l\'importo, la durata e qualche rata pagata.'],
     ['#scegli-tema', 'Le impostazioni: versione semplice o avanzata, che cosa fa l\'assistente, i colori della pagina.'],
     // Impostazioni (riquadro e pannello)
     ['[data-scelta-versione="semplice"]', 'La versione semplice mostra solo l\'essenziale: le rate e se tornano, quanto costa il prestito, il rimborso anticipato, il backup.'],
@@ -117,7 +126,6 @@
     ['label:has([data-opzione-assistente="spiega"])', 'Se lo spegni non spiego più le cose quando ci passi sopra con il mouse.'],
     ['label:has([data-opzione-assistente="segue"])', 'Se lo spegni resto in cima alla pagina e non ti seguo quando scorri.'],
     ['#passa-avanzata', 'Mostra anche gli strumenti per esperti. Si torna alla semplice dalle «Impostazioni».'],
-    ['.indice-pannello [data-vai-a]', el => `Porta alla sezione «${el.textContent.trim()}» di questa pagina.`],
     // Riepilogo in testa
     ['#riepilogo .dato', el => perEtichetta(RIEPILOGO, etichetta(el)) || (/euribor|indice/i.test(etichetta(el)) ? 'Il valore dell\'indice per la rata di questo mese, e il giorno in cui la banca l\'ha letto.' : '')],
     // Piano
