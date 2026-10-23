@@ -93,6 +93,7 @@
     ['Valori dell', 'I valori dell\'Euribor che il programma ha già per il periodo del prestito.'],
     ['Rate già pagate', 'Le rate che hai scritto: servono a controllare i conti della banca.'],
     ['Altre spese', 'Spese iniziali, assicurazioni e spese annuali: servono al costo totale e al TAEG.'],
+    ['TAEG calcolato', 'Il costo vero in percentuale all\'anno, calcolato da me con le regole della legge: se scrivi quello dell\'offerta, ti dico se coincide.'],
     ['TAEG', 'Il costo vero in percentuale all\'anno, come lo scrive il contratto.'],
     ['Importo prestato', 'La somma che ti ha prestato la banca: la trovi nella prima pagina del contratto.'],
     ['Durata', 'Quante rate in tutto, e il mese della prima e dell\'ultima.'],
@@ -102,6 +103,13 @@
     ['Assicurazioni', 'Le assicurazioni legate al prestito: servono al costo totale e al TAEG.'],
     ['Rate scritte', 'Le rate che hai scritto nel piano: quelle controllate sull\'estratto conto e quelle prese dal calcolo (segnate con «=»).'],
     ['Si apre da solo', 'Il prestito principale si apre da solo quando apri la pagina. Lo scegli con la stella nella pagina «Prestiti».'],
+    // Il riepilogo di un'offerta nella guida
+    ['Che cosa', 'Il tipo di finanziamento: decide come faccio i conti.'],
+    ['Offerta di', 'Chi ti ha fatto l\'offerta: serve a riconoscerla nel confronto.'],
+    ['Importo', 'La somma che ti prestano, non il prezzo di quello che compri.'],
+    ['Rata', 'La rata che pagherai ogni mese, calcolata da importo, durata e tasso, spese per rata comprese.'],
+    ['Costo totale', 'Tutto quello che paghi oltre alla somma prestata: interessi, spese e assicurazioni.'],
+    ['Totale da pagare', 'Tutto quello che esce dalle tue tasche: la somma prestata più il costo totale.'],
   ];
   const SCHEDE = {
     prestiti: 'Tutti i prestiti che segui, con il totale delle rate del mese e del debito. Da qui entri in uno e scegli il principale.',

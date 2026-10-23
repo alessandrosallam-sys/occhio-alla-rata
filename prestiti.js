@@ -24,15 +24,15 @@
       rateRestanti: restanti.length,
     };
   }
-  // Un'icona per tipo: la casa per i mutui, il portafoglio per i finanziamenti, l'auto per quelli con la maxirata.
-  const iconaTipo = p => ({ finanziamento: 'portafoglio', maxirata: 'auto' })[p.tipo_prestito] || 'casa';
+  // Un'icona per categoria (archivio.js): la casa per i mutui, l'auto, la borsa degli acquisti, il portafoglio…
+  const iconaTipo = p => { const c = Archivio.categoria(p); return c.tipo === 'variabile' || c.tipo === 'fisso' ? 'casa' : c.icona; };
   M.iconaTipo = iconaTipo;
   // Che prestito è, in poche parole (a tasso fisso anche il TAEG, che dice quanto costa davvero).
   function descriviTipo(r) {
     const p = r.d.parametri;
     if ((p.tipo_prestito || 'variabile') === 'variabile') return `Mutuo a tasso variabile · ${p.indice_nome || 'indice'} + ${perc(p.spread, 3, 1)}`;
     const taeg = Calcolo.costi(r.d, r.righe, true).taeg;
-    const tipo = { fisso: 'Mutuo a tasso fisso', maxirata: `Finanziamento con maxirata di ${M.euro(p.maxirata || 0)}` }[p.tipo_prestito] || 'Finanziamento';
+    const tipo = p.tipo_prestito === 'fisso' ? 'Mutuo a tasso fisso' : p.tipo_prestito === 'maxirata' ? `Auto con maxirata di ${M.euro(p.maxirata || 0)}` : Archivio.categoria(p).breve;
     return `${tipo} · TAN ${perc(p.tasso_fisso || 0, 3, 1)}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
   }
 

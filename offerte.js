@@ -2,6 +2,8 @@
 // il piano completo, come se partisse il mese prossimo: rata, interessi, costo totale e TAEG, uno accanto all'altro.
 // Per il tasso variabile l'indice futuro viene da un modello (previsioni.js, M.proiezioneIndice), in tre scenari, e c'è
 // anche il conto con l'indice fermo a oggi, che è quello con cui la banca calcola il suo TAEG.
+// Un'offerta nuova si aggiunge con la guida (configura.js, M.apriGuidaOfferta), una domanda per pagina; dopo si corregge
+// nella sua carta.
 (function () {
   'use strict';
   const M = window.Mutuo, { stato, $, crea, euro, perc, avvisa } = M;
@@ -15,7 +17,7 @@
   const durata = p => conMaxirata(p) ? `${p.numero_rate} rate + maxirata` : p.numero_rate % 12 === 0 ? `${p.numero_rate / 12} ${p.numero_rate === 12 ? 'anno' : 'anni'} (${p.numero_rate} rate)` : `${p.numero_rate} rate`;
   // Durata in mesi, maxirata compresa: serve a capire se due offerte si possono confrontare.
   const mesi = p => p.numero_rate + (conMaxirata(p) ? 1 : 0);
-  const nomeTipo = p => ({ variabile: 'Mutuo variabile', fisso: 'Mutuo fisso', finanziamento: 'Finanziamento', maxirata: 'Finanziamento con maxirata' })[p.tipo_prestito] || 'Prestito';
+  const nomeTipo = p => Archivio.categoria(p).breve;
   const modelloScelto = () => { const o = Archivio.offerte().find(x => variabile(x.parametri)); const m = o && o.parametri.previsione_modello; return MODELLI.some(([c]) => c === m) ? m : 'vasicek'; };
 
   // ---------- Calcolo di un'offerta ----------
@@ -42,6 +44,17 @@
     return { fisso: false, proiezione, oggi: conti(() => proiezione.ultimo.valore),
       atteso: conti(proiezione.scenari.atteso), alto: conti(proiezione.scenari.alto80), basso: conti(proiezione.scenari.basso80) };
   }
+
+  // Spese o assicurazione per rata grandi quasi quanto la rata: quasi sempre è la rata scritta nel campo sbagliato
+  // (la rata la calcola il programma). Restituisce un avviso per campo: { chiave, testo }.
+  function speseSospette(p, e) {
+    const rata = e.atteso.prima - (p.spese_rata || 0);
+    return [['spese_rata', 'Spese per ogni rata', 'le spese di incasso, di solito pochi euro'], ['assicurazione_rata', 'Assicurazione a ogni rata', 'il premio mensile di un\'assicurazione pagata a parte']]
+      .filter(([chiave]) => p[chiave] >= 20 && p[chiave] >= 0.4 * rata)
+      .map(([chiave, nome, cosa]) => ({ chiave, testo: `«${nome}» è ${euro(p[chiave])}, quasi quanto la rata (${euro(rata)}): forse lì hai scritto la rata. La rata la calcolo io da importo, durata e tasso; in quel campo vanno solo ${cosa}.` }));
+  }
+  M.calcolaOfferta = parametri => calcola({ parametri }, modelloScelto());
+  M.speseSospette = speseSospette;
 
   // ---------- Tabella di confronto ----------
   function disegnaTabella(contenitore) {
@@ -86,6 +99,7 @@
       note.push(crea('p', { className: 'nota' }, `Per il tasso variabile l'indice futuro è una stima, non una previsione sicura: oggi ${x.e.proiezione.nomeSerie} vale ${perc(x.e.proiezione.ultimo.valore, 3)}. `
         + 'Le cifre «fra … e …» sono la fascia in cui cade l\'80% dei casi secondo il modello scelto qui sotto.'));
     }
+    for (const x of calcolate) for (const s of speseSospette(x.o.parametri, x.e)) note.push(crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${s.testo} Correggilo nella sua carta, qui sotto.`));
     const mancanti = esiti.filter(x => x.e.manca);
     if (mancanti.length) note.push(...mancanti.map(x => crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${x.e.manca}`)));
     const scelta = crea('label', { className: 'campo-in-linea' }, 'Previsione dell\'indice per il variabile ',
@@ -120,7 +134,7 @@
         crea('h3', {}, 'Come funziona'),
         crea('ol', { className: 'dopo' },
           crea('li', {}, 'Prima di firmare, la banca o la finanziaria ti deve consegnare un foglio informativo: il PIES per i mutui, il SECCI per i finanziamenti. Lì trovi importo, durata, tasso, spese e TAEG.'),
-          crea('li', {}, 'Premi «Aggiungi un\'offerta» e scrivi quei numeri. Ripeti per ogni offerta che hai ricevuto.'),
+          crea('li', {}, 'Premi «Aggiungi un\'offerta»: ti chiedo quei numeri uno alla volta, e ti dico dove trovarli. Ripeti per ogni offerta che hai ricevuto.'),
           crea('li', {}, 'Il programma calcola, per ognuna, rata, interessi, costo totale e TAEG, e ti dice quale costa meno. Per il tasso variabile mostra anche quanto potrebbe salire la rata.'),
           crea('li', {}, 'Quando hai firmato, premi «Segui questo prestito» sull\'offerta scelta: i dati passano alla configurazione guidata.'))));
       return;
@@ -173,15 +187,7 @@
     if (!Archivio.configurato() && !Archivio.offerte().length) stato.soloOfferte = true;
     disegna();
   });
-  $('#aggiungi-offerta').addEventListener('click', async () => {
-    const offerte = Archivio.offerte(), ultima = offerte[offerte.length - 1];
-    // La nuova offerta riprende importo e durata dell'ultima: di solito si confrontano offerte per lo stesso prestito.
-    await Archivio.richiesta('POST', 'offerte', { parametri: { nome: `Offerta ${offerte.length + 1}`, tipo_prestito: ultima ? ultima.parametri.tipo_prestito : 'fisso',
-      ...(ultima ? { importo_iniziale: ultima.parametri.importo_iniziale, numero_rate: ultima.parametri.numero_rate } : {}) } });
-    disegna();
-    const carte = document.querySelectorAll('#carte-offerte .carta-offerta'), nuova = carte[carte.length - 1];
-    if (nuova) { nuova.scrollIntoView({ block: 'nearest' }); $('input[name="nome"]', nuova).select(); }
-  });
+  $('#aggiungi-offerta').addEventListener('click', () => M.apriGuidaOfferta());
   $('#segui-prestito-offerte').addEventListener('click', () => M.apriGuida(false));
 
   M.viste.push(disegna);

@@ -22,6 +22,8 @@
       { valore: 'fisso', icona: 'casa', etichetta: 'Mutuo a tasso fisso', aiuto: 'Il tasso è scritto nel contratto e resta lo stesso fino all\'ultima rata.' },
       { valore: 'finanziamento', icona: 'portafoglio', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' },
       { valore: 'maxirata', icona: 'auto', etichetta: 'Finanziamento con maxirata finale', aiuto: 'Tipico delle auto: di solito un anticipo, rate mensili basse e alla fine una rata molto più grande (maxirata, rata finale o «valore futuro garantito»).' }] },
+    // La categoria scelta nella guida (vedi CATEGORIE): cambia solo icona, nome e domande, i conti li decide il tipo.
+    categoria: { tipo: 'testo', iniziale: '', nascosto: true, lunghezza: 20 },
     nome: { tipo: 'testo', iniziale: 'Il mio prestito', etichetta: 'Nome del prestito', aiuto: 'Serve solo a riconoscerlo, ad esempio «Casa di via Roma» o «Auto».' },
     importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del prestito (€)', aiuto: 'Il capitale prestato dalla banca o dalla finanziaria.' },
     data_prima_rata: { tipo: 'data', obbligatorio: true, etichetta: 'Inizio del primo periodo',
@@ -134,6 +136,31 @@
   // L'archivio contiene uno o più prestiti, ognuno con parametri, rate, valori dell'indice e festività, e ricorda
   // quale è aperto: le operazioni di "richiesta" lavorano sul prestito aperto ("dati"). Contiene anche le offerte da
   // confrontare prima di firmare (scheda «Offerte»): ognuna ha solo i parametri, con gli stessi campi di un prestito.
+  // Le categorie di prestito che l'utente riconosce, nella prima domanda della guida e delle offerte. Ognuna si calcola
+  // come uno dei tipi del motore (tipo_prestito); «mutuo» è per chi non sa se il suo mutuo è fisso o variabile (solo
+  // per un prestito già firmato: lo si capisce dalle rate). «anni»: le durate pronte nella domanda sulla durata.
+  const CATEGORIE = [
+    { valore: 'variabile', tipo: 'variabile', icona: 'grafico', etichetta: 'Mutuo per la casa a tasso variabile', breve: 'Mutuo variabile', nome: 'Il mio mutuo', anni: [10, 15, 20, 25, 30],
+      aiuto: 'Il tasso segue un indice, di solito l\'Euribor, più uno spread fisso: la rata cambia nel tempo.' },
+    { valore: 'fisso', tipo: 'fisso', icona: 'casa', etichetta: 'Mutuo per la casa a tasso fisso', breve: 'Mutuo fisso', nome: 'Il mio mutuo', anni: [10, 15, 20, 25, 30],
+      aiuto: 'Il tasso è scritto nel contratto: la rata resta la stessa fino all\'ultima.' },
+    { valore: 'mutuo', tipo: 'mutuo', icona: 'info', etichetta: 'Un mutuo, ma non so se il tasso è fisso o variabile', breve: 'Mutuo', nome: 'Il mio mutuo', anni: [10, 15, 20, 25, 30], soloPrestiti: true,
+      aiuto: 'Lo capisco io dalle rate: se cambiano da un mese all\'altro, è variabile.' },
+    { valore: 'finanziamento', tipo: 'finanziamento', icona: 'portafoglio', etichetta: 'Prestito personale', breve: 'Prestito personale', nome: 'Prestito personale', anni: [2, 3, 4, 5, 7],
+      aiuto: 'Una somma da restituire a rate tutte uguali, a tasso fisso: per spese, lavori, studi, liquidità.' },
+    { valore: 'auto', tipo: 'finanziamento', icona: 'auto', etichetta: 'Finanziamento per l\'auto o la moto', breve: 'Finanziamento auto', nome: 'Auto', anni: [2, 3, 4, 5, 7],
+      aiuto: 'Rate tutte uguali fino alla fine, di solito con un anticipo.' },
+    { valore: 'maxirata', tipo: 'maxirata', icona: 'auto', etichetta: 'Auto con maxirata finale', breve: 'Auto con maxirata', nome: 'Auto', anni: [2, 3, 4, 5, 7],
+      aiuto: 'Rate basse e alla fine una rata molto più grande, la «maxirata» (formule chiamate anche PCP o «valore futuro garantito»).' },
+    { valore: 'acquisto', tipo: 'finanziamento', icona: 'borsa', etichetta: 'Acquisto a rate in un negozio', breve: 'Acquisto a rate', nome: 'Acquisto a rate', anni: [1, 2, 3, 4, 5],
+      aiuto: 'Elettrodomestici, mobili, telefono, cure: anche le offerte «a tasso zero».' },
+    { valore: 'quinto', tipo: 'finanziamento', icona: 'documento', etichetta: 'Cessione del quinto', breve: 'Cessione del quinto', nome: 'Cessione del quinto', anni: [3, 5, 7, 10],
+      aiuto: 'La rata la trattiene il datore di lavoro o l\'ente della pensione: al massimo un quinto dello stipendio. Tasso fisso.' },
+  ];
+  // La categoria di un prestito: quella scritta, se va d'accordo con il tipo; altrimenti la prima del suo tipo.
+  const categoria = p => CATEGORIE.find(c => c.valore === p.categoria && c.tipo === p.tipo_prestito)
+    || CATEGORIE.find(c => c.tipo === (p.tipo_prestito || 'variabile') && !c.soloPrestiti) || CATEGORIE[0];
+
   let archivio = null, dati = null;
   const nuovoId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const vuoto = () => ({ id: nuovoId(), parametri: {}, rate: [], euribor: [], festivita: [] });
@@ -343,7 +370,7 @@
   }
 
   window.Archivio = {
-    CAMPI, richiesta, predefiniti, precaricati,
+    CAMPI, CATEGORIE, categoria, richiesta, predefiniti, precaricati,
     // Il prestito aperto è configurato (se non lo è, non ce n'è nessuno: parte la guida).
     configurato: () => configurato(carica()),
     attivo: () => (carica(), archivio.attivo),
