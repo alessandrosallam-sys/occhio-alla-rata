@@ -1,4 +1,4 @@
-<p align="center"><img src="logo.svg" width="120" height="120" alt="Il logo di Occhio alla Rata: un occhio che ha per iride una moneta con l'euro"></p>
+<p align="center"><img src="logo.svg" width="120" height="120" alt="Il logo di Occhio alla Rata: un gufo con gli occhi d'oro"></p>
 
 # Occhio alla Rata
 
@@ -31,7 +31,7 @@ Nella pagina Tassi (versione avanzata) il modulo della proiezione sta richiuso i
 
 **Versione semplice e avanzata**: la pagina parte nella versione **semplice**, con solo quello che serve a chi non è esperto: il piano con le colonne principali (rata, debito, rata calcolata e vera, quota capitale e interessi, indice e tasso), il grafico dell'indice con l'aggiornamento dei valori, il costo del prestito, il rimborso anticipato e il backup. La versione **avanzata**, da attivare nelle **Impostazioni**, aggiunge a ogni prestito le pagine Calendario, Festività e Regole del contratto, le colonne di approfondimento del piano (date, giorni, indice applicato dalla banca, variazioni, rata ideale), le previsioni dell'indice con i modelli e il loro confronto, le tabelle dei valori, la taratura, tutte le regole del contratto, i valori a mano per una rata e la rata ideale. I dati sono gli stessi: si cambia quando si vuole.
 
-**Impostazioni**: dal pulsante «Impostazioni» (o in fondo al pannello di controllo) si sceglie la versione, si decide se l'assistente spiega le cose al passaggio del mouse e se segue la pagina, si sceglie il **logo** fra undici disegni animati (occhio, salvadanaio, casa, gufo, lente, moneta, calendario, radar, binocolo, grafico, sveglia: vale anche per l'icona della scheda del browser) e si sceglie fra otto temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia e Contrasto alto. Cambia solo l'aspetto; le scelte restano nel browser. Sugli schermi larghi le pagine sono in una barra laterale ad albero, ognuna con una riga che dice che cosa contiene. Le icone sono disegnate apposta per la pagina e le animazioni (pagine che entrano, cifre che contano, carte che si sollevano) si spengono da sole se nelle impostazioni del sistema è attivo «riduci movimento».
+**Impostazioni**: dal pulsante «Impostazioni» (o in fondo al pannello di controllo) si sceglie la versione, si decide se l'assistente spiega le cose al passaggio del mouse e se segue la pagina, si sceglie il **logo** fra undici disegni animati (di base il gufo, poi occhio, salvadanaio, casa, lente, moneta, calendario, radar, binocolo, grafico, sveglia: vale anche per l'icona della scheda del browser) e si sceglie fra otto temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia e Contrasto alto. Cambia solo l'aspetto; le scelte restano nel browser. Sugli schermi larghi le pagine sono in una barra laterale ad albero, ognuna con una riga che dice che cosa contiene. Le icone sono disegnate apposta per la pagina e le animazioni (pagine che entrano, cifre che contano, carte che si sollevano) si spengono da sole se nelle impostazioni del sistema è attivo «riduci movimento».
 
 **Dove stanno i dati.** I dati stanno nel browser (`localStorage`) e si salvano da soli a ogni modifica, ma se cancelli i dati di navigazione li perdi. Per questo nel Pannello di controllo c'è **«Salva un backup»**: scarica un file `.json` con tutti i prestiti e le offerte, comprese le scelte della proiezione (modello, orizzonte, scenario). Tienilo al sicuro, ad esempio su una chiavetta o in una cartella di OneDrive o Google Drive. Con **«Carica un backup»** (nel pannello, o nella prima schermata della configurazione) lo riapri, anche su un altro computer o in un altro browser: prima di sostituire i dati la pagina dice di quando è il backup e che cosa contiene. Il pannello mostra la data dell'ultimo backup.
 
@@ -99,7 +99,7 @@ costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione a
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
 icone.js              le icone della pagina, disegnate a mano
 loghi.js              gli undici loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse
-logo.svg              il logo dell'occhio da solo (README)
+logo.svg              il logo del gufo da solo (README)
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
 crea-precaricati.js   genera tassi-precaricati.js dai CSV

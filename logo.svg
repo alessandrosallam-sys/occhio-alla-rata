@@ -1,56 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256" role="img" aria-labelledby="titolo-logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256" color="#ffffff" role="img" aria-labelledby="titolo-logo">
   <title id="titolo-logo">Occhio alla Rata</title>
-  <!-- Il logo di Occhio alla Rata: un occhio che ha per iride una moneta con l'euro. All'apertura l'occhio si apre e
-       la moneta entra girando; poi sbatte le palpebre e ogni tanto si guarda intorno, con una scintilla.
-       Con «riduci movimento» nelle impostazioni del sistema resta fermo. Lo stesso disegno è in icone.js (Icone.logo). -->
+  <!-- Il logo di Occhio alla Rata: un gufo vigile con gli occhi d'oro. Sbatte le palpebre e ogni tanto inclina la testa;
+       con «riduci movimento» nelle impostazioni del sistema resta fermo. Lo stesso disegno è in loghi.js (logo «gufo»),
+       insieme agli altri loghi che si possono scegliere nelle impostazioni. -->
   <defs>
-    <linearGradient id="sfondo-logo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4c6ef5"/>
-      <stop offset="1" stop-color="#7048e8"/>
-    </linearGradient>
-    <radialGradient id="oro-logo" cx="0.38" cy="0.32" r="0.75">
-      <stop offset="0" stop-color="#ffe680"/>
-      <stop offset="0.55" stop-color="#f7b500"/>
-      <stop offset="1" stop-color="#d48a00"/>
-    </radialGradient>
-    <radialGradient id="bianco-logo" cx="0.5" cy="0.45" r="0.6">
-      <stop offset="0.55" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e3e7ff"/>
-    </radialGradient>
-    <clipPath id="taglio-logo">
-      <path d="M7 32C15.5 18.5 24.5 14 32 14s16.5 4.5 25 18c-8.5 13.5-17.5 18-25 18S15.5 45.5 7 32Z"/>
-    </clipPath>
+    <linearGradient id="sfondo-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4c6ef5"/><stop offset="1" stop-color="#7048e8"/></linearGradient>
+    <radialGradient id="oro-logo" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#ffe680"/><stop offset="0.55" stop-color="#f7b500"/><stop offset="1" stop-color="#d48a00"/></radialGradient>
   </defs>
   <style>
-    .palpebra, .iride, .moneta-gira { transform-box: view-box; transform-origin: 32px 32px; }
-    .scintilla { transform-box: fill-box; transform-origin: center; }
-    @keyframes logo-apre { from { transform: scaleY(0.06); } to { transform: scaleY(1); } }
+    .testa { transform-box: view-box; transform-origin: 32px 52px; }
+    .palpebra { transform-box: fill-box; transform-origin: center; }
     @keyframes logo-batte { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
-    @keyframes logo-moneta { from { transform: scaleX(0.08) rotate(-25deg); } to { transform: none; } }
-    @keyframes logo-guarda { 0%, 38%, 100% { transform: translate(0, 0); } 46%, 56% { transform: translate(-4.5px, 0.6px); } 64%, 74% { transform: translate(4.5px, -0.6px); } 82% { transform: translate(0, 0); } }
-    @keyframes logo-luccica { 0%, 74%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); } 80% { opacity: 1; transform: scale(1.15) rotate(45deg); } 88% { opacity: 0; transform: scale(0.4) rotate(90deg); } }
+    @keyframes logo-inclina { 0%, 70%, 100% { transform: none; } 76%, 84% { transform: rotate(-7deg); } 90% { transform: rotate(4deg); } }
     @media (prefers-reduced-motion: no-preference) {
-      .palpebra { animation: logo-apre 0.55s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both, logo-batte 6s 1.4s infinite; }
-      .moneta-gira { animation: logo-moneta 0.7s 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
-      .iride { animation: logo-guarda 9s 2.2s ease-in-out infinite; }
-      .scintilla { animation: logo-luccica 9s 2.2s infinite both; }
+      .palpebra { animation: logo-batte 4.5s 0.8s infinite; }
+      .testa { animation: logo-inclina 8s 1.5s ease-in-out infinite; }
     }
   </style>
   <rect width="64" height="64" rx="16" fill="url(#sfondo-logo)"/>
-  <path d="M20.6 18.4l-2.4-3.9M32 13.2V8.8M43.4 18.4l2.4-3.9" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" opacity="0.92"/>
-  <g class="palpebra">
-    <path d="M7 32C15.5 18.5 24.5 14 32 14s16.5 4.5 25 18c-8.5 13.5-17.5 18-25 18S15.5 45.5 7 32Z" fill="url(#bianco-logo)"/>
-    <g clip-path="url(#taglio-logo)">
-      <g class="iride">
-        <g class="moneta-gira">
-          <circle cx="32" cy="32" r="11.5" fill="url(#oro-logo)" stroke="#c27c00" stroke-width="1"/>
-          <circle cx="32" cy="32" r="8.9" fill="none" stroke="#b97800" stroke-width="0.9" opacity="0.7"/>
-          <path d="M36.4 27.6a6 6 0 1 0 0 8.8M26 30.4h6.6M26 33.6h6.6" fill="none" stroke="#6b4300" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="25.3" cy="25.4" r="1.7" fill="#ffffff" opacity="0.85"/>
-        </g>
-      </g>
+  <g class="testa">
+    <path d="M16.5 21 15 9.5l9.5 6.5M47.5 21 49 9.5 39.5 16" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="currentColor" opacity="0.28"/>
+    <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M24.5 45.5q2.2 2.4 4.4 0M30 48q2 2.4 4 0M35.1 45.5q2.2 2.4 4.4 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" opacity="0.8"/>
+    <g class="palpebra">
+      <circle cx="24.5" cy="29" r="7.8" fill="#ffffff"/><circle cx="39.5" cy="29" r="7.8" fill="#ffffff"/>
+      <circle cx="24.5" cy="29" r="4.4" fill="url(#oro-logo)"/><circle cx="24.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="23.4" cy="27.8" r="0.9" fill="#ffffff"/>
+      <circle cx="39.5" cy="29" r="4.4" fill="url(#oro-logo)"/><circle cx="39.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="38.4" cy="27.8" r="0.9" fill="#ffffff"/>
     </g>
-    <path d="M7 32C15.5 18.5 24.5 14 32 14s16.5 4.5 25 18c-8.5 13.5-17.5 18-25 18S15.5 45.5 7 32Z" fill="none" stroke="#1e1b4b" stroke-opacity="0.25" stroke-width="1.2"/>
+    <path d="M29.8 35.5h4.4L32 40.2Z" fill="#f7b500"/>
   </g>
-  <path class="scintilla" d="M51 9.5l1.3 3 3 1.3-3 1.3-1.3 3-1.3-3-3-1.3 3-1.3Z" fill="#ffe680"/>
+  <path d="M26.5 55v3.5M29.5 55v3.5M34.5 55v3.5M37.5 55v3.5" stroke="#f7b500" stroke-width="2.2" stroke-linecap="round"/>
 </svg>

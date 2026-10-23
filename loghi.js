@@ -25,6 +25,22 @@
   // nome e descrizione per le impostazioni; sguardo: quanto si spostano gli occhi verso il puntatore (di lato, in alto e
   // in basso), se il logo ne ha; disegno(n): il contenuto dell'svg (n rende unici gli id interni).
   const LOGHI = [
+    // Il gufo è il logo del progetto, quello di base.
+    { codice: 'gufo', nome: 'Gufo', descrizione: 'Il logo del progetto: un gufo vigile con gli occhi d\'oro, che ti segue con lo sguardo.', sguardo: [2.6, 1.8],
+      disegno: n => `<defs>${oro('oro-' + n)}<clipPath id="occhi-${n}"><circle cx="24.5" cy="29" r="7.8"/><circle cx="39.5" cy="29" r="7.8"/></clipPath></defs>
+        <g class="testa">
+          <path d="M16.5 21 15 9.5l9.5 6.5M47.5 21 49 9.5 39.5 16" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="currentColor" opacity="0.28"/>
+          <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M24.5 45.5q2.2 2.4 4.4 0M30 48q2 2.4 4 0M35.1 45.5q2.2 2.4 4.4 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" opacity="0.8"/>
+          <g class="palpebra"><circle cx="24.5" cy="29" r="7.8" fill="#ffffff"/><circle cx="39.5" cy="29" r="7.8" fill="#ffffff"/>
+            <g clip-path="url(#occhi-${n})"><g class="sguardo">
+              <circle cx="24.5" cy="29" r="4.4" fill="url(#oro-${n})"/><circle cx="24.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="23.4" cy="27.8" r="0.9" fill="#ffffff"/>
+              <circle cx="39.5" cy="29" r="4.4" fill="url(#oro-${n})"/><circle cx="39.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="38.4" cy="27.8" r="0.9" fill="#ffffff"/>
+            </g></g></g>
+          <path d="M29.8 35.5h4.4L32 40.2Z" fill="#f7b500"/>
+        </g>
+        <path d="M26.5 55v3.5M29.5 55v3.5M34.5 55v3.5M37.5 55v3.5" stroke="#f7b500" stroke-width="2.2" stroke-linecap="round"/>` },
     { codice: 'occhio', nome: 'Occhio', descrizione: 'Un occhio con una moneta per iride: sbatte le palpebre e ti segue con lo sguardo.', sguardo: [4.5, 3],
       disegno: n => `<defs>${oro('oro-' + n)}
           <radialGradient id="bianco-${n}" cx="0.5" cy="0.45" r="0.6"><stop offset="0.55" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e7ff"/></radialGradient>
@@ -58,21 +74,6 @@
         <path d="M9 31 32 12l23 19" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
         <g class="palpebra"><path d="M19.5 40c3.6-5.6 7.8-8.2 12.5-8.2s8.9 2.6 12.5 8.2c-3.6 5.6-7.8 8.2-12.5 8.2s-8.9-2.6-12.5-8.2Z" fill="#ffffff"/>
           <g clip-path="url(#taglio-${n})"><g class="sguardo">${moneta('oro-' + n, 32, 40, 5.6)}</g></g></g>` },
-    { codice: 'gufo', nome: 'Gufo', descrizione: 'Un gufo vigile con gli occhi d\'oro, che ti segue con lo sguardo.', sguardo: [2.6, 1.8],
-      disegno: n => `<defs>${oro('oro-' + n)}<clipPath id="occhi-${n}"><circle cx="24.5" cy="29" r="7.8"/><circle cx="39.5" cy="29" r="7.8"/></clipPath></defs>
-        <g class="testa">
-          <path d="M16.5 21 15 9.5l9.5 6.5M47.5 21 49 9.5 39.5 16" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
-          <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="currentColor" opacity="0.28"/>
-          <path d="M14.5 26c0-8.5 7.7-12.5 17.5-12.5S49.5 17.5 49.5 26v16.5c0 8.5-7.7 12.5-17.5 12.5S14.5 51 14.5 42.5Z" fill="none" stroke="currentColor" stroke-width="3"/>
-          <path d="M24.5 45.5q2.2 2.4 4.4 0M30 48q2 2.4 4 0M35.1 45.5q2.2 2.4 4.4 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" opacity="0.8"/>
-          <g class="palpebra"><circle cx="24.5" cy="29" r="7.8" fill="#ffffff"/><circle cx="39.5" cy="29" r="7.8" fill="#ffffff"/>
-            <g clip-path="url(#occhi-${n})"><g class="sguardo">
-              <circle cx="24.5" cy="29" r="4.4" fill="url(#oro-${n})"/><circle cx="24.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="23.4" cy="27.8" r="0.9" fill="#ffffff"/>
-              <circle cx="39.5" cy="29" r="4.4" fill="url(#oro-${n})"/><circle cx="39.5" cy="29" r="2" fill="#1e1b4b"/><circle cx="38.4" cy="27.8" r="0.9" fill="#ffffff"/>
-            </g></g></g>
-          <path d="M29.8 35.5h4.4L32 40.2Z" fill="#f7b500"/>
-        </g>
-        <path d="M26.5 55v3.5M29.5 55v3.5M34.5 55v3.5M37.5 55v3.5" stroke="#f7b500" stroke-width="2.2" stroke-linecap="round"/>` },
     { codice: 'lente', nome: 'Lente', descrizione: 'Una lente d\'ingrandimento che controlla le rate una per una.', sguardo: null,
       disegno: n => `<defs>${oro('oro-' + n)}</defs>
         <g class="barre">${[[10, 38, 15], [19.5, 32, 21], [29, 35, 18], [38.5, 28, 25], [48, 31, 22]].map(([x, y, h], i) =>
@@ -147,7 +148,7 @@
   const valido = codice => LOGHI.some(l => l.codice === codice);
   const leggi = () => { if (window.MUTUO_UN_FILE) return null; try { return localStorage.getItem(CHIAVE); } catch { return null; } };
   const scrivi = valore => { if (window.MUTUO_UN_FILE) return; try { localStorage.setItem(CHIAVE, valore); } catch { /* vale solo per questa volta */ } };
-  let scelto = valido(leggi()) ? leggi() : 'occhio';
+  let scelto = valido(leggi()) ? leggi() : 'gufo';   // di base il gufo, il logo del progetto
 
   let fatti = 0;
   // Un logo (svg): quello scelto, o quello indicato (le anteprime delle impostazioni).
