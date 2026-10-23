@@ -28,7 +28,7 @@
   --alto-testata: calc(var(--alto-riga) + var(--alto-sottomenu));
   --alto-schede-basso: 0px;          /* barra delle schede in basso: solo sui telefoni */
   --larghezza-pagina: 1360px;
-  --larghezza-lato: 248px;           /* barra laterale di navigazione sugli schermi larghi */
+  --larghezza-lato: 272px;           /* barra laterale di navigazione sugli schermi larghi */
 }
 :root,
 [data-tema="chiaro"],
@@ -826,7 +826,7 @@ tr.in-evidenza td { background-color: var(--accento-tenue); }
 .sottomenu button:hover { background: none; color: var(--inchiostro); }
 .sottomenu .icona { width: 17px; height: 17px; }
 .sottomenu .nome-prestito { max-width: 42vw; padding-right: var(--s3); border-right: 1px solid var(--linea); color: var(--inchiostro); font-weight: 700; }
-.sottomenu .nome-prestito span { overflow: hidden; text-overflow: ellipsis; }
+.sottomenu .nome-prestito .nome { overflow: hidden; text-overflow: ellipsis; }
 .sottomenu button[aria-selected="true"] { color: var(--accento-testo); }
 .sottomenu button[aria-selected="true"]::after { content: ""; position: absolute; left: var(--s2); right: var(--s2); bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--accento); }
 .sottomenu .chiudi-prestito { margin-left: auto; padding: 0 var(--s2); font-size: 20px; color: var(--tenue); }
@@ -1391,30 +1391,33 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
     display: grid; grid-template-columns: 21px minmax(0, 1fr); column-gap: 12px; row-gap: 1px; align-content: center; padding-top: 7px; padding-bottom: 7px; text-align: left;
   }
   body:has(.schede:not([hidden])) .schede button .icona { grid-row: 1 / span 2; align-self: center; }
-  /* Il prestito aperto, sotto «Prestiti»: nome (con la × per chiuderlo), le sue pagine, poi gli altri prestiti */
+  /* Tre livelli, rientrati, con le linee guida: «Prestiti» → il prestito aperto (in un riquadro, con la × per chiuderlo
+     e «Prestito aperto» sotto il nome) → le sue pagine */
   body:has(.schede:not([hidden])) .ramo-prestito:not([hidden]) {
-    display: flex; flex-direction: column; gap: 2px; margin: 0 0 var(--s2) 20px; padding-left: var(--s2); border-left: 2px solid var(--linea);
+    display: flex; flex-direction: column; gap: 4px; margin: 2px 0 var(--s2) 18px; padding-left: 8px; border-left: 2px solid var(--linea);
   }
   body:has(.schede:not([hidden])) .ramo-prestito button {
     display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 4px var(--s2); text-align: left;
     font-size: 14px; font-weight: 600; color: var(--inchiostro-2); border-radius: var(--r2);
   }
-  body:has(.schede:not([hidden])) .ramo-prestito button .icona { width: 18px; height: 18px; grid-row: auto; }
-  .ramo-prestito .testa-ramo { display: flex; flex-direction: column; }
-  .ramo-prestito .etichetta-ramo { padding: 2px var(--s2) 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tenue); }
-  .ramo-prestito .riga-ramo { display: flex; align-items: center; gap: 2px; }
-  body:has(.schede:not([hidden])) .ramo-prestito .nome-prestito { flex: 1; min-width: 0; color: var(--inchiostro); font-weight: 700; }
-  .ramo-prestito .nome-prestito > span:not(.stella), .ramo-prestito .altro-prestito > span:not(.stella) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ramo-prestito .stella { margin-left: auto; }
+  body:has(.schede:not([hidden])) .ramo-prestito button .icona { width: 18px; height: 18px; }
+  .ramo-prestito .testa-ramo { display: flex; align-items: center; gap: 2px; padding: 2px; background: var(--velo); border: 1px solid var(--linea); border-radius: var(--r2); }
+  body:has(.schede:not([hidden])) .ramo-prestito .nome-prestito {
+    display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 0; align-content: center;
+    flex: 1; min-width: 0; min-height: 44px; color: var(--inchiostro); font-weight: 750;
+  }
+  body:has(.schede:not([hidden])) .ramo-prestito .nome-prestito .icona { grid-row: 1 / span 2; }
+  .ramo-prestito .nome-prestito .nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ramo-prestito .nome-prestito .stella { grid-column: 3; grid-row: 1; }
+  .ramo-prestito .etichetta-ramo { grid-column: 2 / span 2; font-size: 11px; font-weight: 600; color: var(--tenue); }
   body:has(.schede:not([hidden])) .ramo-prestito .chiudi-prestito { flex: none; justify-content: center; width: 30px; min-height: 30px; padding: 0; font-size: 18px; font-weight: 400; color: var(--tenue); }
-  .ramo-prestito .pagine-prestito { display: flex; flex-direction: column; gap: 2px; }
+  .ramo-prestito .pagine-prestito { display: flex; flex-direction: column; gap: 2px; margin-left: 16px; padding-left: 6px; border-left: 2px solid var(--linea); }
   body:has(.schede:not([hidden])) .ramo-prestito .pagine-prestito button {
     display: grid; grid-template-columns: 18px minmax(0, 1fr); column-gap: 10px; row-gap: 0; align-content: center; min-height: 40px;
   }
   body:has(.schede:not([hidden])) .ramo-prestito .pagine-prestito button .icona { grid-row: 1 / span 2; }
   body:has(.schede:not([hidden])) .ramo-prestito .pagine-prestito .spiega-scheda { font-size: 11.5px; }
   body:has(.schede:not([hidden])) .ramo-prestito .pagine-prestito button[aria-selected="true"] { background: var(--nav-attiva-sfondo); color: var(--nav-attiva-testo); box-shadow: inset 3px 0 0 var(--accento); }
-  body:has(.schede:not([hidden])) .ramo-prestito .altro-prestito { margin-top: 2px; color: var(--tenue); font-weight: 550; }
   body:has(.schede:not([hidden])) .schede button .spiega-scheda {
     display: block; grid-column: 2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
     font-size: 12px; font-weight: 450; line-height: 1.3; color: inherit; opacity: 0.68;

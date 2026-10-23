@@ -781,20 +781,19 @@
       ...(breve ? [] : [crea('small', { className: 'spiega-scheda' }, pagina.spiega)]));
     const chiudi = () => crea('button', { type: 'button', className: 'chiudi-prestito', 'data-azione': 'chiudi', 'aria-label': 'Chiudi il prestito', title: 'Chiudi il prestito' }, '×');
     // Il nome del prestito aperto porta ai suoi dati.
-    const nome = () => crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'dati', title: 'I dati di questo prestito' },
-      icona(stato.dati), crea('span', {}, nomeDi(stato.dati)), ...stella(stato.dati));
-    // Barra laterale: «Prestito aperto», il nome con le sue pagine, poi gli altri prestiti (un clic li apre).
+    const nome = conEtichetta => crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'dati', title: 'I dati di questo prestito' },
+      icona(stato.dati), crea('span', { className: 'nome' }, nomeDi(stato.dati)), ...stella(stato.dati),
+      ...(conEtichetta ? [crea('small', { className: 'etichetta-ramo' }, 'Prestito aperto')] : []));
+    // Barra laterale, tre livelli: sotto «Prestiti», rientrato, il prestito aperto (con la × per chiuderlo); sotto il
+    // prestito, rientrate ancora, le sue pagine. Gli altri prestiti si aprono dalla pagina «Prestiti».
     const ramo = $('#ramo-prestito'), sotto = $('#sottomenu');
     ramo.hidden = sotto.hidden = !aperto();
     if (!aperto()) { ramo.replaceChildren(); sotto.replaceChildren(); return; }
     ramo.replaceChildren(
-      crea('div', { className: 'prestito-aperto' },
-        crea('div', { className: 'testa-ramo' }, crea('span', { className: 'etichetta-ramo' }, 'Prestito aperto'), crea('div', { className: 'riga-ramo' }, nome(), chiudi())),
-        crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, false)))),
-      ...Archivio.elenco().filter(d => d.id !== stato.dati.id).map(d =>
-        crea('button', { type: 'button', className: 'altro-prestito', 'data-apri-prestito': d.id }, icona(d), crea('span', {}, nomeDi(d)), ...stella(d))));
+      crea('div', { className: 'testa-ramo' }, nome(true), chiudi()),
+      crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, false))));
     // Schermi stretti: una barra sotto la testata con il prestito aperto e le sue pagine.
-    sotto.replaceChildren(nome(),
+    sotto.replaceChildren(nome(false),
       crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, true))),
       chiudi());
   }
