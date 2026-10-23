@@ -99,7 +99,20 @@
     }
     return g;
   }
-  // Versione, assistente e colori: le stesse scelte nel riquadro della testata e nel pannello di controllo.
+  // Il logo (loghi.js): un'anteprima animata per ognuno; quello scelto va in testata e nella scheda del browser.
+  function grigliaLoghi() {
+    if (!window.Loghi) return [];
+    const g = elemento('div', 'griglia-loghi', { role: 'group', 'aria-label': 'Loghi disponibili' });
+    for (const l of window.Loghi.ELENCO) {
+      const pulsante = elemento('button', 'tessera-logo', { type: 'button', 'data-scelta-logo': l.codice, 'aria-pressed': String(l.codice === window.Loghi.scelto()), title: l.descrizione });
+      const riquadro = elemento('span', 'logo anteprima-logo', { 'aria-hidden': 'true' });
+      riquadro.append(window.Loghi.crea(l.codice));
+      pulsante.append(riquadro, elemento('span', '', {}, l.nome));
+      g.append(pulsante);
+    }
+    return [elemento('h3', '', {}, 'Logo'), elemento('p', 'nota', {}, 'Il disegno in alto e nella scheda del browser: ognuno ha la sua animazione. Cambia solo l\'aspetto.'), g];
+  }
+  // Versione, assistente, colori e logo: le stesse scelte nel riquadro della testata e nel pannello di controllo.
   function scelte() {
     const blocco = elemento('div', 'scelte-impostazioni');
     const versioni = elemento('div', 'scelta-versione', { role: 'group', 'aria-label': 'Versione della pagina' });
@@ -123,11 +136,13 @@
       elemento('h3', '', {}, 'L\'assistente'),
       opzioni,
       elemento('h3', '', {}, 'Colori'),
-      griglia());
+      griglia(),
+      ...grigliaLoghi());
     blocco.addEventListener('click', evento => {
-      const tema = evento.target.closest('[data-scelta-tema]'), scelta = evento.target.closest('[data-scelta-versione]');
+      const tema = evento.target.closest('[data-scelta-tema]'), scelta = evento.target.closest('[data-scelta-versione]'), logo = evento.target.closest('[data-scelta-logo]');
       if (tema) applica(tema.dataset.sceltaTema, true);
       if (scelta) applicaVersione(scelta.dataset.sceltaVersione, true);
+      if (logo) window.Loghi.scegli(logo.dataset.sceltaLogo);
     });
     blocco.addEventListener('change', evento => {
       const casella = evento.target.closest('[data-opzione-assistente]');

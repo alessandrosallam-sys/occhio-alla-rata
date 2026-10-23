@@ -145,6 +145,7 @@
     ['[data-scelta-versione="avanzata"]', 'La versione avanzata aggiunge gli strumenti per chi conosce bene il contratto: colonne del piano, calendario, festività, previsioni, taratura, regole.'],
     ['label:has([data-opzione-assistente="spiega"])', 'Se lo spegni non spiego più le cose quando ci passi sopra con il mouse.'],
     ['label:has([data-opzione-assistente="segue"])', 'Se lo spegni resto in cima alla pagina e non ti seguo quando scorri.'],
+    ['[data-scelta-logo]', el => el.title + ' Clic per usarlo come logo.'],
     ['#passa-avanzata', 'Mostra anche gli strumenti per esperti. Si torna alla semplice dalle «Impostazioni».'],
     // Riepilogo in testa
     ['#riepilogo .dato', el => perEtichetta(RIEPILOGO, etichetta(el)) || (/euribor|indice/i.test(etichetta(el)) ? 'Il valore dell\'indice per la rata di questo mese, e il giorno in cui la banca l\'ha letto.' : '')],

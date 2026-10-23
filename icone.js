@@ -1,6 +1,6 @@
 // Icone della pagina: disegni a tratto su una griglia 24 × 24, nello stile delle icone delle schede (colore del testo,
 // tratto 1,8, estremità arrotondate). Icone.crea(nome) restituisce un <svg>; gli elementi con data-icona="nome"
-// ricevono l'icona all'apertura della pagina (Icone.decora per quelli creati dopo). In fondo il logo (Icone.logo).
+// ricevono l'icona all'apertura della pagina (Icone.decora per quelli creati dopo). I loghi sono in loghi.js.
 (function () {
   'use strict';
   const DISEGNI = {
@@ -73,81 +73,6 @@
   }
   const decoraTutto = (radice = document) => radice.querySelectorAll('[data-icona]').forEach(el => decora(el));
 
-  // ---------- Il logo ----------
-  // Un occhio che ha per iride una moneta con l'euro: «occhio alla rata». È lo stesso disegno di logo.svg, ma con i
-  // colori del tema: lo sfondo è quello del riquadro .logo, le ciglia hanno il colore del suo testo. In stile.css le
-  // animazioni: si apre e la moneta entra girando, poi sbatte le palpebre e ogni tanto si guarda intorno, con una
-  // scintilla. Qui lo sguardo che segue il puntatore e l'occhiolino a un clic. Con «riduci movimento» resta fermo.
-  const OCCHIO = 'M7 32C15.5 18.5 24.5 14 32 14s16.5 4.5 25 18c-8.5 13.5-17.5 18-25 18S15.5 45.5 7 32Z';
-  let loghi = 0;
-  function logo(classe = '') {
-    const n = ++loghi, svg = document.createElementNS(NS, 'svg');   // n: gli id interni non si ripetono se i loghi sono più di uno
-    svg.setAttribute('viewBox', '0 0 64 64');
-    svg.setAttribute('class', ('logo-occhio ' + classe).trim());
-    svg.setAttribute('aria-hidden', 'true');
-    svg.innerHTML = `<defs>
-        <radialGradient id="oro-logo-${n}" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#ffe680"/><stop offset="0.55" stop-color="#f7b500"/><stop offset="1" stop-color="#d48a00"/></radialGradient>
-        <radialGradient id="bianco-logo-${n}" cx="0.5" cy="0.45" r="0.6"><stop offset="0.55" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e7ff"/></radialGradient>
-        <clipPath id="taglio-logo-${n}"><path d="${OCCHIO}"/></clipPath>
-      </defs>
-      <path class="ciglia" d="M20.6 18.4l-2.4-3.9M32 13.2V8.8M43.4 18.4l2.4-3.9"/>
-      <g class="palpebra">
-        <path class="bianco" d="${OCCHIO}" fill="url(#bianco-logo-${n})"/>
-        <g clip-path="url(#taglio-logo-${n})"><g class="sguardo"><g class="iride"><g class="moneta-gira">
-          <circle class="moneta" cx="32" cy="32" r="11.5" fill="url(#oro-logo-${n})"/>
-          <circle class="anello" cx="32" cy="32" r="8.9"/>
-          <path class="euro" d="M36.4 27.6a6 6 0 1 0 0 8.8M26 30.4h6.6M26 33.6h6.6"/>
-          <circle class="riflesso" cx="25.3" cy="25.4" r="1.7"/>
-        </g></g></g></g>
-        <path class="contorno" d="${OCCHIO}"/>
-      </g>
-      <path class="scintilla" d="M51 9.5l1.3 3 3 1.3-3 1.3-1.3 3-1.3-3-3-1.3 3-1.3Z"/>`;
-    return svg;
-  }
-  // Lo sguardo segue il puntatore: al massimo 4,5 unità di lato e 3 in alto o in basso (meno se il puntatore è vicino).
-  // Fermo il mouse per tre secondi, l'occhio torna a guardarsi intorno da solo.
-  const fermo = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  let puntatore = null, quadro = 0, riposo = 0;
-  function seguiPuntatore() {
-    quadro = 0;
-    for (const svg of document.querySelectorAll('.logo-occhio')) {
-      const r = svg.getBoundingClientRect(), sguardo = svg.querySelector('.sguardo');
-      if (!r.width || !sguardo) continue;
-      const dx = puntatore.x - (r.left + r.width / 2), dy = puntatore.y - (r.top + r.height / 2);
-      const d = Math.hypot(dx, dy) || 1, vicino = Math.min(1, d / 240);
-      sguardo.style.transform = `translate(${(dx / d * 4.5 * vicino).toFixed(2)}px, ${(dy / d * 3 * vicino).toFixed(2)}px)`;
-      svg.classList.add('segue-puntatore');
-    }
-  }
-  addEventListener('pointermove', evento => {
-    if (fermo() || evento.pointerType === 'touch') return;
-    puntatore = { x: evento.clientX, y: evento.clientY };
-    if (!quadro) quadro = requestAnimationFrame(seguiPuntatore);
-    clearTimeout(riposo);
-    riposo = setTimeout(() => {
-      for (const svg of document.querySelectorAll('.logo-occhio')) {
-        svg.classList.remove('segue-puntatore');
-        const sguardo = svg.querySelector('.sguardo');
-        if (sguardo) sguardo.style.transform = '';
-      }
-    }, 3000);
-  }, { passive: true });
-  // Un clic sul logo: un occhiolino.
-  document.addEventListener('click', evento => {
-    const svg = evento.target instanceof Element && evento.target.closest('.logo-occhio, .logo');
-    const occhio = svg && (svg.matches('.logo-occhio') ? svg : svg.querySelector('.logo-occhio'));
-    if (!occhio || fermo()) return;
-    occhio.classList.remove('occhiolino');
-    void occhio.getBoundingClientRect();   // così l'animazione riparte anche a clic ripetuti
-    occhio.classList.add('occhiolino');
-  });
-  document.addEventListener('animationend', evento => {
-    if (evento.animationName === 'logo-occhiolino') evento.target.closest('.logo-occhio').classList.remove('occhiolino');
-  });
-
-  document.addEventListener('DOMContentLoaded', () => {
-    decoraTutto();
-    for (const posto of document.querySelectorAll('.logo')) posto.replaceChildren(logo());
-  });
-  window.Icone = { crea, decora, decoraTutto, distintivo, logo, NOMI: Object.keys(DISEGNI) };
+  document.addEventListener('DOMContentLoaded', () => decoraTutto());
+  window.Icone = { crea, decora, decoraTutto, distintivo, NOMI: Object.keys(DISEGNI) };   // Icone.logo: loghi.js
 })();
