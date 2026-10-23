@@ -1669,6 +1669,82 @@
   });
   $('#riapri-guida').addEventListener('click', () => M.apriGuida(true));
 
+  // ---------- Pagina «Dati del prestito» ----------
+  // Che prestito è, in parole, con i numeri che ha dato l'utente. «Cambia i dati» apre qui il modulo con i dati
+  // principali (le regole di dettaglio stanno nella pagina «Regole del contratto», versione avanzata) e il piano si
+  // ricalcola appena si salva; «Rifai la configurazione guidata» ripete le domande dall'inizio, solo se lo si chiede.
+  const CHIAVI_DATI = ['nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'maxirata', 'anticipo', 'valore_riferimento',
+    'tasso_fisso', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'spese_nel_prestito', 'taeg_dichiarato'];
+  let cambiaDati = false;
+  const durata = n => { const anni = Math.floor(n / 12), mesi = n % 12;
+    return [anni ? (anni === 1 ? '1 anno' : anni + ' anni') : '', mesi ? (mesi === 1 ? '1 mese' : mesi + ' mesi') : ''].filter(Boolean).join(' e '); };
+  function disegnaDati() {
+    const carta = $('#carta-dati-prestito');
+    if (!stato.dati || !stato.piano) return;
+    if (cambiaDati && carta.contains(document.activeElement)) return;   // non si riscrive il modulo mentre lo si compila
+    const p = stato.dati.parametri, righe = stato.piano.righe, principale = Archivio.principale() === stato.dati.id;
+    const scritte = stato.dati.rate.filter(r => r.rata_vera != null).length, copiate = stato.dati.rate.filter(r => r.rata_vera == null && r.rata_copiata != null).length;
+    const testa = crea('div', { className: 'intestazione-carta' },
+      crea('div', {}, crea('h2', {}, Icone.crea(M.iconaTipo ? M.iconaTipo(p) : 'casa', 'icona icona-titolo'), p.nome || 'Prestito senza nome'),
+        crea('p', { className: 'nota' }, cambiaDati ? 'Correggi quello che non è giusto e premi «Salva»: il piano si ricalcola subito. Le rate che hai scritto restano.'
+          : 'I dati che hai dato al programma, in parole. Se qualcosa non è giusto, premi «Cambia i dati»: il piano si ricalcola subito.')),
+      ...(principale ? [crea('span', { className: 'etichetta-aperto' }, '★ Principale')] : []));
+    if (cambiaDati) {
+      const campi = crea('div', { className: 'campi due-colonne', id: 'campi-dati' }, ...CHIAVI_DATI.map(c => creaCampo(c, p[c], false, p)));
+      carta.replaceChildren(testa, crea('form', { id: 'form-dati', novalidate: true }, campi,
+        crea('div', { className: 'azioni' }, crea('button', { type: 'submit' }, 'Salva'), crea('button', { type: 'button', className: 'secondario', 'data-dati': 'annulla' }, 'Annulla'))));
+      aggiornaVisibili(campi, CHIAVI_DATI, p);
+      return;
+    }
+    const voci = [['Tipo', nomeScelta('tipo_prestito', p.tipo_prestito)], ['Importo prestato', euro(p.importo_iniziale)],
+      ['Durata', `${p.numero_rate} rate mensili (${durata(p.numero_rate)}), da ${M.meseAnno(righe[0].inizio)} a ${M.meseAnno(righe[righe.length - 1].inizio)}`],
+      ...(p.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(p.maxirata)]] : []), ...(p.anticipo > 0 ? [['Anticipo', euro(p.anticipo)]] : []),
+      ['Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
+      ...descriviRegole(p),
+      ...(p.spese_iniziali > 0 ? [['Spese iniziali', euro(p.spese_iniziali)]] : []),
+      ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ')]] : []),
+      ...(p.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(p.taeg_dichiarato, 2)]] : []),
+      ['Rate scritte', scritte + copiate ? (scritte === 1 ? '1 controllata' : `${scritte} controllate`) + ' sull\'estratto conto' + (copiate ? (copiate === 1 ? ', 1 presa dal calcolo' : `, ${copiate} prese dal calcolo`) : '') : 'nessuna, per ora'],
+      ['Si apre da solo', principale ? 'sì, è il prestito principale' : 'no: lo apri dalla pagina «Prestiti»']];
+    carta.replaceChildren(testa,
+      crea('dl', { className: 'riepilogo-guida' }, ...voci.flatMap(([etichetta, valore]) => [crea('dt', {}, etichetta), crea('dd', {}, valore)])),
+      crea('div', { className: 'azioni' },
+        crea('button', { type: 'button', 'data-dati': 'cambia' }, Icone.crea('matita', 'icona icona-aggiunta'), 'Cambia i dati'),
+        ...(principale ? [] : [crea('button', { type: 'button', className: 'secondario', 'data-dati': 'principale' }, '☆ Rendi principale')]),
+        crea('button', { type: 'button', className: 'secondario solo-avanzata', 'data-dati': 'regole' }, 'Tutte le regole del contratto'),
+        crea('button', { type: 'button', className: 'secondario', 'data-dati': 'guida' }, 'Rifai la configurazione guidata')));
+  }
+  $('#carta-dati-prestito').addEventListener('click', async evento => {
+    const pulsante = evento.target.closest('button[data-dati]');
+    if (!pulsante) return;
+    const azione = pulsante.dataset.dati;
+    if (azione === 'cambia' || azione === 'annulla') {
+      cambiaDati = azione === 'cambia';
+      disegnaDati();
+      if (cambiaDati) { const primo = $('#campi-dati input'); if (primo) primo.focus(); }
+    }
+    else if (azione === 'regole') M.mostraScheda('contratto');
+    else if (azione === 'guida') M.apriGuida(true);
+    else if (azione === 'principale') {
+      await Archivio.richiesta('PUT', 'principale/' + stato.dati.id);
+      M.disegnaMenu();
+      disegnaDati();
+      avvisa('Prestito principale scelto: si aprirà da solo.');
+    }
+  });
+  $('#carta-dati-prestito').addEventListener('change', () => { if ($('#campi-dati')) aggiornaVisibili($('#campi-dati'), CHIAVI_DATI, stato.dati.parametri); });
+  $('#carta-dati-prestito').addEventListener('submit', async evento => {
+    evento.preventDefault();
+    const letti = leggiCampi($('#campi-dati'), CHIAVI_DATI);
+    if (letti.errore) return avvisa(letti.errore, true);
+    const cambiati = Object.fromEntries(Object.entries(letti.valori).filter(([chiave, valore]) => valore !== stato.dati.parametri[chiave]));
+    if (!Object.keys(cambiati).length) { cambiaDati = false; disegnaDati(); return avvisa('Nessun dato cambiato'); }
+    if (document.activeElement) document.activeElement.blur();
+    cambiaDati = false;
+    if (!await esegui('PUT', 'parametri', cambiati, 'Dati salvati: il piano è ricalcolato')) { cambiaDati = true; disegnaDati(); }
+  });
+  M.cambioPrestito.push(() => { cambiaDati = false; });
+
   // ---------- Taratura automatica ----------
   let esiti = null;
   function disegnaTaratura() {
@@ -1779,6 +1855,7 @@
     M.avvia();
   });
 
-  M.viste.push(disegnaRegole, disegnaTaratura, disegnaBackup);
+  M.viste.push(disegnaRegole, disegnaTaratura, disegnaBackup, disegnaDati);
+  M.allApertura.dati = disegnaDati;
   M.allApertura.pannello = disegnaBackup;   // anche senza prestiti, quando si seguono solo le offerte
 })();

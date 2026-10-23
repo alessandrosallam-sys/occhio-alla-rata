@@ -1400,7 +1400,9 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
     font-size: 14px; font-weight: 600; color: var(--inchiostro-2); border-radius: var(--r2);
   }
   body:has(.schede:not([hidden])) .ramo-prestito button .icona { width: 18px; height: 18px; grid-row: auto; }
-  .ramo-prestito .testa-ramo { display: flex; align-items: center; gap: 2px; }
+  .ramo-prestito .testa-ramo { display: flex; flex-direction: column; }
+  .ramo-prestito .etichetta-ramo { padding: 2px var(--s2) 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tenue); }
+  .ramo-prestito .riga-ramo { display: flex; align-items: center; gap: 2px; }
   body:has(.schede:not([hidden])) .ramo-prestito .nome-prestito { flex: 1; min-width: 0; color: var(--inchiostro); font-weight: 700; }
   .ramo-prestito .nome-prestito > span:not(.stella), .ramo-prestito .altro-prestito > span:not(.stella) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ramo-prestito .stella { margin-left: auto; }
@@ -1478,6 +1480,11 @@ button.tessera-versione .nome-tema { font-size: 15.5px; }
 label.opzione-assistente { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; line-height: 1.4; cursor: pointer; }
 label.opzione-assistente input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accento); }
 @media (max-width: 520px) { .scelta-versione { grid-template-columns: minmax(0, 1fr); } }
+
+/* Dati del prestito: i dati in parole, poi il modulo per cambiarli */
+.carta-dati-prestito h2 { display: flex; align-items: center; gap: var(--s2); margin: 0; }
+.carta-dati-prestito .riepilogo-guida { margin: var(--s4) 0; }
+.carta-dati-prestito .azioni { flex-wrap: wrap; }
 
 /* Prestiti: la stella del principale, l'elenco vuoto */
 button.scelta-principale[aria-pressed="true"] { color: #8a6100; border-color: #e5a800; background: color-mix(in srgb, #f5b301 14%, var(--superficie)); }

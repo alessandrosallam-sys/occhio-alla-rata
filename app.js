@@ -763,6 +763,7 @@
     { scheda: 'calendario', nome: 'Calendario', breve: 'Calendario', spiega: 'Quando si legge l\'indice', icona: 'calendario', soloVariabile: true, avanzata: true },
     { scheda: 'festivita', nome: 'Festività', breve: 'Festività', spiega: 'I giorni di chiusura delle banche', icona: 'bandiera', soloVariabile: true, avanzata: true },
     { scheda: 'contratto', nome: 'Regole del contratto', breve: 'Regole', spiega: 'Taratura, regole, ritocchi', icona: 'regole', avanzata: true },
+    { scheda: 'dati', nome: 'Dati del prestito', breve: 'Dati', spiega: 'Importo, durata, tasso', icona: 'matita' },
   ];
   const aperto = () => !!(stato.aperto && stato.dati);
   const paginaPossibile = p => aperto() && (!p.soloVariabile || variabile()) && !(p.avanzata && semplice());
@@ -777,25 +778,23 @@
     const voce = (pagina, breve) => crea('button', { type: 'button', role: 'tab', 'data-scheda': pagina.scheda, 'aria-controls': 'scheda-' + pagina.scheda,
       'aria-selected': String(stato.scheda === pagina.scheda) }, Icone.crea(pagina.icona, 'icona'), crea('span', {}, breve ? pagina.breve : pagina.nome),
       ...(breve ? [] : [crea('small', { className: 'spiega-scheda' }, pagina.spiega)]));
-    const datiPrestito = breve => crea('button', { type: 'button', className: 'voce-azione', 'data-azione': 'dati' },
-      Icone.crea('matita', 'icona'), crea('span', {}, breve ? 'Dati' : 'Dati del prestito'), ...(breve ? [] : [crea('small', { className: 'spiega-scheda' }, 'Importo, durata, tasso')]));
-    const chiudi = () => crea('button', { type: 'button', className: 'chiudi-prestito', 'data-azione': 'chiudi', 'aria-label': 'Chiudi il prestito' }, '×');
-    // Barra laterale: il prestito aperto con le sue pagine, poi gli altri (un clic li apre).
+    const chiudi = () => crea('button', { type: 'button', className: 'chiudi-prestito', 'data-azione': 'chiudi', 'aria-label': 'Chiudi il prestito', title: 'Chiudi il prestito' }, '×');
+    // Il nome del prestito aperto porta ai suoi dati.
+    const nome = () => crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'dati', title: 'I dati di questo prestito' },
+      icona(stato.dati), crea('span', {}, nomeDi(stato.dati)), ...stella(stato.dati));
+    // Barra laterale: «Prestito aperto», il nome con le sue pagine, poi gli altri prestiti (un clic li apre).
     const ramo = $('#ramo-prestito'), sotto = $('#sottomenu');
     ramo.hidden = sotto.hidden = !aperto();
     if (!aperto()) { ramo.replaceChildren(); sotto.replaceChildren(); return; }
     ramo.replaceChildren(
       crea('div', { className: 'prestito-aperto' },
-        crea('div', { className: 'testa-ramo' },
-          crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'piano' }, icona(stato.dati), crea('span', {}, nomeDi(stato.dati)), ...stella(stato.dati)),
-          chiudi()),
-        crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, false)), datiPrestito(false))),
+        crea('div', { className: 'testa-ramo' }, crea('span', { className: 'etichetta-ramo' }, 'Prestito aperto'), crea('div', { className: 'riga-ramo' }, nome(), chiudi())),
+        crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, false)))),
       ...Archivio.elenco().filter(d => d.id !== stato.dati.id).map(d =>
         crea('button', { type: 'button', className: 'altro-prestito', 'data-apri-prestito': d.id }, icona(d), crea('span', {}, nomeDi(d)), ...stella(d))));
     // Schermi stretti: una barra sotto la testata con il prestito aperto e le sue pagine.
-    sotto.replaceChildren(
-      crea('button', { type: 'button', className: 'nome-prestito', 'data-vai': 'prestiti' }, icona(stato.dati), crea('span', {}, nomeDi(stato.dati))),
-      crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, true)), datiPrestito(true)),
+    sotto.replaceChildren(nome(),
+      crea('div', { className: 'pagine-prestito', role: 'group', 'aria-label': 'Pagine di ' + nomeDi(stato.dati) }, ...pagine.map(p => voce(p, true))),
       chiudi());
   }
 
@@ -845,7 +844,6 @@
     if (!pulsante) return;
     if (pulsante.dataset.scheda || pulsante.dataset.vai) mostraScheda(pulsante.dataset.scheda || pulsante.dataset.vai);
     else if (pulsante.dataset.apriPrestito) M.entra(pulsante.dataset.apriPrestito);
-    else if (pulsante.dataset.azione === 'dati') M.apriGuida(true);
     else if (pulsante.dataset.azione === 'chiudi') M.esci();
   });
 

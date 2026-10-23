@@ -81,10 +81,10 @@
   ];
   const CAPITO = [
     ['Tipo', 'Il tipo di prestito: decide se il tasso segue un indice o resta fisso.'],
+    ['Tasso aggiornato', 'Ogni quanto cambia il tasso: ogni mese, oppure ogni 3 o 6 mesi con l\'Euribor della stessa durata.'],
     ['Tasso', 'Il tasso delle rate. Nel variabile è l\'indice di quel momento più lo spread, che resta sempre uguale; nel fisso è il TAN.'],
     ['Capitale', 'Come si restituisce il debito: alla francese la quota capitale si ricalcola ogni mese; con le quote fissate all\'inizio è scritta nel piano della firma; all\'italiana è sempre uguale.'],
     ['Indice letto', 'Il giorno in cui la banca legge l\'Euribor per una rata: di solito pochi giorni lavorativi prima che inizi il mese della rata.'],
-    ['Tasso aggiornato', 'Ogni quanto cambia il tasso: ogni mese, oppure ogni 3 o 6 mesi con l\'Euribor della stessa durata.'],
     ['Interessi', 'Come si contano i giorni per gli interessi: un dodicesimo del tasso annuo ogni mese, oppure i giorni veri del mese.'],
     ['Spese per rata', 'Le spese che la banca aggiunge a ogni rata, già comprese nell\'importo addebitato.'],
     ['Ogni rata copre', 'Il mese a cui si riferiscono gli interessi di una rata, rispetto al giorno in cui viene addebitata.'],
@@ -94,6 +94,14 @@
     ['Rate già pagate', 'Le rate che hai scritto: servono a controllare i conti della banca.'],
     ['Altre spese', 'Spese iniziali, assicurazioni e spese annuali: servono al costo totale e al TAEG.'],
     ['TAEG', 'Il costo vero in percentuale all\'anno, come lo scrive il contratto.'],
+    ['Importo prestato', 'La somma che ti ha prestato la banca: la trovi nella prima pagina del contratto.'],
+    ['Durata', 'Quante rate in tutto, e il mese della prima e dell\'ultima.'],
+    ['Maxirata', 'L\'ultima rata, molto più grande delle altre.'],
+    ['Anticipo', 'Quello che hai pagato subito al venditore: non fa parte del prestito.'],
+    ['Spese iniziali', 'Le spese pagate una volta, all\'inizio: servono al costo totale e al TAEG.'],
+    ['Assicurazioni', 'Le assicurazioni legate al prestito: servono al costo totale e al TAEG.'],
+    ['Rate scritte', 'Le rate che hai scritto nel piano: quelle controllate sull\'estratto conto e quelle prese dal calcolo (segnate con «=»).'],
+    ['Si apre da solo', 'Il prestito principale si apre da solo quando apri la pagina. Lo scegli con la stella nella pagina «Prestiti».'],
   ];
   const SCHEDE = {
     prestiti: 'Tutti i prestiti che segui, con il totale delle rate del mese e del debito. Da qui entri in uno e scegli il principale.',
@@ -105,16 +113,20 @@
     calendario: 'In che giorno la banca legge l\'indice per ogni rata.',
     festivita: 'I giorni di chiusura delle banche, che non contano come lavorativi.',
     contratto: 'Le regole del contratto di questo prestito: taratura automatica, regole a mano, ritocchi, rata ideale.',
+    dati: 'I dati di questo prestito, in parole: importo, durata, tasso, spese. Da lì li cambi se non sono giusti.',
   };
 
   const VOCI = [
     ['[data-spiega]', el => el.dataset.spiega],
     // Navigazione e testata
     ['.schede button[data-scheda], .sottomenu button[data-scheda]', el => SCHEDE[el.dataset.scheda]],
-    ['[data-azione="dati"]', 'Rivedi o cambia i dati di questo prestito: importo, durata, tasso, regole del contratto. Le rate che hai scritto restano.'],
+    ['.etichetta-ramo', 'Qui sotto c\'è il prestito su cui stai lavorando, con le sue pagine.'],
+    ['[data-dati="cambia"]', 'Apre il modulo con importo, durata, tasso e spese: correggi e salva, il piano si ricalcola subito. Le rate scritte restano.'],
+    ['[data-dati="guida"]', 'Ripete le domande della configurazione guidata, una alla volta, con le risposte già date. Le rate scritte restano.'],
+    ['[data-dati="regole"]', 'Tutte le regole di dettaglio del contratto, con la taratura automatica.'],
+    ['[data-dati="principale"]', 'Rendilo il prestito principale: si aprirà da solo quando apri la pagina.'],
     ['[data-azione="chiudi"]', 'Chiude il prestito: resta il menù generale, con l\'elenco di tutti i prestiti.'],
-    ['.ramo-prestito .nome-prestito', el => `Il prestito aperto, «${el.textContent.replace('★', '').trim()}»: sotto ci sono le sue pagine. Clic per il suo piano.`],
-    ['.sottomenu .nome-prestito', el => `Il prestito aperto, «${el.textContent.trim()}». Clic per vedere tutti i prestiti.`],
+    ['.nome-prestito', el => `Il prestito aperto, «${el.textContent.replace('★', '').trim()}». Clic per i suoi dati: importo, durata, tasso, spese.`],
     ['[data-apri-prestito]', el => `Apri «${el.textContent.replace('★', '').trim()}»: le sue pagine prendono il posto di quelle di adesso.`],
     ['.stella', 'Il prestito principale: si apre da solo quando apri la pagina.'],
     ['[data-principale]', el => el.getAttribute('aria-pressed') === 'true' ? 'Questo è il prestito principale: si apre da solo quando apri la pagina. Clic per toglierlo.' : 'Rendilo il prestito principale: si aprirà da solo quando apri la pagina.'],

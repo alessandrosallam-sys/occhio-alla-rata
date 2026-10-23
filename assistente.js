@@ -235,6 +235,7 @@
       : quanti > 1 ? 'Qui vedi tutti i tuoi prestiti, con il totale delle rate del mese. Con la stella scegli quello principale, che si apre da solo.'
       : 'Qui vedi il tuo prestito. Se ne hai un altro, con «Aggiungi un prestito» lo segui insieme a questo.', 'parla'];
     if (nome === 'costi') return ['Qui vedi quanto costa davvero il prestito, oltre alla somma ricevuta, e quanto risparmieresti rimborsandolo prima.', 'parla'];
+    if (nome === 'dati') return ['Questi sono i dati del tuo prestito, in parole. Se qualcosa non è giusto, premi «Cambia i dati»: il piano si ricalcola subito.', 'parla'];
     if (nome === 'contratto') return ['Le regole del contratto: cambiale solo se sai che cosa dice il contratto. Se le rate non tornano, la taratura le cerca da sola.', 'parla'];
     if (nome === 'offerte') return ['Devi ancora firmare? Scrivi le offerte delle banche: ti dico quanto costa davvero ciascuna, e quale costa meno.', 'parla'];
     if (nome === 'piano' && righe.length) {
