@@ -1472,6 +1472,19 @@ button.tessera-tema[aria-pressed="true"], button.tessera-versione[aria-pressed="
 .mini-pillola { align-self: end; width: 46%; height: 10px; border-radius: 6px; background: var(--accento); }
 .gruppo-pannello .griglia-temi { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 .gruppo-pannello .anteprima-tema { height: 100px; }
+/* L'aspetto del robottino (assistente.js): le anteprime, che galleggiano e sbattono gli occhi */
+.opzioni-assistente + .nota { margin-top: var(--s3); }
+.griglia-avatar { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: var(--s2); margin-bottom: var(--s2); }
+button.tessera-avatar {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 0; padding: 8px 6px;
+  background: var(--superficie); color: var(--inchiostro); border: var(--spessore) solid var(--linea-forte); border-radius: var(--r2);
+  font-size: 13.5px; font-weight: 650; white-space: normal; box-shadow: none;
+}
+button.tessera-avatar:hover { background: var(--superficie-2); border-color: var(--tenue); }
+button.tessera-avatar[aria-pressed="true"] { border-color: var(--accento); box-shadow: 0 0 0 2px var(--accento); }
+.tessera-avatar .robot { display: block; width: 58px; height: 58px; overflow: visible; }
+.tessera-avatar:hover .occhi { display: none; }   /* passandoci sopra, il robottino sorride */
+.tessera-avatar:hover .occhi-felici { display: inline; }
 /* Le impostazioni (temi.js): versione, assistente, colori; nel riquadro della testata e nel pannello */
 .scelte-impostazioni > h3 { margin: var(--s5) 0 var(--s2); font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tenue); }
 .scelte-impostazioni > h3:first-child { margin-top: var(--s1); }
@@ -2033,15 +2046,17 @@ button[aria-busy="true"]::after {
   border-radius: 4px 16px 16px 16px; color: var(--inchiostro); font-size: 14.5px; line-height: 1.45;
 }
 .parole .scritto { margin: 0; }
+.robot { --tratto: var(--inchiostro); }   /* occhi e bocca: scuri fissi dove il viso è sempre bianco */
+.robot-sfera, .robot-gigante, .robot-gattobot { --tratto: #1e1b4b; }
 .robot .testa { fill: var(--accento); }
 .robot .viso { fill: var(--superficie); }
 .robot .orecchio { fill: color-mix(in srgb, var(--accento) 70%, #000000); }
 .robot .antenna { stroke: var(--accento); stroke-width: 2.5; stroke-linecap: round; }
 .robot .antenna-luce { fill: #f5b301; }
-.robot .occhi ellipse { fill: var(--inchiostro); }
-.robot .occhi-felici, .robot .bocca { fill: none; stroke: var(--inchiostro); stroke-width: 2.2; stroke-linecap: round; }
+.robot .occhi > * { fill: var(--tratto); }   /* gli occhi, di ogni forma (ellissi, quadretti…) */
+.robot .occhi-felici, .robot .bocca { fill: none; stroke: var(--tratto); stroke-width: 2.2; stroke-linecap: round; }
 .robot .occhi-felici, .robot .bocca-aperta { display: none; }
-.robot .bocca-aperta { fill: var(--inchiostro); }
+.robot .bocca-aperta { fill: var(--tratto); }
 .robot .guancia { fill: #f28b8b; opacity: 0.5; }
 .robot .nuvoletta circle { fill: var(--tenue); opacity: 0; }
 .robot .occhi, .robot .corpo { transition: transform 0.3s ease; }
@@ -2112,7 +2127,7 @@ button[aria-busy="true"]::after {
 @keyframes segue-entra { from { opacity: 0; transform: translateY(18px) scale(0.85); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: no-preference) {
   .assistente.segue { animation: segue-entra 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-  .robot .occhi ellipse { transform-box: fill-box; transform-origin: center; animation: palpebre 5s infinite; }
+  .robot .occhi > * { transform-box: fill-box; transform-origin: center; animation: palpebre 5s infinite; }
   .robot .corpo { animation: galleggia 3.4s ease-in-out infinite; }
   .assistente.felice .corpo { animation: saltello 0.6s ease-out, galleggia 3.4s ease-in-out 0.6s infinite; }
   .assistente.dubbio .corpo { animation: none; }

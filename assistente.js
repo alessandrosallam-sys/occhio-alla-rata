@@ -12,8 +12,14 @@
   'use strict';
   const M = window.Mutuo, { $, crea, euro, meseAnno } = M;
   const UMORI = ['parla', 'pensa', 'felice', 'dubbio'];
-  const DISEGNO = `<svg class="robot" viewBox="0 0 64 64" aria-hidden="true">
-    <g class="corpo">
+  // Gli aspetti del robottino, da scegliere nelle impostazioni (chiave «avatar» nel browser), ispirati ai robot famosi
+  // senza copiarli. Ognuno ha le parti che servono agli umori: .occhi (sbattono; in «pensa» guardano in alto),
+  // .occhi-felici, .bocca e .bocca-aperta (mentre scrive), e i colori del tema con le classi testa, viso, orecchio,
+  // antenna, antenna-luce, guancia (stile.css) o con style="…var(--accento)…". Occhi e bocca hanno il colore --tratto:
+  // quello del testo, ma scuro fisso sui robottini con il viso bianco. La nuvoletta di «pensa» è uguale per tutti.
+  const S = 'style', ACC = 'fill:var(--accento)', SUP = 'fill:var(--superficie)', BORDO = 'stroke:var(--accento);stroke-width:1.8';
+  const AVATAR = [
+    { codice: 'robottino', nome: 'Robottino', descrizione: 'Il robottino di sempre: testa tonda e antenna con la luce.', disegno: `
       <line class="antenna" x1="32" y1="14" x2="32" y2="7"/><circle class="antenna-luce" cx="32" cy="5.5" r="3.2"/>
       <rect class="orecchio" x="5" y="27" width="6" height="12" rx="3"/><rect class="orecchio" x="53" y="27" width="6" height="12" rx="3"/>
       <rect class="testa" x="10" y="13" width="44" height="38" rx="15"/>
@@ -21,16 +27,131 @@
       <g class="occhi"><ellipse cx="25.5" cy="30" rx="3.6" ry="4.4"/><ellipse cx="38.5" cy="30" rx="3.6" ry="4.4"/></g>
       <path class="occhi-felici" d="M21.5 31q4-5 8 0M34.5 31q4-5 8 0"/>
       <path class="bocca" d="M27 38.5q5 4 10 0"/><ellipse class="bocca-aperta" cx="32" cy="39" rx="4" ry="2.6"/>
-      <circle class="guancia" cx="20.5" cy="37.5" r="2.2"/><circle class="guancia" cx="43.5" cy="37.5" r="2.2"/>
-    </g>
-    <g class="nuvoletta"><circle cx="53" cy="11" r="2"/><circle cx="58.5" cy="5.5" r="2.8"/></g>
-  </svg>`;
+      <circle class="guancia" cx="20.5" cy="37.5" r="2.2"/><circle class="guancia" cx="43.5" cy="37.5" r="2.2"/>` },
+    { codice: 'cupolino', nome: 'Cupolino', descrizione: 'Una cupola con un solo grande occhio, come i robottini delle guerre fra le stelle.', disegno: `
+      <rect class="orecchio" x="6.5" y="33" width="6" height="21" rx="2"/><rect class="orecchio" x="51.5" y="33" width="6" height="21" rx="2"/>
+      <rect x="14.5" y="31" width="35" height="23" rx="3" ${S}="${SUP};${BORDO}"/>
+      <path d="M21.5 35v15M42.5 35v15" ${S}="stroke:var(--accento);stroke-width:3.2;stroke-linecap:round"/>
+      <path d="M14 31a18 18 0 0 1 36 0Z" ${S}="${SUP};${BORDO}"/>
+      <path d="M18 26.5h6v-4.5h-4.3M40 22h4.3l1.7 4.5h-6Z" ${S}="${ACC}"/>
+      <circle cx="32" cy="21" r="6" ${S}="fill:none;${BORDO}"/>
+      <g class="occhi"><ellipse cx="32" cy="21" rx="4" ry="4"/></g>
+      <path class="occhi-felici" d="M28 22.5q4-5 8 0"/>
+      <circle cx="41.5" cy="26.5" r="1.5" fill="#e03131"/>
+      <path class="bocca" d="M28 42h8"/><ellipse class="bocca-aperta" cx="32" cy="42" rx="4.5" ry="2.2"/>` },
+    { codice: 'cingolino', nome: 'Cingolino', descrizione: 'Occhi a binocolo e cingoli: un piccolo robot spazzino, curioso di tutto.', disegno: `
+      <rect class="orecchio" x="29.5" y="21" width="5" height="8" rx="1.5"/>
+      <rect class="orecchio" x="15" y="10" width="16" height="14" rx="6"/><rect class="orecchio" x="33" y="10" width="16" height="14" rx="6"/>
+      <circle cx="23" cy="17" r="5.2" ${S}="${SUP}"/><circle cx="41" cy="17" r="5.2" ${S}="${SUP}"/>
+      <g class="occhi"><ellipse cx="23.5" cy="17.5" rx="3.2" ry="3.2"/><ellipse cx="40.5" cy="17.5" rx="3.2" ry="3.2"/></g>
+      <path class="occhi-felici" d="M19.5 18.5q3.5-4 7 0M37.5 18.5q3.5-4 7 0"/>
+      <rect class="testa" x="13" y="28" width="38" height="20" rx="3"/>
+      <rect class="viso" x="18.5" y="31.5" width="27" height="12" rx="2"/>
+      <path class="bocca" d="M26 37.5h12"/><ellipse class="bocca-aperta" cx="32" cy="37.5" rx="5" ry="2.4"/>
+      <rect x="8" y="46" width="48" height="10" rx="5" ${S}="fill:var(--tratto);opacity:0.85"/>
+      <g ${S}="${SUP}"><circle cx="14" cy="51" r="2.6"/><circle cx="25" cy="51" r="2.6"/><circle cx="39" cy="51" r="2.6"/><circle cx="50" cy="51" r="2.6"/></g>` },
+    { codice: 'ovetto', nome: 'Ovetto', descrizione: 'Bianco e liscio, con gli occhi di luce: vola leggero.', disegno: `
+      <path d="M21.5 42c0-3 4.7-4.5 10.5-4.5s10.5 1.5 10.5 4.5c0 8-4.5 15-10.5 15s-10.5-7-10.5-15Z" ${S}="fill:#ffffff;${BORDO}"/>
+      <ellipse cx="19.5" cy="46" rx="3" ry="7.5" transform="rotate(10 19.5 46)" ${S}="fill:#ffffff;${BORDO}"/>
+      <ellipse cx="44.5" cy="46" rx="3" ry="7.5" transform="rotate(-10 44.5 46)" ${S}="fill:#ffffff;${BORDO}"/>
+      <ellipse cx="32" cy="23" rx="17.5" ry="14" ${S}="fill:#ffffff;${BORDO}"/>
+      <ellipse cx="32" cy="24.5" rx="13.5" ry="8.5" fill="#14142b"/>
+      <g class="occhi"><ellipse cx="26" cy="24.5" rx="4" ry="2.8" ${S}="fill:#5ec8ff"/><ellipse cx="38" cy="24.5" rx="4" ry="2.8" ${S}="fill:#5ec8ff"/></g>
+      <path class="occhi-felici" d="M22.5 26q3.5-4.5 7 0M34.5 26q3.5-4.5 7 0" ${S}="stroke:#5ec8ff"/>
+      <path class="bocca" d="M30.5 30h3" ${S}="stroke:#5ec8ff;opacity:0.7"/><ellipse class="bocca-aperta" cx="32" cy="30" rx="2.2" ry="1.1" ${S}="fill:#5ec8ff"/>` },
+    { codice: 'sfera', nome: 'Sfera', descrizione: 'Rotola su una palla, con la testa a cupola e l\'antenna sottile.', disegno: `
+      <circle cx="32" cy="45.5" r="14" ${S}="fill:#ffffff;${BORDO}"/>
+      <circle cx="32" cy="45.5" r="7" ${S}="fill:none;stroke:var(--accento);stroke-width:3.4"/>
+      <path d="M18.5 41.9A14 14 0 0 1 24 34M45.5 41.9A14 14 0 0 0 40 34M25 57.6A14 14 0 0 0 39 57.6" ${S}="fill:none;stroke:var(--accento);stroke-width:3.2"/>
+      <line class="antenna" x1="39" y1="20" x2="39" y2="12"/><circle class="antenna-luce" cx="39" cy="11" r="1.8"/>
+      <path d="M18 30a14 12 0 0 1 28 0Z" ${S}="fill:#ffffff;${BORDO}"/>
+      <path d="M23.5 20.5h17" ${S}="stroke:var(--accento);stroke-width:2"/>
+      <circle cx="28.5" cy="25.3" r="4.2" ${S}="fill:#ffffff;stroke:var(--tratto);stroke-width:1.4"/>
+      <g class="occhi"><ellipse cx="28.5" cy="25.3" rx="2.5" ry="2.5"/></g>
+      <path class="occhi-felici" d="M25.5 26.3q3-3.8 6 0"/>
+      <circle cx="37" cy="24.8" r="1.5" ${S}="fill:var(--tratto)"/>
+      <path class="bocca" d="M35 28.2h3.6"/><ellipse class="bocca-aperta" cx="36.8" cy="28.2" rx="2" ry="1.1"/>` },
+    { codice: 'gigante', nome: 'Gigante buono', descrizione: 'Tondo, bianco e gentile: un assistente da abbracciare.', disegno: `
+      <path d="M6 64c2-14 13-21 26-21s24 7 26 21Z" ${S}="fill:#ffffff;${BORDO}"/>
+      <ellipse cx="32" cy="29" rx="22" ry="16.5" ${S}="fill:#ffffff;${BORDO}"/>
+      <path d="M25 29h14" ${S}="stroke:var(--tratto);stroke-width:2.2"/>
+      <g class="occhi"><ellipse cx="22" cy="29" rx="3.6" ry="3.6"/><ellipse cx="42" cy="29" rx="3.6" ry="3.6"/></g>
+      <path class="occhi-felici" d="M18 30.5q4-5 8 0M38 30.5q4-5 8 0"/>
+      <path class="bocca" d="M29.5 37.5q2.5 1.6 5 0"/><ellipse class="bocca-aperta" cx="32" cy="37.8" rx="2.6" ry="1.6"/>
+      <circle class="guancia" cx="16.5" cy="35.5" r="2.2"/><circle class="guancia" cx="47.5" cy="35.5" r="2.2"/>` },
+    { codice: 'latta', nome: 'Latta', descrizione: 'Il robot di latta dei vecchi giocattoli, con i bulloni e la griglia.', disegno: `
+      <line class="antenna" x1="32" y1="14" x2="32" y2="7.5"/><circle class="antenna-luce" cx="32" cy="6" r="3"/>
+      <circle class="orecchio" cx="9" cy="31" r="4"/><circle class="orecchio" cx="55" cy="31" r="4"/>
+      <rect class="testa" x="11.5" y="13.5" width="41" height="35" rx="5"/>
+      <g class="orecchio"><circle cx="15.5" cy="17.5" r="1.4"/><circle cx="48.5" cy="17.5" r="1.4"/><circle cx="15.5" cy="44.5" r="1.4"/><circle cx="48.5" cy="44.5" r="1.4"/></g>
+      <rect class="viso" x="17" y="19" width="30" height="24.5" rx="4"/>
+      <circle cx="25" cy="27.5" r="5.4" ${S}="fill:none;${BORDO}"/><circle cx="39" cy="27.5" r="5.4" ${S}="fill:none;${BORDO}"/>
+      <g class="occhi"><ellipse cx="25" cy="27.5" rx="3.2" ry="3.2"/><ellipse cx="39" cy="27.5" rx="3.2" ry="3.2"/></g>
+      <path class="occhi-felici" d="M21.5 28.5q3.5-4 7 0M35.5 28.5q3.5-4 7 0"/>
+      <rect x="22.5" y="35" width="19" height="6" rx="1.5" ${S}="fill:none;stroke:var(--tratto);stroke-width:1.6"/>
+      <path class="bocca" d="M26.5 35v6M30.5 35v6M34.5 35v6M38.5 35v6"/><ellipse class="bocca-aperta" cx="32" cy="38" rx="7.5" ry="2.4"/>` },
+    { codice: 'visiera', nome: 'Visiera', descrizione: 'Testa a cilindro, visiera scura e antenna: un po\' sbruffone, ma di cuore.', disegno: `
+      <line class="antenna" x1="32" y1="12" x2="32" y2="5.5"/><circle class="antenna-luce" cx="32" cy="4.5" r="2.6"/>
+      <path class="testa" d="M16 56V25a16 13 0 0 1 32 0v31Z"/>
+      <rect x="14.5" y="21.5" width="35" height="13" rx="6.5" fill="#1b1b2e"/>
+      <g class="occhi"><ellipse cx="25" cy="28" rx="4.4" ry="3.8" ${S}="fill:#ffffff"/><ellipse cx="39" cy="28" rx="4.4" ry="3.8" ${S}="fill:#ffffff"/>
+        <ellipse cx="25" cy="28" rx="1.5" ry="1.5" ${S}="fill:#111111"/><ellipse cx="39" cy="28" rx="1.5" ry="1.5" ${S}="fill:#111111"/></g>
+      <path class="occhi-felici" d="M21 29.5q4-5 8 0M35 29.5q4-5 8 0" ${S}="stroke:#ffffff"/>
+      <rect class="viso" x="21" y="40" width="22" height="9" rx="3"/>
+      <path class="bocca" d="M25.5 40v9M29.5 40v9M34.5 40v9M38.5 40v9M21 44.5h22"/><ellipse class="bocca-aperta" cx="32" cy="44.5" rx="8" ry="3"/>` },
+    { codice: 'gattobot', nome: 'Gattobot', descrizione: 'Un gatto robot con i baffi, il naso rosso e il campanello.', disegno: `
+      <path class="testa" d="M15 25 17.5 9.5l10 8.5ZM49 25 46.5 9.5l-10 8.5Z"/>
+      <circle class="testa" cx="32" cy="32" r="20.5"/>
+      <ellipse cx="32" cy="36.5" rx="16" ry="14" fill="#ffffff"/>
+      <ellipse cx="27.5" cy="24.5" rx="4.8" ry="5.8" ${S}="fill:#ffffff;stroke:var(--tratto);stroke-width:1.2"/>
+      <ellipse cx="36.5" cy="24.5" rx="4.8" ry="5.8" ${S}="fill:#ffffff;stroke:var(--tratto);stroke-width:1.2"/>
+      <g class="occhi"><ellipse cx="29" cy="25.5" rx="1.7" ry="2.3"/><ellipse cx="35" cy="25.5" rx="1.7" ry="2.3"/></g>
+      <path class="occhi-felici" d="M25.5 26.5q2.5-3.5 5 0M33.5 26.5q2.5-3.5 5 0"/>
+      <circle cx="32" cy="31.5" r="2.6" fill="#e03131"/>
+      <path d="M32 34v5.5M13.5 33.5l9 1.8M13.5 38.5h9M50.5 33.5l-9 1.8M50.5 38.5h-9" ${S}="stroke:var(--tratto);stroke-width:1.3;stroke-linecap:round"/>
+      <path class="bocca" d="M24.5 40q7.5 6 15 0"/><ellipse class="bocca-aperta" cx="32" cy="42.5" rx="5" ry="3"/>
+      <rect x="17" y="50" width="30" height="4.5" rx="2.2" fill="#e03131"/>
+      <circle cx="32" cy="56" r="3.2" fill="#f7b500"/><path d="M29.5 55.5h5" stroke="#8a5a00" stroke-width="1"/>` },
+    { codice: 'gufobot', nome: 'Gufobot', descrizione: 'Un gufo meccanico, parente del logo del progetto.', disegno: `
+      <path class="testa" d="M14 19 17.5 8l8.5 6.5h12L46.5 8 50 19v25a12 12 0 0 1-12 12H26a12 12 0 0 1-12-12Z"/>
+      <circle class="viso" cx="24.5" cy="29" r="8.2"/><circle class="viso" cx="39.5" cy="29" r="8.2"/>
+      <circle cx="24.5" cy="29" r="5.6" fill="none" stroke="#f7b500" stroke-width="1.8"/><circle cx="39.5" cy="29" r="5.6" fill="none" stroke="#f7b500" stroke-width="1.8"/>
+      <g class="occhi"><ellipse cx="24.5" cy="29" rx="3.4" ry="3.4"/><ellipse cx="39.5" cy="29" rx="3.4" ry="3.4"/></g>
+      <path class="occhi-felici" d="M20.5 30q4-5 8 0M35.5 30q4-5 8 0"/>
+      <path d="M29.8 36h4.4L32 40.6Z" fill="#f7b500"/>
+      <path class="bocca" d="M28.5 45q3.5 2.6 7 0"/><ellipse class="bocca-aperta" cx="32" cy="45.5" rx="3" ry="1.9"/>
+      <g class="orecchio"><circle cx="19" cy="47" r="1.6"/><circle cx="45" cy="47" r="1.6"/></g>` },
+    { codice: 'pixel', nome: 'Pixel', descrizione: 'Un robot a quadretti, come nei videogiochi di una volta.', disegno: `
+      <rect class="antenna-luce" x="29" y="4" width="6" height="5"/><rect class="orecchio" x="30.5" y="9" width="3" height="7"/>
+      <rect class="orecchio" x="7" y="26" width="5" height="12"/><rect class="orecchio" x="52" y="26" width="5" height="12"/>
+      <rect class="testa" x="12" y="16" width="40" height="32"/>
+      <rect class="viso" x="17" y="21" width="30" height="22"/>
+      <g class="occhi"><rect x="22" y="26" width="6" height="6"/><rect x="36" y="26" width="6" height="6"/></g>
+      <path class="occhi-felici" d="M21.5 31v-3h2v-2h3v2h2v3M35.5 31v-3h2v-2h3v2h2v3" stroke-linecap="square"/>
+      <path class="bocca" d="M25 37.5h14" stroke-linecap="square"/><ellipse class="bocca-aperta" cx="32" cy="38" rx="6" ry="2.4"/>
+      <g class="orecchio"><rect x="14" y="51" width="8" height="5"/><rect x="42" y="51" width="8" height="5"/></g>` },
+  ];
+  const NUVOLETTA = '<g class="nuvoletta"><circle cx="53" cy="11" r="2"/><circle cx="58.5" cy="5.5" r="2.8"/></g>';
+  const leggiAvatar = () => { try { return localStorage.getItem('avatar'); } catch { return null; } };
+  let avatarScelto = AVATAR.some(a => a.codice === leggiAvatar()) ? leggiAvatar() : 'robottino';
+  const disegnoAvatar = (codice = avatarScelto) => {
+    const a = AVATAR.find(x => x.codice === codice) || AVATAR[0];
+    return `<svg class="robot robot-${a.codice}" viewBox="0 0 64 64" aria-hidden="true"><g class="corpo">${a.disegno}</g>${NUVOLETTA}</svg>`;
+  };
+  // Cambia l'aspetto di tutti gli assistenti della pagina (non delle anteprime nelle impostazioni).
+  function scegliAvatar(codice) {
+    if (!AVATAR.some(a => a.codice === codice)) return;
+    avatarScelto = codice;
+    try { localStorage.setItem('avatar', codice); } catch { /* vale solo per questa volta */ }
+    for (const avatar of document.querySelectorAll('.assistente .avatar')) avatar.innerHTML = disegnoAvatar();
+    for (const pulsante of document.querySelectorAll('[data-scelta-avatar]')) pulsante.setAttribute('aria-pressed', String(pulsante.dataset.sceltaAvatar === codice));
+  }
   const fermo = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const vuole = codice => !window.Temi || Temi.opzione(codice);   // scelte delle impostazioni: 'spiega', 'segue'
 
   function nuovo(classe = '') {
     const el = crea('div', { className: 'assistente ' + classe });
-    el.innerHTML = `<div class="avatar">${DISEGNO}</div><div class="parole"><p class="scritto" aria-hidden="true"></p><span class="solo-lettori" aria-live="polite"></span></div>`;
+    el.innerHTML = `<div class="avatar">${disegnoAvatar()}</div><div class="parole"><p class="scritto" aria-hidden="true"></p><span class="solo-lettori" aria-live="polite"></span></div>`;
     return el;
   }
   // Scrive un testo nel fumetto, lettera per lettera (tutto insieme con «subito» o con «riduci movimento»).
@@ -202,7 +323,7 @@
   document.addEventListener('pointerdown', () => { daTastiera = false; }, true);
   document.addEventListener('focusin', evento => { if (daTastiera) guarda(evento.target); });
 
-  window.Assistente = { nuovo, dici, spiega, segui };
+  window.Assistente = { nuovo, dici, spiega, segui, AVATAR, disegnoAvatar, scegliAvatar, avatarScelto: () => avatarScelto };
 
   // ---------- In cima alle schede del programma ----------
   const nelProgramma = nuovo('nel-programma');
