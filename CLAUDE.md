@@ -16,7 +16,7 @@ Leggi [docs/progetto-generale.md](docs/progetto-generale.md) prima di toccare il
 
 ## Git e GitHub: si lavora da più computer
 
-Il repository è https://github.com/alessandrosallam-sys/occhio-alla-rata (ramo `main`, per ora privato). Nessun altro ci lavora, ma l'autore usa più computer: GitHub è il punto d'incontro, quindi deve essere sempre aggiornato.
+Il repository è https://github.com/alessandrosallam-sys/occhio-alla-rata (ramo `main`, per ora privato). Nessun altro ci lavora, ma l'autore usa più computer: GitHub è il punto d'incontro, quindi deve essere sempre aggiornato. Come si prepara un computer nuovo, cosa c'è e cosa manca, i problemi comuni: [docs/lavorare-da-un-altro-pc.md](docs/lavorare-da-un-altro-pc.md). Se l'autore ti chiede aiuto per preparare un computer, segui quella guida.
 
 - **All'inizio di ogni sessione**: `git status` e `git pull`. Se trovi modifiche non salvate che non sono tue (un'altra sessione al lavoro), non toccarle e non metterle nei tuoi commit.
 - **Dopo ogni modifica completata e provata**: commit e subito `git push`, senza chiedere. Messaggio in italiano: cosa e perché. Nel commit metti solo i file che hai cambiato tu.
