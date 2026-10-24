@@ -7,6 +7,9 @@
   <title>Occhio alla Rata</title>
   <link rel="stylesheet" href="stile.css">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <!-- L'app da installare sul telefono (pwa.js, sw.js): nome, icone, colori -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icone-app/icona-180.png">
   <meta name="theme-color" content="#ffffff">
   <!-- Il tema si sceglie qui, prima che la pagina si disegni (temi.js) -->
   <script src="temi.js"></script>
@@ -228,6 +231,7 @@
             <form class="sezione-valori" id="form-internet">
               <h3 data-icona="scarica">Scarica da internet</h3>
               <p class="nota" id="spiegazione-internet"></p>
+              <p class="nota" id="stato-storico" role="status"></p>
               <p class="nota evidenza" id="avviso-internet" hidden></p>
               <div class="riga-comandi">
                 <label class="campo-in-linea">Quale Euribor <select name="serie"></select></label>
@@ -476,6 +480,16 @@
           </div>
         </div>
 
+        <!-- L'app sul telefono: come installarla (pwa.js) -->
+        <div class="carta carta-versione carta-app" id="carta-app">
+          <div>
+            <h2 data-icona="scarica">L'app sul telefono</h2>
+            <p class="nota" id="testo-app"></p>
+            <p class="nota">I dati restano sul dispositivo dove li scrivi. Per portare i prestiti dal computer al telefono, o al contrario, usa «Salva un backup» da una parte e «Carica un backup» dall'altra.</p>
+          </div>
+          <div class="azioni"><button type="button" id="installa-app" data-icona="scarica" hidden>Installa l'app</button></div>
+        </div>
+
         <!-- Nella versione semplice: che cosa c'è in più nell'avanzata -->
         <div class="carta solo-semplice carta-versione">
           <div>
@@ -508,6 +522,7 @@
   <script src="deduzione.js"></script>
   <script src="tassi-precaricati.js"></script>
   <script src="tassi-internet.js"></script>
+  <script src="storico.js"></script>
   <script src="archivio.js"></script>
   <script src="modelli.js"></script>
   <script src="app.js"></script>
@@ -520,5 +535,6 @@
   <script src="prestiti.js"></script>
   <script src="costi.js"></script>
   <script src="offerte.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>

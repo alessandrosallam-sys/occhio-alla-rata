@@ -9,7 +9,7 @@ Leggi [docs/progetto-generale.md](docs/progetto-generale.md) prima di toccare il
 ## Regole fisse (chieste dall'autore)
 
 - **Niente librerie esterne, niente CDN, niente installazioni nel progetto.** La pagina è HTML, CSS e JavaScript scritti a mano; gli script usano solo i moduli integrati di Node.
-- **Internet solo per i dati**: la pagina scarica i valori dell'Euribor dal sito della Bundesbank (`tassi-internet.js`), anche da sola all'apertura. È l'unica cosa che passa dalla rete.
+- **Internet solo per i dati**: la pagina scarica i valori dell'Euribor dal sito della Bundesbank (`tassi-internet.js`, `storico.js`), anche da sola all'apertura. È l'unica cosa che passa dalla rete. I valori non vanno mai nel repository né sul sito: ogni dispositivo li prende dalla fonte (licenza EMMI).
 - **`tassi-precaricati.js` è generato** e non sta nel repository (`.gitignore`, come i CSV di `dati-euribor/`): non si modifica a mano, si rigenera con `crea-precaricati.js`. Senza, la pagina funziona lo stesso e scarica i valori da internet.
 - **Niente dati personali.** Il repository diventerà pubblico. Mai cifre di un mutuo vero (importi, rate, tassi, durate, date), nomi, email, percorsi del computer, nomi di banche o riferimenti a progetti privati: né nel codice, né nei testi di esempio, nei commenti, nella documentazione o nei messaggi dei commit. Negli esempi usa cifre inventate. Se l'autore te ne dà di vere per una prova, usale solo in file fuori dal repository.
 - I destinatari sono persone che non sanno niente di mutui: ogni testo deve spiegare che cosa si chiede, dove trovarlo e cosa fare se non lo si sa.
@@ -24,6 +24,10 @@ Il repository è https://github.com/alessandrosallam-sys/occhio-alla-rata (ramo 
 - **Email dei commit**: l'indirizzo privato di GitHub, `342585660+alessandrosallam-sys@users.noreply.github.com`. L'account rifiuta gli invii con un'altra email. Su un computer appena clonato, prima del primo commit, controlla `git config user.email` e se serve imposta nel repository `git config user.name "Alessandro S"` e `git config user.email` con quell'indirizzo.
 - **Push rifiutato** perché su GitHub ci sono commit nuovi: `git pull --rebase`, poi di nuovo `git push`. Mai `--force`.
 - **Accesso a GitHub**: nel terminale di Claude Code le richieste di accesso di git sono spente, e il primo push su un computer si ferma con «terminal prompts disabled». Rilancialo permettendo la finestra di accesso (PowerShell: `$env:GIT_TERMINAL_PROMPT='1'; $env:GCM_INTERACTIVE='auto'; git push`; Bash: `GIT_TERMINAL_PROMPT=1 GCM_INTERACTIVE=auto git push`) e avvisa l'autore che deve completare l'accesso nel browser. Basta una volta per computer.
+
+## App da installare (PWA)
+
+Sul sito (GitHub Pages) la pagina si installa come app: `manifest.webmanifest`, `icone-app/`, `sw.js`, `pwa.js` (docs/progetto-generale.md, sezione 30). `sw.js` salva per l'uso offline tutto quello che `index.html` carica: un file nuovo collegato da `index.html` entra da solo nella copia, non c'è un elenco da aggiornare. Le icone si rigenerano da `logo.svg` (sezione 30) se il logo cambia.
 
 ## Convenzioni dello stile
 

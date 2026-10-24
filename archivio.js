@@ -390,6 +390,8 @@
 
   window.Archivio = {
     CAMPI, CATEGORIE, categoria, richiesta, predefiniti, precaricati,
+    // Lo storico dei valori è cambiato (storico.js ha scaricato giorni nuovi): la prossima lettura lo decodifica di nuovo.
+    precaricatiCambiati: () => decodificati.clear(),
     // Il prestito aperto è configurato (se non lo è, non ce n'è nessuno: parte la guida).
     configurato: () => configurato(carica()),
     attivo: () => (carica(), archivio.attivo),

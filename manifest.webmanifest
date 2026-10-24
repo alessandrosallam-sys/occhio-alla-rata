@@ -1,0 +1,20 @@
+{
+  "name": "Occhio alla Rata",
+  "short_name": "Occhio Rata",
+  "description": "Controlla mutui e finanziamenti rata per rata: se la banca addebita la cifra giusta, quanto costa il prestito, come andranno le rate.",
+  "lang": "it",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#4c6ef5",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    { "src": "icone-app/icona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icone-app/icona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icone-app/icona-mascherabile-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icone-app/icona-mascherabile-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

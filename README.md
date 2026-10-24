@@ -11,6 +11,7 @@ Non serve installare niente: si scarica la cartella e si apre `index.html` con i
 ## Come si usa
 
 1. Scarica il progetto (pulsante **Code → Download ZIP** su GitHub, oppure `git clone`) e apri `index.html` con un doppio clic. Provato con Microsoft Edge; dovrebbe funzionare con qualunque browser recente.
+   **Sul telefono** si usa come un'app: apri il sito del progetto (GitHub Pages) con Chrome e scegli «Installa app» nel menù, oppure il pulsante «Installa l'app» nel Pannello di controllo; su iPhone, in Safari, Condividi e poi «Aggiungi alla schermata Home». Compare un'icona, si apre a schermo intero e funziona anche senza connessione. I dati restano sul dispositivo dove li scrivi: per portarli dal computer al telefono usa il backup.
 2. Alla prima apertura scegli il **simbolo** del programma fra dieci disegni animati (lo ritrovi in alto e nella scheda del browser, e si cambia quando vuoi nelle Impostazioni); poi la pagina di benvenuto: la scritta «Occhio alla Rata» che compare lettera per lettera (un clic la rifà; con «riduci movimento» nelle impostazioni del sistema vedi tutto fermo), sei riquadri su che cosa fa il programma, i tre passi di come funziona e che cosa tenere a portata di mano. Poi parte la **configurazione guidata**: una domanda per pagina, con una spiegazione corta sotto (e una più lunga a richiesta), e un piccolo assistente animato che commenta ogni pagina. Tieni a portata di mano l'estratto conto o qualche ricevuta delle rate.
    - **Il prestito**: che cos'è (mutuo per la casa a tasso fisso o variabile, prestito personale, finanziamento per l'auto, auto con maxirata finale, acquisto a rate in un negozio, cessione del quinto), importo, durata (in anni o in rate, come la trovi nel contratto: il conto lo fa il programma), data della prima rata (se non la ricordi, va bene quella dell'ultima). Per un mutuo c'è anche la risposta «non so se è fisso o variabile».
    - **Le rate pagate**: prima scegli se partire dalle più recenti o dalla prima, poi scrivi le rate una alla volta, ognuna con il mese e la data dell'addebito per esteso; quelle che non hai si saltano. Dopo ogni rata il programma rifà i conti in sottofondo: una barra dice quanto è sicuro, e un «robottino» racconta, riga per riga, che cosa sta provando.
@@ -69,7 +70,7 @@ node dati-euribor/scarica.js      scarica lo storico dal 1999 in file CSV (dati-
 node crea-precaricati.js          lo porta nel file tassi-precaricati.js, letto dalla pagina
 ```
 
-Senza questi file la pagina funziona lo stesso: all'apertura scarica i valori che le servono.
+Senza questi file la pagina funziona lo stesso: all'apertura scarica i valori che le servono. In più ogni dispositivo tiene una **copia locale dello storico** (le cinque serie dal 1999, circa 400 KB nel browser): la prima volta la scarica tutta dalla Bundesbank, poi solo i giorni nuovi. Così le previsioni funzionano anche senza connessione, e nessuno ridistribuisce i valori: ognuno li prende dalla fonte. La pagina Tassi dice fin quando arriva la copia.
 
 ## Avvertenza
 
@@ -101,6 +102,11 @@ icone.js              le icone della pagina, disegnate a mano
 loghi.js              i dieci loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse
 intro.js              la prima apertura: la scritta «Occhio alla Rata» che compare lettera per lettera
 logo.svg              il logo del gufo da solo (README)
+storico.js            lo storico degli Euribor su questo dispositivo: scaricato dalla Bundesbank, tenuto nel browser
+pwa.js                l'app da installare: registra sw.js e riempie la carta «L'app sul telefono» del pannello
+sw.js                 service worker: la copia della pagina per usarla senza connessione (solo da un sito https)
+manifest.webmanifest  nome, icone e colori dell'app installata
+icone-app/            le icone PNG dell'app, ricavate da logo.svg
 tassi-internet.js     lettura dei valori dell'Euribor dal sito della Bundesbank
 tassi-precaricati.js  (generato, non nel repository) valori dell'Euribor dentro la pagina
 crea-precaricati.js   genera tassi-precaricati.js dai CSV
@@ -111,7 +117,7 @@ CLAUDE.md             le regole del progetto per chi ci lavora con Claude Code
 
 Prima di cambiare il codice leggi `docs/progetto-generale.md`: spiega come funziona ogni parte, perché è fatta così e come è stata provata.
 
-Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`.
+Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `pwa.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, principale, prestiti: [...], offerte: [...] }` (`principale`: il prestito che si apre da solo, `null` se nessuno) (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `PUT principale/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
 

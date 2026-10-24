@@ -1,2 +1,4 @@
 # Fine riga LF nel repository per tutti i file di testo.
 * text=auto eol=lf
+# Le icone dell'app sono immagini: mai toccate come testo.
+*.png binary

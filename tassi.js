@@ -378,6 +378,7 @@
   $('#spiegazione-internet').textContent = Internet.spiegazione + ' Vengono aggiunti i giorni che mancano, dall\'inizio del mutuo a oggi; i valori che hai già inserito non vengono toccati.';
   moduloInternet.serie.replaceChildren(crea('option', { value: '' }, 'Scegli…'), ...Internet.SERIE.map(s => crea('option', { value: s.codice }, s.nome)));
   function disegnaInternet() {
+    disegnaStorico();
     const serie = Internet.riconosci(M.indice());
     if (serie) moduloInternet.serie.value = serie.codice;
     const avviso = $('#avviso-internet');
@@ -442,6 +443,17 @@
     }
   }
   M.dopoAvvio.push(aggiornaAutomatico);
+
+  // ---------- Lo storico dell'Euribor sul dispositivo (storico.js) ----------
+  // All'apertura, con la stessa casella dello scarico automatico, scarica i giorni che mancano allo storico dal 1999 di
+  // tutte e cinque le serie: serve alle previsioni e alla stima delle rate future, anche senza connessione. Se arrivano
+  // valori nuovi il piano si ricalcola (la stima delle rate future può cambiare).
+  function disegnaStorico() { if (window.Storico) $('#stato-storico').textContent = Storico.descrizione(); }
+  M.dopoAvvio.push(() => { if (window.Storico && automatico()) { Storico.aggiorna(); disegnaStorico(); } });
+  document.addEventListener('storico-aggiornato', evento => {
+    disegnaStorico();
+    if (evento.detail.nuovi && stato.dati && !$('#principale').hidden) M.aggiorna(stato.dati);
+  });
   M.cambioPrestito.push(() => { esitoInternet = null; });   // l'ultimo scarico riguardava il prestito di prima
 
   moduloInternet.addEventListener('submit', async evento => {
