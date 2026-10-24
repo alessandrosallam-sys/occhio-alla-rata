@@ -28,8 +28,6 @@ Il repository è https://github.com/alessandrosallam-sys/occhio-alla-rata (ramo 
 ## Convenzioni dello stile
 
 - **Grandezza dei testi**: ogni `font-size` di `stile.css` si scrive `calc(Npx * var(--testo))`. `--testo` è la grandezza scelta nelle impostazioni, da 1 a 1,4. Un `font-size` fisso non crescerebbe con la scelta. Le cifre dei riquadri hanno in più un tetto, per restare dentro il riquadro (docs/progetto-generale.md, sezione 29).
-- **Colori**: solo variabili del tema (`var(--accento)`, `var(--inchiostro)`…), mai colori scritti a mano fuori dai blocchi dei temi, così valgono anche per i temi calcolati e per «Il tuo tema» (sezione 28).
-
 ## Node
 
 Serve solo agli script (`crea-precaricati.js`, `dati-euribor/scarica.js`) e alle prove, non alla pagina. Ci vuole la versione 22 o successiva (WebSocket integrato). Cercalo in quest'ordine: `node` nel PATH; `..\runtime\node.exe`, una copia portatile nella cartella che contiene il repository. Se non c'è, dillo all'autore: non installarlo di tua iniziativa.
