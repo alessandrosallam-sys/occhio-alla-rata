@@ -141,7 +141,7 @@ Le festività considerate sono quelle del calendario TARGET (quello su cui si pu
 
 **Non sono coperti**: preammortamento, rate non mensili; le estinzioni parziali si possono simulare nella pagina Costi e rimborso, ma non registrare nel piano; spread che cambia nel tempo (si può solo scrivere a mano, rata per rata, il tasso applicato).
 
-**Attenzione**: il programma riproduce al centesimo un solo contratto vero, quello su cui è nato (Euribor 6 mesi, rilevazione quattro giorni lavorativi prima della fine del periodo, giorni effettivi su 365/366, quote fissate all'inizio). Le altre combinazioni, compresi tasso fisso e finanziamenti, hanno superato solo controlli di coerenza (per esempio: a tasso fisso la rata è costante; senza costi il TAEG è il TAN composto mese per mese). Se il tuo contratto torna, o non torna, [apri una segnalazione](../../issues/new/choose): è il modo per migliorarlo.
+**Attenzione**: il programma riproduce al centesimo un solo contratto vero, quello su cui è nato (Euribor 6 mesi, rilevazione quattro giorni lavorativi prima della fine del periodo, giorni effettivi su 365/366, quote fissate all'inizio). Tasso fisso, finanziamenti e maxirata sono stati confrontati con un calcolo indipendente, scritto da capo con le formule bancarie e quella europea del TAEG: su 300 prestiti di prova tutte le rate tornano al centesimo e il TAEG coincide. Non sono però ancora stati confrontati con contratti veri. Se il tuo contratto torna, o non torna, [apri una segnalazione](../../issues/new/choose): è il modo per migliorarlo.
 
 ## Dati dell'Euribor e licenza
 

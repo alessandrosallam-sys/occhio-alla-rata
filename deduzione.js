@@ -19,6 +19,10 @@
   const MS_GIORNO = 86400000;
   const { centesimi } = Calcolo;
   const SPESE_MASSIME = 20;   // spese per rata più alte non si cercano
+  // Spese per rata che le banche usano davvero (incasso rata, gestione pratica): multipli di 0,25 € fino a 5 €, di 0,50 €
+  // fino a 10 €, poi euro interi. Servono quando le rate non separano le spese dal tasso (25 ottobre 2026, sezione 33).
+  const SPESE_TONDE = [...Array.from({ length: 20 }, (_, i) => (i + 1) * 0.25), ...Array.from({ length: 10 }, (_, i) => 5.5 + i * 0.5),
+    ...Array.from({ length: 10 }, (_, i) => 11 + i)];
 
   // Regole per leggere l'indice (le stesse della taratura) e quanto sono diffuse (0 = la più comune): a parità di rate
   // che tornano vince la più diffusa. Due giorni lavorativi prima è il giorno in cui l'Euribor viene fissato.
@@ -153,11 +157,13 @@
     if (spese != null) { const th = trova(spese); return th == null ? null : chiudi(th, spese, true); }
     const senzaSpese = trova(0);
     if (senzaSpese == null) return null;
-    if (js.length < 3) return chiudi(senzaSpese, 0, false);
+    // Inseparabili: oltre alla stima con spese zero, «perSpese» dà il theta che va con certe spese (registra prova le tonde).
+    const inseparabili = () => ({ ...chiudi(senzaSpese, 0, false), perSpese: trova });
+    if (js.length < 3) return inseparabili();
     // Dove sarebbe theta con le spese più alte: le rate stimate crescono con theta in modo quasi lineare.
     const v0 = stima(senzaSpese), v1 = stima(senzaSpese + 1e-4);
     const pendenza = js.reduce((t, j) => t + v1[j] - v0[j], 0) / js.length / 1e-4;
-    if (!(pendenza > 0)) return chiudi(senzaSpese, 0, false);
+    if (!(pendenza > 0)) return inseparabili();
     const conSpese = Math.max(basso, senzaSpese - SPESE_MASSIME / pendenza);
     const d0 = dispersione(senzaSpese), dMezzo = dispersione((senzaSpese + conSpese) / 2), dSpese = dispersione(conSpese);
     const soglia = js.length * 2.5e-5;   // mezzo centesimo di scarto medio: sotto, sono gli arrotondamenti
@@ -165,7 +171,7 @@
     // cambierebbero le rate, l'una rispetto all'altra, spostando theta di un centesimo di punto. Se meno di un centesimo
     // di euro, spese e theta non si distinguono (rata sempre uguale, o rate troppo vicine fra loro).
     const h = (senzaSpese - conSpese) / 2, curvatura = (dSpese.q - 2 * dMezzo.q + d0.q) / (2 * h * h);
-    if (!(curvatura * 1e-8 >= js.length * 1e-4)) return chiudi(senzaSpese, 0, false);
+    if (!(curvatura * 1e-8 >= js.length * 1e-4)) return inseparabili();
     // Senza spese i conti tornano già: spese zero.
     if (d0.q < soglia) return chiudi(senzaSpese, 0, true);
     // Sezione aurea sulla dispersione degli scarti.
@@ -229,6 +235,12 @@
       if (fuori.length) { for (const h of fuori) tenute[h] = 0; e = stima(tenute); }
     }
     const risultato = { theta: e.theta, spese: e.s, separate: e.separate };
+    // Inseparabili: theta per spese date, con i minimi quadrati sulle rate tenute (rata − spese = theta × peso).
+    if (!e.separate && spese == null && thetaNoto == null) risultato.perSpese = sp => {
+      let sxy = 0, sxx = 0;
+      for (let h = 0; h < n; h++) if (tenute[h]) { sxy += a[h] * (y[h] - sp); sxx += a[h] * a[h]; }
+      return sxx > 0 ? sxy / sxx : null;
+    };
     if (rapido) { let rss = 0; scarti().forEach((x, h) => { if (tenute[h]) rss += x * x; }); return { ...risultato, rss }; }
     return { ...risultato, ...errori(scarti()) };
   }
@@ -328,6 +340,25 @@
         for (const tp of tpDi ? tpDi(theta, prova) : [0]) {
           const esito = contaCon(theta, tp, prova.separate || allargati ? noti.spese_rata : (noti.spese_rata ?? 0));
           if (esito.rate + esito.quote > 0) trovati.push({ ...t, theta, tp, ...esito, separate: prova.separate || (allargati && esito.quote === scritte.length) });
+        }
+      }
+      // Rate che non separano il tasso dalle spese: con spese zero il tasso arrotondato di solito non fa tornare le rate,
+      // e prima la guida si arrendeva (un mutuo fisso con le spese di incasso: rate tutte uguali). Si provano allora le
+      // spese tonde, ciascuna con il suo tasso arrotondato, e si tengono quelle che fanno tornare tutte le rate. Restano
+      // «non separate»: la pagina chiede comunque il tasso, ma propone quello giusto. Non per le quote fisse (tpDi), dove
+      // ogni prova costa troppo.
+      // Nel variabile le combinazioni sono centinaia: solo quelle che con spese zero quasi tornano (scarto medio sotto i 2
+      // centesimi); le altre (un'altra versione dell'Euribor, un altro giorno di rilevazione) non tornerebbero nemmeno con
+      // le spese giuste. A tasso fisso le combinazioni sono poche, e nel piano all'italiana con spese lo scarto con spese
+      // zero resta alto anche con le regole giuste: lì si provano sempre.
+      if (!prova.separate && !allargati && prova.perSpese && (prova.errore < 0.02 || !variabile(t.tipo)) && thetaNoto == null && noti.spese_rata == null && !tpDi) {
+        for (const sp of SPESE_TONDE) {
+          const th = prova.perSpese(sp);
+          if (th == null || !Number.isFinite(th)) continue;
+          for (const theta of arrotondati(th)) {
+            const esito = contaCon(theta, 0, sp);
+            if (esito.rate + esito.senza === vere.length && esito.quote === scritte.length) trovati.push({ ...t, theta, tp: 0, ...esito, separate: false });
+          }
         }
       }
     };
@@ -546,7 +577,14 @@
     }
     // Al suo posto nell'ordine delle domande: prima si chiede se il mutuo è fisso o variabile, e con quale indice.
     const chiaveTasso = primo.parametri.tipo_prestito === 'variabile' ? 'spread' : 'tasso_fisso';
-    if (!primo.separate && !differenze.some(d => d.chiave === chiaveTasso)) differenze.push({ chiave: chiaveTasso, valori: [tasso(primo)], motivo: 'spese' });
+    // Rate che non separano il tasso dalle spese: la domanda sul tasso lo dice («motivo»), anche quando i tassi possibili
+    // sono più d'uno, e per ogni tasso porta le spese con cui le rate tornano (la pagina le scrive sotto la risposta).
+    if (!primo.separate) {
+      let d = differenze.find(x => x.chiave === chiaveTasso);
+      if (!d) differenze.push(d = { chiave: chiaveTasso, valori: [tasso(primo)] });
+      d.motivo = 'spese';
+      d.spese = d.valori.map(v => (pari.find(c => Math.abs(tasso(c) - v) < 1e-9) || primo).parametri.spese_rata || 0);
+    }
     return differenze.sort((a, b) => DATI_CHIAVE.indexOf(a.chiave) - DATI_CHIAVE.indexOf(b.chiave));
   }
 

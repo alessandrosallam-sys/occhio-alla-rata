@@ -1209,11 +1209,17 @@
     campoNumero('quota_valore', '', 'es. 280,00', 'Quota capitale (€)'));
   function domandaDubbio(d) {
     const testi = TESTI_DUBBIO[d.chiave], numero = ['spread', 'tasso_fisso', 'spese_rata'].includes(d.chiave), spese = d.motivo === 'spese';
-    const proposto = formatoValore(d.chiave, d.valori[0]);
-    const perche = !spese ? testi.perche : d.chiave === 'spread'
-      ? `Dalle rate non riesco a distinguere lo spread dalle spese che la banca può aggiungere a ogni rata: i conti tornano con uno spread di ${proposto} senza spese, ma anche con uno spread un po' più basso e qualche euro di spese.`
-      : `Dalle rate non riesco a distinguere il tasso dalle spese che la banca può aggiungere a ogni rata: i conti tornano con un tasso del ${proposto} senza spese, ma anche con un tasso un po' più basso e qualche euro di spese.`;
-    const scelte = d.chiave === 'tasso_annuo_piano' ? [] : d.valori.map((v, i) => voce('risposta', String(i), formatoValore(d.chiave, v), spese ? 'Senza spese aggiunte alle rate.' : null, false));
+    const proposto = formatoValore(d.chiave, d.valori[0]), nome = d.chiave === 'spread' ? 'lo spread' : 'il tasso';
+    // Le spese che vanno con ogni risposta (deduzione.js, differenzeFra): zero per la stima di partenza, oppure le spese
+    // tonde trovate insieme a quel tasso.
+    const speseDi = i => (d.spese && d.spese[i]) || 0;
+    const conSpese = i => speseDi(i) > 0 ? `con ${euro(speseDi(i))} di spese a ogni rata` : 'senza spese';
+    const perche = !spese ? testi.perche
+      : d.valori.length > 1 ? `Dalle rate non riesco a distinguere ${nome} dalle spese che la banca aggiunge a ogni rata: i conti tornano con più combinazioni. Qui sotto le più probabili; quella giusta è scritta nel contratto.`
+        : `Dalle rate non riesco a distinguere ${nome} dalle spese che la banca può aggiungere a ogni rata: i conti tornano con ${d.chiave === 'spread' ? 'uno spread di' : 'un tasso del'} ${proposto} ${conSpese(0)}, ma anche con ${nome} un po' diverso e spese diverse.`;
+    // Al massimo quattro risposte pronte, le più probabili: con le rate tutte uguali le combinazioni possono essere decine.
+    const scelte = d.chiave === 'tasso_annuo_piano' ? [] : d.valori.slice(0, 4).map((v, i) => voce('risposta', String(i), formatoValore(d.chiave, v),
+      spese ? conSpese(i)[0].toUpperCase() + conSpese(i).slice(1) + '.' : null, false));
     const altro = numero ? [voce('risposta', 'altro', spese ? 'Nel contratto c\'è un altro valore' : 'Un altro valore', null, false,
       crea('input', { type: 'text', inputMode: 'decimal', name: 'risposta_altro', placeholder: d.chiave === 'spese_rata' ? 'es. 1,50' : 'es. 1,25', 'aria-label': testi.domanda }))] : [];
     return crea('div', { className: 'domanda domanda-sola', 'data-campo': 'risposta' },
