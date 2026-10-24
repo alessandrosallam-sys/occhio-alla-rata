@@ -1,7 +1,8 @@
 /* =====================================================================
    Mutuo variabile — foglio di stile
    Struttura (vedi anche docs/progetto-generale.md, sezione 13):
-     1. Variabili e temi: un blocco per tema (chiaro, notte, carta, salvia, aurora, ardesia, contrasto alto)
+     1. Variabili e temi: un blocco per tema (chiaro, notte, carta, salvia, aurora, ardesia, contrasto alto); gli altri
+        temi (oceano, tramonto, lavanda, bosco, brace, terminale, «Il tuo tema») li calcola temi.js dai colori di base
      2. Base: pagina, testi, titoli
      3. Componenti: pulsanti, campi, carte, note, pannelli richiudibili, tabelle, legende
      4. Testata e schede (in alto; in basso sui telefoni)
@@ -1495,6 +1496,35 @@ button.tessera-versione .nome-tema { font-size: 15.5px; }
 .opzioni-assistente { display: flex; flex-direction: column; gap: var(--s2); }
 label.opzione-assistente { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; line-height: 1.4; cursor: pointer; }
 label.opzione-assistente input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accento); }
+/* «Il tuo tema» (temi.js): compare sotto i temi quando è scelto */
+.editor-tema { margin-top: var(--s3); padding: var(--s3) var(--s4) var(--s4); background: var(--superficie-2); border: var(--spessore) solid var(--linea); border-radius: var(--r2); }
+.editor-tema > .nota { margin: 0 0 var(--s3); }
+.campi-tema { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--s2) var(--s4); margin-bottom: var(--s3); }
+.campo-tema { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.campo-tema.campo-largo { grid-column: 1 / -1; }
+.campo-tema select { width: 100%; }
+.campo-colore { flex-direction: row; align-items: center; gap: 10px; cursor: pointer; }
+.campo-colore input[type="color"] {
+  flex: none; width: 46px; height: 36px; min-height: 0; padding: 3px; cursor: pointer;
+  background: var(--superficie); border: var(--spessore) solid var(--linea-forte); border-radius: var(--r1);
+}
+.nome-campo-tema { font-weight: 600; line-height: 1.3; }
+.nome-campo-tema small { display: block; font-weight: 400; color: var(--tenue); font-size: 12.5px; }
+.avviso-contrasto { padding: var(--s2) var(--s3); background: var(--avviso-sfondo); color: var(--avviso-testo); border-radius: var(--r1); }
+/* I caratteri: tendina, nome scritto a mano, esempio */
+.scelta-caratteri { display: grid; gap: var(--s3); }
+.riga-carattere { display: grid; grid-template-columns: minmax(180px, 230px) 1fr; gap: 6px var(--s3); align-items: end; }
+.riga-carattere input[type="text"] { grid-column: 1; width: 100%; }
+.riga-carattere .esempio-carattere {
+  grid-column: 2; grid-row: 1; align-self: end; min-height: var(--alto-controllo); display: flex; align-items: center;
+  padding: 0 var(--s3); background: var(--superficie-2); border: var(--spessore) dashed var(--linea-forte); border-radius: var(--r1);
+  font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.riga-carattere .nota { grid-column: 1 / -1; margin: 0; color: var(--avviso-testo); }
+@media (max-width: 560px) {
+  .riga-carattere { grid-template-columns: 1fr; }
+  .riga-carattere .esempio-carattere { grid-column: 1; grid-row: auto; }
+}
 @media (max-width: 520px) { .scelta-versione { grid-template-columns: minmax(0, 1fr); } }
 
 /* Guida: «Scelgo io il metodo e fin dove», due tendine sotto la voce */
