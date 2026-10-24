@@ -24,6 +24,9 @@ Se usi Claude Code, le stesse regole sono in [CLAUDE.md](CLAUDE.md).
 
 ## Proposte di modifica
 
+Il progetto ha la licenza [PolyForm Noncommercial 1.0.0](LICENSE): si usa liberamente, ma non a scopo di lucro. Proponendo una modifica accetti che sia distribuita con la stessa licenza, e che l'autore possa concederla anche con altri termini, per esempio un permesso per un uso commerciale.
+
+
 1. Fai un fork e un ramo con un nome che dica che cosa cambia.
 2. Un commit per ogni cambiamento, con un messaggio in italiano: che cosa e perché.
 3. Apri una pull request spiegando che cosa hai provato, e su quali browser.

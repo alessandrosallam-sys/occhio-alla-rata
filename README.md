@@ -13,7 +13,7 @@ Mutui a tasso variabile o fisso e finanziamenti: il piano rata per rata, il cost
   <a href="CONTRIBUTING.md">Contribuire</a>
 </p>
 
-<p align="center">Gratis e open source · nessun account · funziona anche senza connessione · i dati restano sul tuo dispositivo</p>
+<p align="center">Gratis · codice aperto · nessun account · funziona anche senza connessione · i dati restano sul tuo dispositivo</p>
 
 <p align="center">
   <img src="docs/immagini/piano.png" width="74%" alt="Il piano di un mutuo variabile inventato: in cima la rata del mese, la prossima rata e le statistiche; sotto le rate, tutte verdi perché tornano">
@@ -108,7 +108,7 @@ Nella pagina Tassi (versione avanzata) il modulo della proiezione sta richiuso i
 
 ## Domande frequenti
 
-**Quanto costa?** Niente. È un progetto gratuito e open source, con licenza MIT.
+**Quanto costa?** Niente. È gratuito e il codice è aperto: puoi usarlo, copiarlo e modificarlo liberamente, purché non a scopo di lucro. Vedi [Licenza](#licenza).
 
 **I miei dati vanno da qualche parte?** No. Restano nel browser del tuo dispositivo. Nessuno, nemmeno chi ha scritto il programma, può vederli.
 
@@ -224,4 +224,14 @@ Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del dise
 
 ## Licenza
 
-Codice con licenza MIT (vedi `LICENSE`). I valori dell'Euribor non fanno parte del progetto: vedi sopra.
+Il codice è distribuito con la licenza [PolyForm Noncommercial 1.0.0](LICENSE): il testo ufficiale, in inglese, è quello che vale. In breve:
+
+- **Puoi** usarlo gratis per i tuoi prestiti, studiarlo, copiarlo, modificarlo e condividerlo, anche modificato.
+- **Possono usarlo anche** associazioni dei consumatori, scuole, enti pubblici e altre organizzazioni senza scopo di lucro, anche per aiutare altre persone.
+- **Non puoi** venderlo, né usarlo in un'attività a scopo di lucro (per esempio una banca, una società di consulenza o un consulente con clienti a pagamento).
+- **Chi lo condivide** deve dare anche i termini della licenza e la riga «Required Notice» con il copyright, che sta in cima al file `LICENSE`.
+- **Nessuna garanzia**: il programma è fornito così com'è (vedi anche l'[avvertenza](#avvertenza)).
+
+Per un uso commerciale serve un permesso dell'autore: chiedilo aprendo una [segnalazione](../../issues/new/choose).
+
+Non è una licenza «open source» nel senso stretto del termine, che comprende anche l'uso commerciale: per questo si parla di codice aperto. I valori dell'Euribor non fanno parte del progetto: vedi sopra.
