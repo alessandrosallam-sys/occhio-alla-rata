@@ -178,10 +178,17 @@
   // La rata «di questo mese»: quella in corso; se il prestito non è ancora partito la prima, se è finito l'ultima.
   const rataDelMese = M.rataDelMese = righe => Calcolo.rataPerData(righe, stato.oggi) || (stato.oggi < righe[0].inizio ? righe[0] : righe[righe.length - 1]);
 
+  // In cima alle pagine del prestito, due file di riquadri (24 ottobre 2026: prima le statistiche erano un pannello a
+  // parte nel piano, che si apriva e chiudeva).
+  //  - «Il mese»: la rata del mese in evidenza, la prossima rata con il giorno in cui se ne saprà la cifra esatta, il
+  //    debito residuo e il tasso (nella versione avanzata indice e tasso separati, e il TAEG a tasso fisso).
+  //  - Le statistiche, solo nella pagina del piano (stile.css): quanto hai pagato, l'ultima rata addebitata, gli
+  //    interessi ancora da pagare, il totale a fine piano; nella versione avanzata anche tassi applicati e andamento, e
+  //    sotto ogni riquadro le voci di dettaglio (più bassa, più alta, media, composizione…).
   function disegnaRiepilogo() {
-    const righe = stato.piano.righe, p = stato.dati.parametri;
+    const righe = stato.piano.righe, p = stato.dati.parametri, avanzata = !semplice();
     const corrente = rataDelMese(righe), nonPartito = stato.oggi < righe[0].inizio;
-    const precedente = righe[corrente.n - 2], ultima = righe[righe.length - 1];
+    const precedente = righe[corrente.n - 2], ultima = righe[righe.length - 1], prossima = righe[corrente.n];
     const rata = r => r.rataVera != null ? r.rataVera : r.rataCalcolata;
     const rimborsato = Math.max(0, Math.min(1, 1 - corrente.debito / p.importo_iniziale));
     let dettaglioRata = corrente.rataVera != null ? 'addebitata' : 'calcolata';
@@ -191,41 +198,120 @@
     }
     const dettaglioEuribor = corrente.origineEuribor === 'db' ? `rilevato il ${data(corrente.riferimento)}`
       : corrente.origineEuribor === 'manuale' ? 'inserito a mano' : `previsione: manca il valore del ${data(corrente.riferimento)}`;
-    // A tasso fisso al posto di indice e tasso totale ci sono il TAN e il TAEG (che conta anche spese e assicurazioni).
-    const taeg = variabile() ? null : Calcolo.costi(stato.dati, righe, true).taeg;
-    // Ogni tessera: [etichetta, cifra, come scriverla, dettaglio, avanzamento, classe, icona].
     const euroV = v => euro(v), perc3 = v => perc(v, 3), perc31 = v => perc(v, 3, 1), perc2 = v => perc(v, 2);
+    const mese = r => `${MESI[+r.inizio.slice(5, 7) - 1].slice(0, 3)} ${r.inizio.slice(0, 4)}`;
+    const somma = (lista, valore) => lista.reduce((totale, r) => totale + valore(r), 0);
+    const estremo = (lista, valore, verso) => lista.reduce((a, r) => (valore(r) - valore(a)) * verso > 0 ? r : a);
+
+    // Quando si saprà la cifra esatta della prossima rata: nel variabile, il giorno in cui la banca legge l'indice.
+    function quandoSiSapra(r) {
+      if (!r) return 'il prestito finisce con questa rata';
+      if (r.rataVera != null) return 'già addebitata';
+      if (!variabile()) return r.maxirata ? 'la maxirata finale: la cifra è già nota' : 'già nota: il tasso è fisso';
+      if (r.origineEuribor === 'manuale') return 'già nota: l\'indice l\'hai scritto tu';
+      if (r.origineEuribor === 'db') return r.eredita
+        ? `già nota: il tasso resta quello di ${meseAnno(righe[r.rataRevisione - 1].inizio)}`
+        : `già nota: ${indice()} letto il ${data(r.riferimento)}`;
+      if (r.riferimento <= stato.oggi) return `stima: l'indice è stato letto il ${data(r.riferimento)}, ma il valore manca (pagina Tassi)`;
+      // Con la media del mese il valore si conosce solo finito il mese; altrimenti il giorno della rilevazione.
+      const media = p.regola_rilevazione === 'media_mese';
+      const [anno, numeroMese] = r.riferimento.split('-').map(Number);
+      const giorno = media ? new Date(Date.UTC(anno, numeroMese, 0)).toISOString().slice(0, 10) : r.riferimento;
+      const fra = Math.round((Date.parse(giorno) - Date.parse(stato.oggi)) / 864e5);
+      const quando = fra <= 0 ? 'oggi' : fra === 1 ? 'domani' : `fra ${fra} giorni`;
+      return `stima: la cifra esatta si saprà ${media ? 'dopo il' : 'il'} ${giornoSettimana(giorno)} ${data(giorno)} (${quando})`;
+    }
+
+    // Ogni riquadro: { etichetta, numero, formato, dettaglio, quota (barra), classe, icona, extra, voci: [etichetta, valore, nota, pallino] }.
     const tassi = variabile()
-      ? [[indice(), corrente.euribor, perc3, dettaglioEuribor, null, '', 'grafico'], ['Tasso totale', corrente.tassoTotale, perc3, `indice + spread ${perc(corrente.spread, 3, 1)}`, null, '', 'percento']]
-      : [['Tasso fisso (TAN)', p.tasso_fisso, perc31, ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}` : 'uguale fino all\'ultima rata', null, '', 'percento'],
-        ['TAEG', taeg, perc2, 'il costo vero, con spese e assicurazioni', null, '', 'calcolatrice']];
-    // La rata del mese è la tessera principale (classe "principale": più grande e in testa, vedi stile.css).
-    const voci = [
-      ['Debito residuo', corrente.debito, euroV, `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, rimborsato, '', 'discesa'],
-      [nonPartito ? `Prima rata, ${meseAnno(corrente.inizio)}` : `Rata di ${meseAnno(corrente.inizio)}`, rata(corrente), euroV, nonPartito ? 'il prestito non è ancora partito' : dettaglioRata, null, 'principale', 'calendario'],
+      ? (avanzata
+        ? [{ etichetta: indice(), numero: corrente.euribor, formato: perc3, dettaglio: dettaglioEuribor, icona: 'grafico' },
+          { etichetta: 'Tasso totale', numero: corrente.tassoTotale, formato: perc3, dettaglio: `indice + spread ${perc(corrente.spread, 3, 1)}`, icona: 'percento' }]
+        : [{ etichetta: 'Tasso totale', numero: corrente.tassoTotale, formato: perc3, icona: 'percento',
+          dettaglio: `${indice()} ${corrente.euribor != null ? perc(corrente.euribor, 3) : '?'} + spread ${perc(corrente.spread, 3, 1)}` }])
+      : [{ etichetta: 'Tasso fisso (TAN)', numero: p.tasso_fisso, formato: perc31, icona: 'percento',
+        dettaglio: ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}` : 'uguale fino all\'ultima rata' },
+      ...(avanzata ? [{ etichetta: 'TAEG', numero: Calcolo.costi(stato.dati, righe, true).taeg, formato: perc2, dettaglio: 'il costo vero, con spese e assicurazioni', icona: 'calcolatrice' }] : [])];
+    const delMese = [
+      { etichetta: nonPartito ? `Prima rata, ${meseAnno(corrente.inizio)}` : `Rata di ${meseAnno(corrente.inizio)}`, numero: rata(corrente), formato: euroV,
+        dettaglio: nonPartito ? 'il prestito non è ancora partito' : dettaglioRata, classe: 'principale', icona: 'calendario' },
+      { etichetta: prossima ? `Prossima rata, ${meseAnno(prossima.inizio)}` : 'Prossima rata', numero: prossima ? rata(prossima) : null, formato: euroV,
+        dettaglio: quandoSiSapra(prossima), classe: 'prossima', icona: 'orologio' },
+      { etichetta: 'Debito residuo', numero: corrente.debito, formato: euroV, dettaglio: `rimborsato il ${perc(rimborsato, 1)} di ${euro(p.importo_iniziale)}`, quota: rimborsato, icona: 'discesa' },
       ...tassi,
-      ['Totale rate a fine piano', ultima.cumulato, euroV, `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}`, null, '', 'somma'],
     ];
+
+    // Statistiche, calcolate sulle rate già addebitate (quelle scritte nella colonna «Rata vera» o prese dal calcolo).
+    const pagate = righe.filter(r => r.rataVera != null), statistiche = [];
+    if (pagate.length) {
+      const versato = somma(pagate, r => r.rataVera), capitale = somma(pagate, r => r.quotaCapitale), spese = pagate.length * p.spese_rata;
+      const parti = [['Capitale', capitale, 'capitale'], ['Interessi', versato - capitale - spese, 'interessi'], ['Spese', spese, 'spese']].filter(([, v], i) => i < 2 || v > 0);
+      const barra = crea('div', { className: 'composizione', role: 'img', 'aria-label': parti.map(([nome, v]) => `${nome} ${perc(v / versato, 1)}`).join(', ') },
+        ...parti.map(([nome, v, classe]) => { const pezzo = crea('span', { className: classe, title: `${nome}: ${euro(v)}` }); pezzo.style.flexGrow = Math.max(v, 0); return pezzo; }));
+      const dalCalcolo = pagate.filter(r => r.rataCopiata).length;
+      statistiche.push({ etichetta: 'Pagato finora', numero: versato, formato: euroV, icona: 'euro', extra: barra,
+        dettaglio: `in ${pagate.length} rate su ${righe.length}` + (dalCalcolo ? `, ${dalCalcolo} prese dal calcolo` : ''),
+        voci: parti.map(([nome, v, classe]) => [nome, euro(v), perc(v / versato, 1), classe]) });
+      const ultimaPagata = pagate[pagate.length - 1];
+      const bassa = estremo(pagate, r => r.rataVera, -1), alta = estremo(pagate, r => r.rataVera, 1);
+      statistiche.push({ etichetta: 'Ultima rata addebitata', numero: ultimaPagata.rataVera, formato: euroV, icona: 'calendario',
+        dettaglio: meseAnno(ultimaPagata.inizio) + (ultimaPagata.rataCopiata ? ', presa dal calcolo' : ''),
+        voci: [['Rata media', euro(versato / pagate.length)], ['Più bassa', euro(bassa.rataVera), mese(bassa)], ['Più alta', euro(alta.rataVera), mese(alta)]] });
+    } else {
+      statistiche.push({ etichetta: 'Pagato finora', numero: null, icona: 'euro', dettaglio: 'scrivi nel piano, colonna «Rata vera», le rate che hai pagato: qui vedrai quanto hai versato' });
+    }
+    const future = righe.filter(r => r.rataVera == null);
+    if (future.length) {
+      const massima = estremo(future, r => r.rataCalcolata, 1);
+      statistiche.push({ etichetta: 'Interessi ancora da pagare', numero: somma(future, r => r.rataCalcolata - r.quotaCapitale - p.spese_rata), formato: euroV, icona: 'traguardo',
+        dettaglio: `${future.length === 1 ? '1 rata' : future.length + ' rate'} da pagare, fino a ${meseAnno(ultima.inizio)}` + (variabile() ? ' (stima)' : ''),
+        voci: [['Capitale da rimborsare', euro(future[0].debito)], ['Rata prevista più alta', euro(massima.rataCalcolata), mese(massima)]] });
+    }
+    statistiche.push({ etichetta: 'Totale rate a fine piano', numero: ultima.cumulato, formato: euroV, icona: 'somma', dettaglio: `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}` });
+    if (avanzata && variabile() && pagate.length) {
+      const basso = estremo(pagate, r => r.tassoTotale, -1), alto = estremo(pagate, r => r.tassoTotale, 1);
+      statistiche.push({ etichetta: 'Tassi applicati', numero: somma(pagate, r => r.tassoTotale) / pagate.length, formato: perc3, icona: 'percento',
+        dettaglio: 'tasso totale medio delle rate pagate', voci: [['Più basso', perc(basso.tassoTotale, 3), mese(basso)], ['Più alto', perc(alto.tassoTotale, 3), mese(alto)]] });
+      // A parità di giorni: a tasso fisso la variazione misurerebbe solo la lunghezza dei mesi, per questo solo qui.
+      const variazioni = pagate.filter(r => r.variazioneRata != null && righe[r.n - 2] && righe[r.n - 2].rataVera != null);
+      if (variazioni.length) {
+        const aumento = estremo(variazioni, r => r.variazioneRata, 1), calo = estremo(variazioni, r => r.variazioneRata, -1);
+        const su = variazioni.filter(r => r.variazioneRata > 0.00005).length, giu = variazioni.filter(r => r.variazioneRata < -0.00005).length;
+        statistiche.push({ etichetta: 'Andamento mese per mese', numero: somma(variazioni, r => r.variazioneRata) / variazioni.length, formato: v => percConSegno(v), icona: 'grafico',
+          dettaglio: 'variazione media al mese del costo al giorno',
+          voci: [['Mesi in aumento', String(su), `${giu} in calo`], ['Maggior aumento', percConSegno(aumento.variazioneRata), mese(aumento)], ['Maggior calo', percConSegno(calo.variazioneRata), mese(calo)]] });
+      }
+    }
+
     // Le cifre contano fino al valore nuovo: da zero quando si apre un prestito, da quello di prima quando cambia.
     const altroPrestito = memoriaRiepilogo.prestito !== stato.dati.id, prima = memoriaRiepilogo.valori;
-    const contenitore = $('#riepilogo');
-    contenitore.replaceChildren(...voci.map(([etichetta, numero, formato, dettaglio, quota, classe, icona], i) => {
+    const riquadro = t => {
       const valore = crea('span', { className: 'valore' });
-      const tessera = crea('div', { className: 'dato' + (classe ? ' ' + classe : '') }, crea('span', { className: 'etichetta' }, Icone.crea(icona, 'icona icona-dato'), etichetta),
-        valore, crea('span', { className: 'dettaglio', title: dettaglio }, dettaglio));
-      if (numero == null) valore.textContent = '—';
-      else contaFino(valore, altroPrestito ? 0 : prima[i] != null ? prima[i] : numero, numero, formato);
-      if (quota != null) {
+      const tessera = crea('div', { className: 'dato' + (t.classe ? ' ' + t.classe : '') },
+        crea('span', { className: 'etichetta' }, Icone.crea(t.icona, 'icona icona-dato'), t.etichetta),
+        valore, crea('span', { className: 'dettaglio', title: t.dettaglio }, t.dettaglio));
+      if (t.numero == null || Number.isNaN(t.numero)) valore.textContent = '—';
+      else contaFino(valore, altroPrestito ? 0 : prima.has(t.etichetta) ? prima.get(t.etichetta) : t.numero, t.numero, t.formato);
+      if (t.quota != null) {
         const riempimento = crea('span');
-        riempimento.style.width = (quota * 100).toFixed(1) + '%';
+        riempimento.style.width = (t.quota * 100).toFixed(1) + '%';
         tessera.append(crea('div', { className: 'avanzamento' }, riempimento));
       }
+      if (t.extra) tessera.append(t.extra);
+      if (avanzata && t.voci && t.voci.length) tessera.append(crea('dl', { className: 'voci-dato' }, ...t.voci.map(([etichetta, v, nota, pallino]) => crea('div', {},
+        crea('dt', {}, ...(pallino ? [crea('i', { className: 'pallino ' + pallino })] : []), etichetta),
+        crea('dd', {}, v, ...(nota ? [crea('small', {}, nota)] : []))))));
       return tessera;
-    }));
+    };
+    const filaMese = crea('div', { className: 'riepilogo-mese' }, ...delMese.map(riquadro));
+    filaMese.style.setProperty('--tessere', delMese.length - 1);
+    const filaStatistiche = crea('div', { className: 'riepilogo-statistiche', 'aria-label': 'Statistiche del prestito' }, ...statistiche.map(riquadro));
+    const contenitore = $('#riepilogo');
+    contenitore.replaceChildren(filaMese, filaStatistiche);
     if (altroPrestito) rianima(contenitore, 'entra');
-    Object.assign(memoriaRiepilogo, { prestito: stato.dati.id, valori: voci.map(v => v[1]) });
+    Object.assign(memoriaRiepilogo, { prestito: stato.dati.id, valori: new Map([...delMese, ...statistiche].map(t => [t.etichetta, t.numero])) });
   }
-  const memoriaRiepilogo = { prestito: null, valori: [] };
+  const memoriaRiepilogo = { prestito: null, valori: new Map() };
 
   // ---------- Piano ----------
   const previsione = r => r.origineEuribor === 'previsione' ? 'previsione' : '';
@@ -425,18 +511,23 @@
     disegnaEsitoConti(quante);
   }
 
-  // In testa al piano, in una frase: i conti tornano, ci sono rate da controllare, o non c'è ancora niente da confrontare.
+  // In testa al piano, in una riga corta: i conti tornano, ci sono rate da controllare, o non c'è ancora niente da
+  // confrontare. La spiegazione intera sta nel title (e l'assistente la dice al passaggio del mouse).
   function disegnaEsitoConti(quante) {
     const daControllare = quante.problema, pagate = quante.pagata;
-    const [classe, simbolo, titolo, spiegazione] = daControllare
-      ? ['ko', '!', `${daControllare === 1 ? '1 rata' : daControllare + ' rate'} da controllare`, (variabile() ? 'Manca la rata vera o il valore dell\'indice' : 'Manca la rata vera') + ', oppure la rata non coincide con il calcolo: sono le righe rosse.']
-      : pagate ? ['ok', '✓', 'I conti tornano', pagate === 1 ? 'La rata che hai inserito coincide con il calcolo.' : `Tutte le ${pagate} rate inserite coincidono con il calcolo.`]
-        : ['neutro', 'i', 'Nessuna rata da confrontare', 'Scrivi nella colonna «Rata vera» la cifra che la banca ti ha addebitato: la riga diventa verde se i conti tornano.'];
+    const [classe, simbolo, titolo, breve, spiegazione] = daControllare
+      ? ['ko', '!', `${daControllare === 1 ? '1 rata' : daControllare + ' rate'} da controllare`, 'le righe rosse',
+        (variabile() ? 'Manca la rata vera o il valore dell\'indice' : 'Manca la rata vera') + ', oppure la rata non coincide con il calcolo: sono le righe rosse.']
+      : pagate ? ['ok', '✓', 'I conti tornano', pagate === 1 ? '1 rata su 1' : `${pagate} rate su ${pagate}`,
+        pagate === 1 ? 'La rata che hai inserito coincide con il calcolo.' : `Tutte le ${pagate} rate inserite coincidono con il calcolo.`]
+        : ['neutro', 'i', 'Nessuna rata da confrontare', 'scrivi la cifra addebitata in «Rata vera»',
+          'Scrivi nella colonna «Rata vera» la cifra che la banca ti ha addebitato: la riga diventa verde se i conti tornano.'];
     const esito = $('#esito-conti');
     esito.className = 'esito-conti ' + classe;
+    esito.title = spiegazione;
     esito.replaceChildren(crea('span', { className: 'simbolo-esito', 'aria-hidden': 'true' }, simbolo),
-      crea('span', { className: 'testo-esito' }, crea('strong', {}, titolo), crea('span', {}, spiegazione)),
-      ...(daControllare ? [crea('button', { type: 'button', className: 'secondario piccolo', 'data-stato': 'problema' }, 'Vai all\'ultima')] : []));
+      crea('span', { className: 'testo-esito' }, crea('strong', {}, titolo), crea('span', {}, breve)),
+      ...(daControllare ? [crea('button', { type: 'button', className: 'collegamento-esito', 'data-stato': 'problema' }, 'Vai all\'ultima')] : []));
   }
 
   // Porta una riga al centro della tabella, che scorre nel suo riquadro. Con "mostra" porta in vista anche la tabella.
@@ -537,7 +628,6 @@
     anteprimaRata();
     disegnaObiettivo();
     disegnaAllinea();
-    disegnaStatisticheMutuo();
     // I valori a mano per una rata riguardano l'indice: a tasso fisso non servono.
     $('#form-applicato').hidden = !variabile();
   }
@@ -575,78 +665,6 @@
   });
   $('#togli-obiettivo').addEventListener('click', () => salvaObiettivo(0));
 
-  // Statistiche del mutuo, nella pagina del piano: un riquadro per argomento, calcolate sulle rate già addebitate.
-  function disegnaStatisticheMutuo() {
-    const p = stato.dati.parametri, righe = stato.piano.righe, contenitore = $('#statistiche-mutuo');
-    const pagate = righe.filter(r => r.rataVera != null);
-    if (!pagate.length) { contenitore.replaceChildren(crea('p', { className: 'nota' }, 'Le statistiche compaiono dopo aver inserito la prima rata vera.')); return; }
-    const somma = (lista, valore) => lista.reduce((totale, r) => totale + valore(r), 0);
-    const estremo = (lista, valore, verso) => lista.reduce((a, r) => (valore(r) - valore(a)) * verso > 0 ? r : a);
-    const mese = r => `${MESI[+r.inizio.slice(5, 7) - 1].slice(0, 3)} ${r.inizio.slice(0, 4)}`;
-    // Una voce è [etichetta, valore, dettaglio in piccolo, classe del pallino colorato].
-    const voce = ([etichetta, valore, dettaglio, pallino]) => crea('div', {},
-      crea('dt', {}, ...(pallino ? [crea('i', { className: 'pallino ' + pallino })] : []), etichetta),
-      crea('dd', {}, valore, ...(dettaglio ? [crea('small', {}, dettaglio)] : [])));
-    const ICONE_STATISTICHE = { 'Quanto hai pagato': 'euro', 'Le tue rate': 'calendario', 'Andamento mese per mese': 'grafico', 'Tassi applicati': 'percento', 'Da qui alla fine': 'traguardo' };
-    const riquadro = (titolo, cifra, didascalia, voci, extra) => crea('section', { className: 'riquadro-statistica' },
-      crea('h3', {}, Icone.crea(ICONE_STATISTICHE[titolo] || 'info', 'icona icona-titolo'), titolo), crea('p', { className: 'cifra' }, cifra), crea('p', { className: 'didascalia' }, didascalia),
-      ...(extra ? [extra] : []), crea('dl', {}, ...voci.map(voce)));
-
-    // Quanto hai pagato: totale e composizione
-    const versato = somma(pagate, r => r.rataVera), capitale = somma(pagate, r => r.quotaCapitale), spese = pagate.length * p.spese_rata;
-    const interessi = versato - capitale - spese;
-    const parti = [['Capitale', capitale, 'capitale'], ['Interessi', interessi, 'interessi'], ['Spese', spese, 'spese']];
-    const barra = crea('div', { className: 'composizione', role: 'img', 'aria-label': parti.map(([nome, v]) => `${nome} ${perc(v / versato, 1)}`).join(', ') },
-      ...parti.map(([nome, v, classe]) => { const pezzo = crea('span', { className: classe, title: `${nome}: ${euro(v)}` }); pezzo.style.flexGrow = Math.max(v, 0); return pezzo; }));
-    const dalCalcolo = pagate.filter(r => r.rataCopiata).length;
-    const pagato = riquadro('Quanto hai pagato', euro(versato), `in ${pagate.length} rate su ${righe.length}` + (dalCalcolo ? `, ${dalCalcolo} prese dal calcolo` : ''),
-      parti.map(([nome, v, classe]) => [nome, euro(v), perc(v / versato, 1), classe]), barra);
-
-    // Le tue rate
-    const bassa = estremo(pagate, r => r.rataVera, -1), alta = estremo(pagate, r => r.rataVera, 1), ultima = pagate[pagate.length - 1];
-    const rate = riquadro('Le tue rate', euro(versato / pagate.length), 'rata media',
-      [['Più bassa', euro(bassa.rataVera), mese(bassa)], ['Più alta', euro(alta.rataVera), mese(alta)], ['Ultima addebitata', euro(ultima.rataVera), mese(ultima)]]);
-
-    // Andamento mese per mese, a parità di giorni
-    const variazioni = pagate.filter(r => r.variazioneRata != null && righe[r.n - 2].rataVera != null);
-    let andamento = null;
-    if (variazioni.length && variabile()) {   // a tasso fisso la rata non cambia: conterebbe solo la lunghezza dei mesi
-      const aumento = estremo(variazioni, r => r.variazioneRata, 1), calo = estremo(variazioni, r => r.variazioneRata, -1);
-      const su = variazioni.filter(r => r.variazioneRata > 0.00005).length, giu = variazioni.filter(r => r.variazioneRata < -0.00005).length;
-      andamento = riquadro('Andamento mese per mese', percConSegno(somma(variazioni, r => r.variazioneRata) / variazioni.length), 'variazione media al mese del costo al giorno',
-        [['▲ Mesi in aumento', String(su), `${giu} in calo ▼`], ['Maggior aumento', percConSegno(aumento.variazioneRata), mese(aumento)], ['Maggior calo', percConSegno(calo.variazioneRata), mese(calo)]]);
-    }
-
-    // Tassi applicati
-    const tassoBasso = estremo(pagate, r => r.tassoTotale, -1), tassoAlto = estremo(pagate, r => r.tassoTotale, 1);
-    const corrente = rataDelMese(righe);
-    const tassi = !variabile() ? null : riquadro('Tassi applicati', perc(somma(pagate, r => r.tassoTotale) / pagate.length, 3), 'tasso totale medio (indice + spread)',
-      [['Più basso', perc(tassoBasso.tassoTotale, 3), mese(tassoBasso)], ['Più alto', perc(tassoAlto.tassoTotale, 3), mese(tassoAlto)], ['Di questo mese', perc(corrente.tassoTotale, 3), mese(corrente)]]);
-
-    // Da qui alla fine (previsione)
-    const future = righe.filter(r => r.rataVera == null);
-    let futuro = null;
-    if (future.length) {
-      const massima = estremo(future, r => r.rataCalcolata, 1), fine = righe[righe.length - 1];
-      futuro = riquadro('Da qui alla fine', euro(somma(future, r => r.rataCalcolata - r.quotaCapitale - p.spese_rata)), 'interessi ancora da pagare' + (variabile() ? ' (previsione)' : ''),
-        [['Rate mancanti', String(future.length), `fino a ${mese(fine)}`], ['Capitale da rimborsare', euro(future[0].debito)], ['Rata prevista più alta', euro(massima.rataCalcolata), mese(massima)]]);
-    }
-    contenitore.replaceChildren(...[pagato, rate, andamento, tassi, futuro].filter(Boolean));
-  }
-  // Le statistiche si possono chiudere per lasciare più spazio alla tabella (la scelta viene ricordata).
-  function mostraStatistiche(aperte, ricorda) {
-    $('#statistiche-mutuo').hidden = !aperte;
-    $('#mostra-statistiche').setAttribute('aria-expanded', aperte);
-    $('#mostra-statistiche').textContent = aperte ? 'Nascondi statistiche' : 'Mostra statistiche';
-    if (ricorda) ricordo.scrivi('statistiche', aperte ? 'aperte' : 'chiuse');
-    if (aperte && ricorda) rianima($('#statistiche-mutuo'), 'entra');
-  }
-  $('#mostra-statistiche').addEventListener('click', () => mostraStatistiche($('#statistiche-mutuo').hidden, true));
-  {
-    const scelta = ricordo.leggi('statistiche');
-    // All'inizio sono chiuse, così in primo piano ci sono il riquadro dei conti e la tabella.
-    mostraStatistiche(scelta ? scelta === 'aperte' : false, false);
-  }
 
   // Tasso applicato a mano
   const rataScelta = () => formApplicato.giorno.value ? Calcolo.rataPerData(stato.piano.righe, formApplicato.giorno.value) : null;
@@ -819,7 +837,7 @@
   document.addEventListener('cambio-versione', () => {
     if ($('#principale').hidden) return;
     disegnaMenu();
-    if (stato.dati) { disegnaPiano(); for (const disegna of M.viste) disegna(); }
+    if (stato.dati) { disegnaRiepilogo(); disegnaPiano(); for (const disegna of M.viste) disegna(); }
     if (!schedaPossibile(stato.scheda)) mostraScheda(aperto() ? 'piano' : 'prestiti');
   });
 

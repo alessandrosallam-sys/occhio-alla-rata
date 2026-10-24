@@ -25,6 +25,11 @@ Il repository è https://github.com/alessandrosallam-sys/occhio-alla-rata (ramo 
 - **Push rifiutato** perché su GitHub ci sono commit nuovi: `git pull --rebase`, poi di nuovo `git push`. Mai `--force`.
 - **Accesso a GitHub**: nel terminale di Claude Code le richieste di accesso di git sono spente, e il primo push su un computer si ferma con «terminal prompts disabled». Rilancialo permettendo la finestra di accesso (PowerShell: `$env:GIT_TERMINAL_PROMPT='1'; $env:GCM_INTERACTIVE='auto'; git push`; Bash: `GIT_TERMINAL_PROMPT=1 GCM_INTERACTIVE=auto git push`) e avvisa l'autore che deve completare l'accesso nel browser. Basta una volta per computer.
 
+## Convenzioni dello stile
+
+- **Grandezza dei testi**: ogni `font-size` di `stile.css` si scrive `calc(Npx * var(--testo))`. `--testo` è la grandezza scelta nelle impostazioni, da 1 a 1,4. Un `font-size` fisso non crescerebbe con la scelta. Le cifre dei riquadri hanno in più un tetto, per restare dentro il riquadro (docs/progetto-generale.md, sezione 29).
+- **Colori**: solo variabili del tema (`var(--accento)`, `var(--inchiostro)`…), mai colori scritti a mano fuori dai blocchi dei temi, così valgono anche per i temi calcolati e per «Il tuo tema» (sezione 28).
+
 ## Node
 
 Serve solo agli script (`crea-precaricati.js`, `dati-euribor/scarica.js`) e alle prove, non alla pagina. Ci vuole la versione 22 o successiva (WebSocket integrato). Cercalo in quest'ordine: `node` nel PATH; `..\runtime\node.exe`, una copia portatile nella cartella che contiene il repository. Se non c'è, dillo all'autore: non installarlo di tua iniziativa.

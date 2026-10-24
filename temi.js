@@ -4,7 +4,7 @@
 // Questo file:
 //  - sceglie tema e versione e li mette su <html> prima che la pagina si disegni (si carica nel <head>, così niente lampi);
 //  - calcola i temi che danno solo i colori di base, compreso «Il tuo tema» (chiave «tema-personale»), e applica i
-//    caratteri scelti per testo, titoli e cifre (chiave «caratteri»);
+//    caratteri scelti per testo, titoli e cifre (chiave «caratteri») e la grandezza dei testi (chiave «grandezza-testo»);
 //  - li ricorda nel browser (chiavi «tema» e «versione»), con le due scelte dell'assistente («assistente-spiega»,
 //    «assistente-segue»: «no» se spente);
 //  - costruisce le impostazioni: il pulsante «Impostazioni» nella testata apre un riquadro con versione, assistente
@@ -182,6 +182,30 @@
     } catch { return true; }
   }
   applicaCaratteri();
+
+  // ---------- Grandezza dei testi ----------
+  // Ogni font-size di stile.css è moltiplicato per la variabile --testo (1 di base). Si ingrandiscono solo i testi, non
+  // tutta la pagina: lo zoom intero ingrandirebbe anche le altezze legate allo schermo (tabella del piano, menù).
+  const GRANDEZZE = [
+    { codice: 'normale', nome: 'Normale', scala: 1 },
+    { codice: 'grande', nome: 'Grande', scala: 1.12 },
+    { codice: 'piu-grande', nome: 'Più grande', scala: 1.25 },
+    { codice: 'molto-grande', nome: 'Molto grande', scala: 1.4 },
+  ];
+  let grandezza = GRANDEZZE.some(g => g.codice === leggi('grandezza-testo')) ? leggi('grandezza-testo') : 'normale';
+  function applicaGrandezza(codice, ricorda) {
+    const scelta = GRANDEZZE.find(g => g.codice === codice) || GRANDEZZE[0];
+    grandezza = scelta.codice;
+    if (scelta.scala === 1) radice.style.removeProperty('--testo'); else radice.style.setProperty('--testo', String(scelta.scala));
+    for (const pulsante of document.querySelectorAll('[data-grandezza-testo]')) pulsante.setAttribute('aria-pressed', String(pulsante.dataset.grandezzaTesto === grandezza));
+    if (ricorda) {
+      scrivi(grandezza, 'grandezza-testo');
+      // Il grafico dei tassi scrive i suoi testi con le misure del momento: lo si ridisegna.
+      if (window.Mutuo && window.Mutuo.ridisegnaTassi && document.querySelector('#scheda-tassi:not([hidden])')) window.Mutuo.ridisegnaTassi();
+      document.dispatchEvent(new CustomEvent('cambio-grandezza', { detail: grandezza }));
+    }
+  }
+  applicaGrandezza(grandezza, false);
   const VERSIONI = [
     { codice: 'semplice', nome: 'Semplice', descrizione: 'Solo quello che serve: le rate e se tornano, quanto costa il prestito, il rimborso anticipato, il backup. Consigliata.' },
     { codice: 'avanzata', nome: 'Avanzata', descrizione: 'Tutto: colonne di approfondimento del piano, calendario delle rilevazioni, festività, previsioni dell\'indice, taratura e regole del contratto.' },
@@ -338,6 +362,17 @@
   }
   // I caratteri: per testo, titoli e cifre una tendina, la casella per un carattere scritto a mano e un esempio.
   const ESEMPI = { testo: 'La rata di marzo torna al centesimo.', titoli: 'Il piano delle rate', numeri: '0123456789 · 712,35 €' };
+  function sceltaGrandezza() {
+    const gruppo = elemento('div', 'scelta-grandezza', { role: 'group', 'aria-label': 'Grandezza dei testi' });
+    for (const g of GRANDEZZE) {
+      const pulsante = elemento('button', 'tessera-grandezza', { type: 'button', 'data-grandezza-testo': g.codice, 'aria-pressed': String(g.codice === grandezza) });
+      const lettera = elemento('span', 'lettera-grandezza', { 'aria-hidden': 'true' }, 'A');
+      lettera.style.fontSize = [13, 17, 21, 26][GRANDEZZE.indexOf(g)] + 'px';   // la «A» mostra la grandezza, uguale in tutti i pulsanti
+      pulsante.append(lettera, elemento('span', '', {}, g.nome));
+      gruppo.append(pulsante);
+    }
+    return gruppo;
+  }
   function sceltaCaratteri() {
     const box = elemento('div', 'scelta-caratteri');
     for (const u of USI) {
@@ -431,6 +466,9 @@
       elemento('h3', '', {}, 'Colori'),
       griglia(),
       editorTema(),
+      elemento('h3', '', {}, 'Testi'),
+      elemento('p', 'nota', {}, 'La grandezza dei testi in tutta la pagina. Se è ancora piccola, puoi anche ingrandire tutto con Ctrl e + (sul Mac Cmd e +).'),
+      sceltaGrandezza(),
       elemento('h3', '', {}, 'Caratteri'),
       elemento('p', 'nota', {}, 'Valgono con qualunque tema. Si usano i caratteri già presenti sul computer: «Quello del tema» lascia la scelta del tema.'),
       sceltaCaratteri(),
@@ -442,6 +480,8 @@
       if (logo) window.Loghi.scegli(logo.dataset.sceltaLogo);
       if (avatar) window.Assistente.scegliAvatar(avatar.dataset.sceltaAvatar);
       if (evento.target.closest('[data-personale-ripristina]')) impostaPersonale(PERSONALE_INIZIALE);
+      const grande = evento.target.closest('[data-grandezza-testo]');
+      if (grande) applicaGrandezza(grande.dataset.grandezzaTesto, true);
     });
     blocco.addEventListener('input', evento => {
       const colore = evento.target.closest('[data-personale]'), altro = evento.target.closest('[data-carattere-altro]');
@@ -524,5 +564,6 @@
     opzione, impostaOpzione: applicaOpzione,
     personale: () => ({ ...personale }), impostaPersonale, coloriDelTema, CARATTERI, caratteri: () => JSON.parse(JSON.stringify(caratteri)), impostaCaratteri,
     contrasto, variabili,
+    GRANDEZZE, grandezza: () => grandezza, impostaGrandezza: codice => applicaGrandezza(codice, true),
   };
 })();

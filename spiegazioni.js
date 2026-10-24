@@ -41,6 +41,12 @@
     ['Tasso fisso', 'Il tasso del contratto (TAN), uguale per tutte le rate: serve a calcolare gli interessi.'],
     ['TAEG', 'Il costo vero del prestito in percentuale all\'anno: interessi, spese e assicurazioni insieme. Serve a confrontare prestiti diversi.'],
     ['Totale rate', 'Tutto quello che avrai pagato con le rate alla fine del prestito; sotto, la parte di interessi e spese.'],
+    ['Prossima rata', 'La rata del mese dopo. Nel variabile la cifra esatta si conosce solo quando la banca legge l\'indice: sotto c\'è il giorno. Fino ad allora è una stima. Nel fisso è già nota.'],
+    ['Pagato finora', 'Quanto hai versato con le rate scritte nel piano. La barra divide il versato in capitale, interessi e spese: passaci sopra per le cifre.'],
+    ['Ultima rata addebitata', 'L\'ultima rata che hai scritto nel piano, con il suo mese. Nella versione avanzata sotto ci sono anche la rata media, la più bassa e la più alta.'],
+    ['Interessi ancora da pagare', 'Gli interessi delle rate che restano, fino alla fine. Nel variabile è una stima, perché dipende dall\'indice dei prossimi anni.'],
+    ['Tassi applicati', 'Il tasso medio delle rate che hai pagato, e sotto il più basso e il più alto.'],
+    ['Andamento', 'Come è cambiato da un mese all\'altro quello che paghi al giorno: così i mesi più lunghi o più corti non contano.'],
   ];
   const COSTI = [
     ['Importo prestato', 'La somma che ti ha prestato la banca.'],
@@ -71,13 +77,6 @@
     ['Rata più alta', 'La rata più alta che potresti pagare, secondo la previsione dell\'indice.'],
     ['Importo e durata', 'Quanto ti prestano e in quanto tempo.'],
     ['Tipo', 'Tasso fisso o variabile.'],
-  ];
-  const STATISTICHE = [
-    ['Quanto hai pagato', 'Quanto hai versato finora con le rate, e quanta parte è capitale e quanta interessi.'],
-    ['Le tue rate', 'La rata media, la più bassa e la più alta che hai pagato.'],
-    ['Andamento', 'Come è cambiata la rata da un mese all\'altro.'],
-    ['Tassi applicati', 'Il tasso medio, il più basso e il più alto delle rate pagate.'],
-    ['Da qui alla fine', 'Quanto manca: interessi ancora da pagare e rate che restano.'],
   ];
   const CAPITO = [
     ['Tipo', 'Il tipo di prestito: decide se il tasso segue un indice o resta fisso.'],
@@ -157,14 +156,12 @@
     ['#tabella-piano tbody tr[data-n]', spiegaRata],
     ['#tabella-piano thead th[data-gruppo]', el => `Il gruppo di colonne «${el.textContent.trim()}». Clic per mostrare o nascondere le colonne di approfondimento.`],
     ['#tabella-piano thead th[title]', el => el.title.replace(/^([^:]+): /, '«$1»: ')],
-    ['#esito-conti', 'Il riassunto del piano: quante rate tornano con i conti della banca e quante sono da controllare.'],
+    ['#esito-conti', el => el.title ? el.title + ' Le righe del piano dicono rata per rata che cosa torna.' : 'Il riassunto del piano: quante rate tornano con i conti della banca e quante sono da controllare.'],
     ['#compila-rate, #compila-rate-pannello', 'Riempie le rate passate senza importo con quelle calcolate. Restano segnate con «=» finché non le controlli sull\'estratto conto.'],
     ['#togli-copiate', 'Toglie le rate prese dal calcolo; quelle scritte da te restano.'],
     ['#vai-oggi', 'Porta la tabella alla rata di questo mese.'],
-    ['#mostra-statistiche', 'Mostra o nasconde i riassunti: quanto hai pagato, interessi, rate medie, quanto manca.'],
     ['#colonne-extra button', el => el.title || 'Mostra o nasconde altre colonne di approfondimento.'],
     ['#legenda-piano', 'I colori delle righe: verde la rata torna, rosso è da controllare, il pallino è il mese in corso.'],
-    ['.riquadro-statistica', el => perEtichetta(STATISTICHE, etichetta(el))],
     // Prestiti e offerte
     ['#aggiungi-prestito', 'Segui un altro prestito accanto a questo: un mutuo, un finanziamento, un\'auto.'],
     ['.totali-prestiti', 'I totali di tutti i tuoi prestiti: rate del mese, debito residuo e interessi ancora da pagare.'],

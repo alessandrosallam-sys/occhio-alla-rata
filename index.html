@@ -44,7 +44,7 @@
   </header>
 
   <!-- I numeri del mese (app.js, disegnaRiepilogo) -->
-  <div class="riepilogo" id="riepilogo" aria-label="Il mese in corso"></div>
+  <div class="riepilogo" id="riepilogo" aria-label="Il mese in corso e le statistiche del prestito"></div>
 
   <!-- Configurazione guidata: compare al primo avvio, o quando la si riapre dal pannello -->
   <section id="configurazione" class="configurazione" hidden>
@@ -106,10 +106,8 @@
         <div class="azioni azioni-piano">
           <button type="button" id="compila-rate" class="secondario" hidden title="Se le rate che hai controllato tornano con il calcolo, segna come pagate anche le altre rate passate usando la cifra calcolata"></button>
           <button type="button" id="vai-oggi" data-icona="calendario" class="secondario">Vai al mese corrente</button>
-          <button type="button" id="mostra-statistiche" class="secondario" aria-controls="statistiche-mutuo">Nascondi statistiche</button>
         </div>
       </div>
-      <div class="statistiche-mutuo" id="statistiche-mutuo" aria-label="Statistiche del mutuo"></div>
       <div class="comandi-tabella">
         <div class="colonne-extra" id="colonne-extra" role="group" aria-label="Colonne di approfondimento"></div>
         <ul class="legenda" id="legenda-piano" aria-label="Legenda dei colori">
