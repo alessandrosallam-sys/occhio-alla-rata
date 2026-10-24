@@ -17,6 +17,8 @@
   // .occhi-felici, .bocca e .bocca-aperta (mentre scrive), e i colori del tema con le classi testa, viso, orecchio,
   // antenna, antenna-luce, guancia (stile.css) o con style="…var(--accento)…". Occhi e bocca hanno il colore --tratto:
   // quello del testo, ma scuro fisso sui robottini con il viso bianco. La nuvoletta di «pensa» è uguale per tutti.
+  // Quelli con «nascosto» non si possono scegliere (chiesto dall'utente il 24 ottobre 2026): il disegno resta, per
+  // rimetterli basta togliere la parola. Chi li aveva scelti torna al robottino.
   const S = 'style', ACC = 'fill:var(--accento)', SUP = 'fill:var(--superficie)', BORDO = 'stroke:var(--accento);stroke-width:1.8';
   const AVATAR = [
     { codice: 'robottino', nome: 'Robottino', descrizione: 'Il robottino di sempre: testa tonda e antenna con la luce.', disegno: `
@@ -39,7 +41,7 @@
       <path class="occhi-felici" d="M28 22.5q4-5 8 0"/>
       <circle cx="41.5" cy="26.5" r="1.5" fill="#e03131"/>
       <path class="bocca" d="M28 42h8"/><ellipse class="bocca-aperta" cx="32" cy="42" rx="4.5" ry="2.2"/>` },
-    { codice: 'cingolino', nome: 'Cingolino', descrizione: 'Occhi a binocolo e cingoli: un piccolo robot spazzino, curioso di tutto.', disegno: `
+    { codice: 'cingolino', nascosto: true, nome: 'Cingolino', descrizione: 'Occhi a binocolo e cingoli: un piccolo robot spazzino, curioso di tutto.', disegno: `
       <rect class="orecchio" x="29.5" y="21" width="5" height="8" rx="1.5"/>
       <rect class="orecchio" x="15" y="10" width="16" height="14" rx="6"/><rect class="orecchio" x="33" y="10" width="16" height="14" rx="6"/>
       <circle cx="23" cy="17" r="5.2" ${S}="${SUP}"/><circle cx="41" cy="17" r="5.2" ${S}="${SUP}"/>
@@ -90,7 +92,7 @@
       <path class="occhi-felici" d="M21.5 28.5q3.5-4 7 0M35.5 28.5q3.5-4 7 0"/>
       <rect x="22.5" y="35" width="19" height="6" rx="1.5" ${S}="fill:none;stroke:var(--tratto);stroke-width:1.6"/>
       <path class="bocca" d="M26.5 35v6M30.5 35v6M34.5 35v6M38.5 35v6"/><ellipse class="bocca-aperta" cx="32" cy="38" rx="7.5" ry="2.4"/>` },
-    { codice: 'visiera', nome: 'Visiera', descrizione: 'Testa a cilindro, visiera scura e antenna: un po\' sbruffone, ma di cuore.', disegno: `
+    { codice: 'visiera', nascosto: true, nome: 'Visiera', descrizione: 'Testa a cilindro, visiera scura e antenna: un po\' sbruffone, ma di cuore.', disegno: `
       <line class="antenna" x1="32" y1="12" x2="32" y2="5.5"/><circle class="antenna-luce" cx="32" cy="4.5" r="2.6"/>
       <path class="testa" d="M16 56V25a16 13 0 0 1 32 0v31Z"/>
       <rect x="14.5" y="21.5" width="35" height="13" rx="6.5" fill="#1b1b2e"/>
@@ -99,7 +101,7 @@
       <path class="occhi-felici" d="M21 29.5q4-5 8 0M35 29.5q4-5 8 0" ${S}="stroke:#ffffff"/>
       <rect class="viso" x="21" y="40" width="22" height="9" rx="3"/>
       <path class="bocca" d="M25.5 40v9M29.5 40v9M34.5 40v9M38.5 40v9M21 44.5h22"/><ellipse class="bocca-aperta" cx="32" cy="44.5" rx="8" ry="3"/>` },
-    { codice: 'gattobot', nome: 'Gattobot', descrizione: 'Un gatto robot con i baffi, il naso rosso e il campanello.', disegno: `
+    { codice: 'gattobot', nascosto: true, nome: 'Gattobot', descrizione: 'Un gatto robot con i baffi, il naso rosso e il campanello.', disegno: `
       <path class="testa" d="M15 25 17.5 9.5l10 8.5ZM49 25 46.5 9.5l-10 8.5Z"/>
       <circle class="testa" cx="32" cy="32" r="20.5"/>
       <ellipse cx="32" cy="36.5" rx="16" ry="14" fill="#ffffff"/>
@@ -112,7 +114,7 @@
       <path class="bocca" d="M24.5 40q7.5 6 15 0"/><ellipse class="bocca-aperta" cx="32" cy="42.5" rx="5" ry="3"/>
       <rect x="17" y="50" width="30" height="4.5" rx="2.2" fill="#e03131"/>
       <circle cx="32" cy="56" r="3.2" fill="#f7b500"/><path d="M29.5 55.5h5" stroke="#8a5a00" stroke-width="1"/>` },
-    { codice: 'gufobot', nome: 'Gufobot', descrizione: 'Un gufo meccanico, parente del logo del progetto.', disegno: `
+    { codice: 'gufobot', nascosto: true, nome: 'Gufobot', descrizione: 'Un gufo meccanico, parente del logo del progetto.', disegno: `
       <path class="testa" d="M14 19 17.5 8l8.5 6.5h12L46.5 8 50 19v25a12 12 0 0 1-12 12H26a12 12 0 0 1-12-12Z"/>
       <circle class="viso" cx="24.5" cy="29" r="8.2"/><circle class="viso" cx="39.5" cy="29" r="8.2"/>
       <circle cx="24.5" cy="29" r="5.6" fill="none" stroke="#f7b500" stroke-width="1.8"/><circle cx="39.5" cy="29" r="5.6" fill="none" stroke="#f7b500" stroke-width="1.8"/>
@@ -130,17 +132,83 @@
       <path class="occhi-felici" d="M21.5 31v-3h2v-2h3v2h2v3M35.5 31v-3h2v-2h3v2h2v3" stroke-linecap="square"/>
       <path class="bocca" d="M25 37.5h14" stroke-linecap="square"/><ellipse class="bocca-aperta" cx="32" cy="38" rx="6" ry="2.4"/>
       <g class="orecchio"><rect x="14" y="51" width="8" height="5"/><rect x="42" y="51" width="8" height="5"/></g>` },
+    // Gli aspetti «da intelligenza artificiale» dei film e delle serie (24 ottobre 2026): colori propri, uguali in
+    // ogni tema, e animazioni proprie in stile.css (pioggia, luce che corre, cerchi che girano…).
+    { codice: 'codice', nome: 'Codice', descrizione: 'Uno schermo nero con la pioggia di cifre verdi, come nei film sugli hacker.', disegno: `
+      <rect x="9" y="9" width="46" height="46" rx="10" fill="#03110a" stroke="#00c853" stroke-width="1.8"/>
+      <g class="pioggia" fill="none" stroke="#00e676" stroke-width="1.7">
+        <path d="M14 13v38" stroke-dasharray="2 3 1 4 3 5" opacity="0.55"/><path d="M19 13v38" stroke-dasharray="1 2 3 6 2 4" opacity="0.35"/>
+        <path d="M24 13v38" stroke-dasharray="3 4 1 2 2 6" opacity="0.6"/><path d="M29 13v38" stroke-dasharray="2 5 2 2 1 6" opacity="0.4"/>
+        <path d="M34 13v38" stroke-dasharray="1 2 3 6 2 4" opacity="0.55"/><path d="M39 13v38" stroke-dasharray="2 3 1 4 3 5" opacity="0.35"/>
+        <path d="M44 13v38" stroke-dasharray="2 5 2 2 1 6" opacity="0.6"/><path d="M49 13v38" stroke-dasharray="3 4 1 2 2 6" opacity="0.4"/>
+      </g>
+      <rect x="16" y="22" width="32" height="13" rx="3" fill="#03110a" opacity="0.9"/>
+      <g class="occhi"><rect x="20.5" y="25.5" width="7" height="5.5" rx="1" ${S}="fill:#b9ffd0"/><rect x="36.5" y="25.5" width="7" height="5.5" rx="1" ${S}="fill:#b9ffd0"/></g>
+      <path class="occhi-felici" d="M20.5 30q3.5-4.5 7 0M36.5 30q3.5-4.5 7 0" ${S}="stroke:#b9ffd0"/>
+      <rect x="23" y="39" width="18" height="7" rx="2" fill="#03110a" opacity="0.9"/>
+      <path class="bocca" d="M27 42.5h10" ${S}="stroke:#00e676"/><ellipse class="bocca-aperta" cx="32" cy="42.5" rx="5" ry="2.2" ${S}="fill:#00e676"/>` },
+    { codice: 'occhio-rosso', nome: 'Occhio rosso', descrizione: 'Il computer di bordo delle astronavi dei film: un pannello di metallo e un grande occhio rosso, calmo e gentile.', disegno: `
+      <rect x="15" y="5" width="34" height="54" rx="4" fill="#1b1d22" stroke="#9aa1ab" stroke-width="1.8"/>
+      <rect x="19" y="9" width="26" height="5" rx="1" fill="#c7cbd2"/><path d="M21.5 11.5h6M30 11.5h11" stroke="#1b1d22" stroke-width="1.6"/>
+      <circle cx="32" cy="31" r="12.5" fill="#0a0a0c" stroke="#a9afb8" stroke-width="2.4"/>
+      <circle cx="32" cy="31" r="9" fill="#2a0303"/>
+      <g class="occhi"><circle cx="32" cy="31" r="7.4" ${S}="fill:#ff2a1a;opacity:0.3"/><circle cx="32" cy="31" r="4.6" ${S}="fill:#ff3322"/><circle cx="32" cy="31" r="1.5" ${S}="fill:#ffd23a"/></g>
+      <path class="occhi-felici" d="M27 32.5q5-6 10 0" ${S}="stroke:#ff3322"/>
+      <ellipse cx="27.5" cy="25.5" rx="3" ry="1.5" transform="rotate(-35 27.5 25.5)" fill="#ffffff" opacity="0.3"/>
+      <rect class="bocca-aperta" x="22.5" y="45.5" width="19" height="10" rx="1.5" ${S}="fill:#ff3322;opacity:0.5"/>
+      <path d="M22.5 47h19M22.5 50.5h19M22.5 54h19" stroke="#5a606a" stroke-width="1.5"/>
+      <path class="bocca" d="M30 57h4" ${S}="stroke:#6b1410;stroke-width:1.4"/>` },
+    { codice: 'scanner', nome: 'Scanner', descrizione: 'Il muso nero di un\'auto che parla, con la luce rossa che corre avanti e indietro.', disegno: `
+      <path d="M5 31Q32 15 59 31L56.5 47Q32 56 7.5 47Z" fill="#121214" stroke="#5b5f68" stroke-width="1.6"/>
+      <path d="M12 26.5Q32 17 52 26.5" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.2"/>
+      <rect x="11" y="31" width="42" height="7.5" rx="3.75" fill="#2b0606"/>
+      <g class="scia"><rect x="27.5" y="32" width="9" height="5.5" rx="2.75" fill="#ff2a1a" opacity="0.35"/></g>
+      <g class="scorre"><g class="occhi"><rect x="27.5" y="32" width="9" height="5.5" rx="2.75" ${S}="fill:#ff3b2f"/></g></g>
+      <path class="occhi-felici" d="M17 37q4-4.5 8 0M39 37q4-4.5 8 0" ${S}="stroke:#ff3b2f"/>
+      <rect x="22" y="42" width="20" height="10" rx="2" fill="#1d1d21" stroke="#3d4048" stroke-width="1"/>
+      <path class="bocca" d="M27 47h2M31 47h2M35 47h2" ${S}="stroke:#ff3b2f;stroke-width:1.6;stroke-linecap:butt"/>
+      <path class="bocca-aperta" d="M26.5 44h3v6h-3ZM30.5 43h3v8h-3ZM34.5 44h3v6h-3Z" ${S}="fill:#ff3b2f"/>` },
+    { codice: 'ologramma', nome: 'Ologramma', descrizione: 'Un volto di luce azzurra che esce da un proiettore, come le intelligenze artificiali della fantascienza.', disegno: `
+      <rect x="8" y="5" width="48" height="56" rx="12" fill="#07121f" stroke="#1f4a6b" stroke-width="1.4"/>
+      <path d="M22 57 15 18h34l-7 39Z" fill="#5ec8ff" opacity="0.12"/>
+      <ellipse cx="32" cy="57.5" rx="13" ry="3.5" fill="#16263a" stroke="#5ec8ff" stroke-width="1.4"/>
+      <g class="luce-ologramma">
+        <ellipse cx="32" cy="28" rx="13" ry="15.5" fill="#5ec8ff" fill-opacity="0.22" stroke="#8fe0ff" stroke-width="1.6"/>
+        <path d="M22 19h20M19.7 23h24.6M19.5 27h25M19.5 31h25M20.5 35h23M23 39h18" stroke="#bdefff" stroke-width="0.8" opacity="0.35"/>
+        <g class="occhi"><ellipse cx="26.5" cy="27" rx="3" ry="2.2" ${S}="fill:#eafcff"/><ellipse cx="37.5" cy="27" rx="3" ry="2.2" ${S}="fill:#eafcff"/></g>
+        <path class="occhi-felici" d="M23.5 28q3-3.8 6 0M34.5 28q3-3.8 6 0" ${S}="stroke:#eafcff"/>
+        <path class="bocca" d="M28.5 35.5q3.5 2 7 0" ${S}="stroke:#eafcff"/><ellipse class="bocca-aperta" cx="32" cy="35.8" rx="3" ry="1.6" ${S}="fill:#eafcff"/>
+      </g>` },
+    { codice: 'onda', nome: 'Onda', descrizione: 'Una sfera di luce colorata che si agita quando parla, come gli assistenti vocali dei telefoni.', disegno: `
+      <circle cx="32" cy="32" r="23" fill="#0c0a1f" stroke="#2f2a55" stroke-width="1.4"/>
+      <g class="colori-onda">
+        <ellipse cx="27" cy="29" rx="14" ry="11" fill="#ff4fa3" opacity="0.55"/>
+        <ellipse cx="37" cy="30" rx="13" ry="12" fill="#6a5cff" opacity="0.55"/>
+        <ellipse cx="32" cy="37" rx="14" ry="9" fill="#2fd3ff" opacity="0.5"/>
+      </g>
+      <g class="occhi"><ellipse cx="26" cy="29" rx="2.6" ry="3.4" ${S}="fill:#ffffff"/><ellipse cx="38" cy="29" rx="2.6" ry="3.4" ${S}="fill:#ffffff"/></g>
+      <path class="occhi-felici" d="M23 30q3-4 6 0M35 30q3-4 6 0" ${S}="stroke:#ffffff"/>
+      <path class="bocca" d="M25 39.5q3.5-3 7 0t7 0" ${S}="stroke:#ffffff"/><ellipse class="bocca-aperta" cx="32" cy="39.5" rx="6" ry="2.6" ${S}="fill:#ffffff"/>` },
+    { codice: 'reattore', nome: 'Reattore', descrizione: 'Cerchi di luce che girano, come l\'interfaccia del maggiordomo digitale di un supereroe.', disegno: `
+      <circle cx="32" cy="32" r="26.5" fill="#061722"/>
+      <circle class="anello-fuori" cx="32" cy="32" r="25" pathLength="60" fill="none" stroke="#38c8ff" stroke-width="1.4" stroke-dasharray="4 2 1 3"/>
+      <circle class="anello-mezzo" cx="32" cy="32" r="20" pathLength="40" fill="none" stroke="#38c8ff" stroke-width="2.4" stroke-dasharray="9 3 5 3" opacity="0.7"/>
+      <circle cx="32" cy="32" r="15" fill="#0b2a3a" stroke="#7fe6ff" stroke-width="1.6"/>
+      <g class="occhi"><rect x="24.5" y="27" width="5.5" height="4" rx="1" ${S}="fill:#c9f6ff"/><rect x="34" y="27" width="5.5" height="4" rx="1" ${S}="fill:#c9f6ff"/></g>
+      <path class="occhi-felici" d="M24 31q3-4 6 0M34 31q3-4 6 0" ${S}="stroke:#c9f6ff"/>
+      <path class="bocca" d="M27 37.5h10" ${S}="stroke:#7fe6ff"/><ellipse class="bocca-aperta" cx="32" cy="37.5" rx="5" ry="2" ${S}="fill:#7fe6ff"/>` },
   ];
   const NUVOLETTA = '<g class="nuvoletta"><circle cx="53" cy="11" r="2"/><circle cx="58.5" cy="5.5" r="2.8"/></g>';
   const leggiAvatar = () => { try { return localStorage.getItem('avatar'); } catch { return null; } };
-  let avatarScelto = AVATAR.some(a => a.codice === leggiAvatar()) ? leggiAvatar() : 'robottino';
+  const sceglibile = codice => AVATAR.some(a => a.codice === codice && !a.nascosto);
+  let avatarScelto = sceglibile(leggiAvatar()) ? leggiAvatar() : 'robottino';
   const disegnoAvatar = (codice = avatarScelto) => {
     const a = AVATAR.find(x => x.codice === codice) || AVATAR[0];
     return `<svg class="robot robot-${a.codice}" viewBox="0 0 64 64" aria-hidden="true"><g class="corpo">${a.disegno}</g>${NUVOLETTA}</svg>`;
   };
   // Cambia l'aspetto di tutti gli assistenti della pagina (non delle anteprime nelle impostazioni).
   function scegliAvatar(codice) {
-    if (!AVATAR.some(a => a.codice === codice)) return;
+    if (!sceglibile(codice)) return;
     avatarScelto = codice;
     try { localStorage.setItem('avatar', codice); } catch { /* vale solo per questa volta */ }
     for (const avatar of document.querySelectorAll('.assistente .avatar')) avatar.innerHTML = disegnoAvatar();

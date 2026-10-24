@@ -117,6 +117,7 @@
     if (!window.Assistente || !window.Assistente.AVATAR) return [];
     const g = elemento('div', 'griglia-avatar', { role: 'group', 'aria-label': 'Aspetti del robottino' });
     for (const a of window.Assistente.AVATAR) {
+      if (a.nascosto) continue;   // tolti dalla scelta (assistente.js)
       const pulsante = elemento('button', 'tessera-avatar', { type: 'button', 'data-scelta-avatar': a.codice, 'aria-pressed': String(a.codice === window.Assistente.avatarScelto()), title: a.descrizione });
       const riquadro = elemento('span', 'anteprima-avatar', { 'aria-hidden': 'true' });
       riquadro.innerHTML = window.Assistente.disegnoAvatar(a.codice);
