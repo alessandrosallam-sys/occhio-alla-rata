@@ -787,7 +787,7 @@ Chiesto dall'utente: "se volessimo fare un'app Android invece?", poi, fra le str
 2. Settings → Pages → «Deploy from a branch», ramo `main`, cartella `/ (root)` → Save.
 3. Dopo un minuto o due il sito è su `https://alessandrosallam-sys.github.io/occhio-alla-rata/`. Dal telefono, con Chrome: il sito, poi «Installa app» dal menù o il pulsante nel Pannello di controllo.
 
-Ogni `git push` su `main` aggiorna il sito; il telefono prende la versione nuova alla prima apertura con la connessione.
+Nel repository c'è un file vuoto `.nojekyll` (25 ottobre 2026): dice a GitHub Pages di pubblicare i file così come sono, senza passarli da Jekyll, che altrimenti potrebbe fermarsi su simboli come `{{` o `{%` nella documentazione. Ogni `git push` su `main` aggiorna il sito; il telefono prende la versione nuova alla prima apertura con la connessione.
 
 ### Prove
 
