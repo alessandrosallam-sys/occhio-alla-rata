@@ -795,3 +795,32 @@ Ogni `git push` su `main` aggiorna il sito; il telefono prende la versione nuova
 - `prova-file.js` (6 controlli): con il doppio clic niente service worker, la carta dice di aprire il sito, lo storico parte dai precaricati e nel browser finiscono solo i pochi giorni scaricati.
 - Le prove di prima passano tutte (riepilogo 26, grandezza dei testi 14, temi 45, robottini 20).
 - **Non provato**: un telefono vero (installazione, icona, avvio a schermo intero), Safari su iPhone, GitHub Pages vero.
+
+## 31. La presentazione su GitHub (25 ottobre 2026)
+
+Chiesto dall'utente: "possiamo migliorare il github in modo da presentare bene il progetto?", prima di renderlo pubblico.
+
+- **README**: in testa logo, nome, la frase «La banca ti addebita la rata giusta? Controllalo al centesimo.», i collegamenti (l'app su GitHub Pages, come si usa, domande, documentazione, contribuire) e due schermate, computer e telefono. Poi «Perché», «Che cosa fa», «I tuoi dati restano tuoi», una tabella di schermate, «Come si usa» (telefono, computer, primi passi) e le domande frequenti. La guida dettagliata di prima è intatta, dentro un riquadro richiudibile (`<details>`); le sezioni tecniche restano in fondo, con in più «Segnalazioni e contributi». I collegamenti alle segnalazioni sono relativi (`../../issues/new/choose`), così valgono anche se il repository cambia nome o proprietario.
+- **Schermate** (`docs/immagini/`, circa 2 MB): piano, tassi con la proiezione, costi e rimborso, offerte, benvenuto, tema Terminale, telefono chiaro e scuro. Sono fatte con **dati inventati** (un mutuo variabile «Casa al mare» di 180.000 € sull'Euribor 6 mesi, le cui rate passate sono prese dal calcolo, un finanziamento auto con maxirata e due offerte), da Edge senza finestra con lo script `crea-schermate.js` (nella cartella temporanea della sessione, non conservato): carica i dati con `Archivio.importa`, riempie le rate passate con `POST rate` dal piano calcolato, e fotografa a 1440×900 e a 390×844 (doppia densità). Vanno rifatte quando l'aspetto cambia molto.
+- **Anteprima per i social** (`docs/immagini/anteprima-social.png`, 1280×640, sotto 1 MB come chiede GitHub): logo, nome, frase, tre punti e il telefono. Non si mostra da sola: va caricata a mano (sotto).
+- **Segnalazioni** (`.github/ISSUE_TEMPLATE/`): tre moduli, «Il mio contratto torna (o non torna)» (tipo, esito, che cosa ha capito il programma, di quanto sbaglia), «Qualcosa non funziona» e «Un'idea». Tutti avvertono che la segnalazione è pubblica: niente nomi, banca, numeri di conto né file di backup; per i contratti gli importi non servono.
+- **`CONTRIBUTING.md`**: il contributo più utile (il proprio contratto), niente dati personali, le regole del progetto, dove sta la documentazione, come si prova, come si propone una modifica.
+
+### Da fare a mano su GitHub (l'autore)
+
+Nella pagina del repository, l'ingranaggio accanto ad «About»:
+- **Description**: `Controlla il tuo mutuo o finanziamento rata per rata: se la banca addebita la cifra giusta, quanto costa davvero, come andranno le rate. Gratis, senza server, funziona anche offline.`
+- **Website**: `https://alessandrosallam-sys.github.io/occhio-alla-rata/` (dopo aver attivato Pages, sezione 30).
+- **Topics**: `mutuo`, `euribor`, `finanziamento`, `taeg`, `finanza-personale`, `tasso-variabile`, `pwa`, `javascript`, `vanilla-js`, `italiano`.
+- Togliere le spunte a «Packages» e «Deployments», se non servono.
+
+In Settings → General → Social preview: «Edit» → carica `docs/immagini/anteprima-social.png`.
+
+### Controllo dei dati privati (25 ottobre 2026)
+
+Chiesto dall'utente prima di renderlo pubblico: "controlla anche che non ci siano dati privati". Controllati i 54 file che andrebbero su GitHub e tutta la storia (51 commit, ogni versione di ogni file, autori e messaggi), con uno script temporaneo che cerca nomi, email, aziende, percorsi del computer, telefoni, IBAN, codici fiscali, chiavi e password, indirizzi IP e della rete di casa, coordinate e nomi di banche.
+- **Trovato**: solo il nome di battesimo con l'iniziale del cognome, «Alessandro S», come autore di tutti i commit (con l'email privata di GitHub) e in CLAUDE.md, dove è scritto come impostarlo. Lasciato com'è: è una scelta dell'autore, e il nome utente GitHub, visibile comunque come proprietario del repository, dice già di più. Cambiarlo vorrebbe dire riscrivere tutta la storia e forzare l'invio.
+- **Falsi allarmi**: numeri dentro i disegni SVG presi per telefoni o indirizzi IP, e `127.0.0.1` in `pwa.js`.
+- **Cifre del mutuo vero**: confrontate le cifre dei testi della copia del 5 ottobre, di prima della pulizia del 14 ottobre, con il repository e con la storia. Nessuna è rimasta nella storia; le sei ancora presenti sono generiche (un segnaposto, l'importo d'esempio 150.000, una soglia del codice, le date d'esempio di «Incolla più tassi», un giorno d'esempio dell'Euribor).
+- **Immagini**: le schermate e le icone contengono solo il disegno, senza testi o metadati nascosti; i dati che mostrano sono inventati.
+- Restano nella documentazione, per scelta, le **regole** del contratto vero su cui è nato il programma (Euribor 6 mesi, lettura quattro giorni lavorativi prima, giorni effettivi, quote fissate all'inizio): sono comuni a moltissimi mutui e non dicono di chi è, né quanto.

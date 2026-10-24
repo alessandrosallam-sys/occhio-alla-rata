@@ -1,0 +1,43 @@
+name: Qualcosa non funziona
+description: Un errore, una pagina che non si apre, un calcolo strano.
+title: "Problema: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Questa segnalazione è pubblica**: non scrivere dati personali e non allegare il file di backup. Se serve un esempio, usa cifre inventate.
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Che cosa è successo
+      description: Che cosa hai fatto, che cosa ti aspettavi e che cosa hai visto invece.
+    validations:
+      required: true
+  - type: dropdown
+    id: dove
+    attributes:
+      label: Come usi il programma
+      options:
+        - App installata sul telefono
+        - Dal sito, nel browser
+        - Pagina scaricata sul computer (index.html)
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Browser e dispositivo
+      placeholder: per esempio Safari su iPhone, Chrome su Windows
+    validations:
+      required: true
+  - type: dropdown
+    id: versione
+    attributes:
+      label: Versione della pagina (nelle Impostazioni)
+      options:
+        - Semplice
+        - Avanzata
+        - Non lo so
+  - type: textarea
+    id: immagini
+    attributes:
+      label: Schermate
+      description: Se puoi, una schermata aiuta molto. Prima di allegarla copri le cifre vere.

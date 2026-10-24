@@ -1,32 +1,100 @@
-<p align="center"><img src="logo.svg" width="120" height="120" alt="Il logo di Occhio alla Rata: un gufo con gli occhi d'oro"></p>
+<p align="center"><img src="logo.svg" width="112" height="112" alt="Il logo di Occhio alla Rata: un gufo con gli occhi d'oro"></p>
 
-# Occhio alla Rata
+<h1 align="center">Occhio alla Rata</h1>
 
-Una pagina web che ricostruisce, rata per rata, un mutuo (a tasso variabile o fisso) o un finanziamento e lo confronta con quello che la banca addebita. Dice se ogni rata è giusta al centesimo, quanto costa davvero il prestito (con spese, assicurazioni e TAEG), quanto si è pagato finora di interessi e, per il variabile, come potrebbero andare le rate future.
+<p align="center"><strong>La banca ti addebita la rata giusta? Controllalo al centesimo.</strong><br>
+Mutui a tasso variabile o fisso e finanziamenti: il piano rata per rata, il costo vero, il rimborso anticipato e il confronto delle offerte prima di firmare.</p>
 
-È pensata per chi non sa niente di mutui: la configurazione chiede solo quattro dati facili (che prestito è, quanto, in quante rate, quando è stata pagata la prima) e gli importi di alcune rate già pagate, come si vedono sull'estratto conto. Il resto (tasso fisso, oppure indice e spread, spese, regole del contratto) il programma lo ricava da solo dalle rate, e chiede altro solo se le rate non bastano, spiegando dove trovarlo.
+<p align="center">
+  <a href="https://alessandrosallam-sys.github.io/occhio-alla-rata/"><strong>Apri l'app</strong></a> ·
+  <a href="#come-si-usa">Come si usa</a> ·
+  <a href="#domande-frequenti">Domande frequenti</a> ·
+  <a href="docs/progetto-generale.md">Documentazione</a> ·
+  <a href="CONTRIBUTING.md">Contribuire</a>
+</p>
 
-Non serve installare niente: si scarica la cartella e si apre `index.html` con il browser. I dati restano sul computer di chi la usa, nel browser, e se ne può salvare un backup in un file. L'unica cosa che passa da internet è lo scarico dei valori dell'Euribor dal sito della Bundesbank.
+<p align="center">Gratis e open source · nessun account · funziona anche senza connessione · i dati restano sul tuo dispositivo</p>
+
+<p align="center">
+  <img src="docs/immagini/piano.png" width="74%" alt="Il piano di un mutuo variabile inventato: in cima la rata del mese, la prossima rata e le statistiche; sotto le rate, tutte verdi perché tornano">
+  &nbsp;
+  <img src="docs/immagini/telefono-piano.png" width="21%" alt="Lo stesso mutuo sul telefono">
+</p>
+
+## Perché
+
+Con un mutuo a tasso variabile la rata cambia quasi ogni mese, e controllarla a mano è difficile: dipende dall'Euribor letto in un giorno preciso, da come si contano i giorni, da come si restituisce il capitale. Le banche sbagliano di rado, ma succede, e la maggior parte delle persone non ha modo di accorgersene.
+
+Occhio alla Rata parte da quello che hai sull'estratto conto: scrivi alcune rate già pagate, e il programma ricava da solo il resto (indice, spread, spese, regole del contratto) finché le rate tornano al centesimo. Da lì ricostruisce tutto il piano, rata per rata.
+
+## Che cosa fa
+
+- **Controlla ogni rata.** Confronta la rata addebitata con quella calcolata: verde se torna, rossa se no, con la differenza.
+- **Capisce il contratto da solo.** Bastano importo, durata, data della prima rata e qualche rata pagata. Se le rate non bastano, chiede solo il dato che manca e spiega dove trovarlo.
+- **Dice quando si saprà la prossima rata.** Nel variabile, il giorno in cui la banca legge l'indice.
+- **Calcola il costo vero.** Interessi pagati e da pagare, spese, assicurazioni e TAEG, confrontato con quello del contratto.
+- **Stima le rate future.** Previsioni dell'Euribor con più modelli statistici: di base usa quello che negli anni passati ha sbagliato di meno.
+- **Simula il rimborso anticipato.** Quanto risparmi rimborsando tutto o una parte, con penali e costi restituiti secondo la legge italiana.
+- **Confronta le offerte.** Prima di firmare: rata, interessi, costo totale e TAEG uno accanto all'altro.
+- **Segue più prestiti insieme.** Mutuo, auto, prestito personale, con i totali del mese.
+- **È pensato per chi non sa niente di mutui.** Una domanda per pagina, spiegazioni semplici e un piccolo assistente che spiega ogni cosa al passaggio del mouse.
+
+## I tuoi dati restano tuoi
+
+- **Niente server e niente account.** Il programma è una pagina web che gira tutta nel tuo browser. I prestiti che scrivi restano sul tuo computer o sul tuo telefono.
+- **Una sola connessione.** L'unica cosa che passa da internet sono i valori dell'Euribor, presi direttamente dal sito della Bundesbank.
+- **Una copia di sicurezza quando vuoi.** «Salva un backup» mette tutto in un file, che riapri dove vuoi.
+- **Codice aperto.** Puoi leggere ogni riga: è tutto HTML, CSS e JavaScript scritti a mano, senza librerie.
+
+## Schermate
+
+Tutte con dati inventati.
+
+| | |
+|---|---|
+| <img src="docs/immagini/tassi.png" alt="La pagina Tassi: l'Euribor 6 mesi dal 2022, con la proiezione in avanti e le fasce di incertezza"> | <img src="docs/immagini/costi.png" alt="Costi e rimborso: quanto costa il prestito e la simulazione dell'estinzione anticipata"> |
+| **Tassi e previsioni**: la storia dell'Euribor e dove potrebbe andare | **Costi e rimborso**: costo totale, TAEG, estinzione anticipata |
+| <img src="docs/immagini/offerte.png" alt="Il confronto di due offerte di mutuo, fisso e variabile"> | <img src="docs/immagini/benvenuto.png" alt="La pagina di benvenuto alla prima apertura"> |
+| **Confronto delle offerte**: quale costa meno, prima di firmare | **La prima apertura**: poche domande, il resto lo capisce lui |
+
+<p align="center">
+  <img src="docs/immagini/telefono-notte.png" width="24%" alt="Il piano sul telefono con il tema scuro">
+  &nbsp;
+  <img src="docs/immagini/tema-terminale.png" width="70%" alt="Il tema Terminale: verde su nero">
+</p>
+<p align="center">Quattordici temi, più uno con i colori scelti da te, caratteri e grandezza dei testi a scelta.</p>
 
 ## Come si usa
 
-1. Scarica il progetto (pulsante **Code → Download ZIP** su GitHub, oppure `git clone`) e apri `index.html` con un doppio clic. Provato con Microsoft Edge; dovrebbe funzionare con qualunque browser recente.
-   **Sul telefono** si usa come un'app: apri il sito del progetto (GitHub Pages) con Chrome e scegli «Installa app» nel menù, oppure il pulsante «Installa l'app» nel Pannello di controllo; su iPhone, in Safari, Condividi e poi «Aggiungi alla schermata Home». Compare un'icona, si apre a schermo intero e funziona anche senza connessione. I dati restano sul dispositivo dove li scrivi: per portarli dal computer al telefono usa il backup.
-2. Alla prima apertura scegli il **simbolo** del programma fra dieci disegni animati (lo ritrovi in alto e nella scheda del browser, e si cambia quando vuoi nelle Impostazioni); poi la pagina di benvenuto: la scritta «Occhio alla Rata» che compare lettera per lettera (un clic la rifà; con «riduci movimento» nelle impostazioni del sistema vedi tutto fermo), sei riquadri su che cosa fa il programma, i tre passi di come funziona e che cosa tenere a portata di mano. Poi parte la **configurazione guidata**: una domanda per pagina, con una spiegazione corta sotto (e una più lunga a richiesta), e un piccolo assistente animato che commenta ogni pagina. Tieni a portata di mano l'estratto conto o qualche ricevuta delle rate.
+**Sul telefono.** Apri [l'app](https://alessandrosallam-sys.github.io/occhio-alla-rata/) con Chrome e scegli «Installa app» dal menù (i tre puntini), oppure il pulsante «Installa l'app» nel Pannello di controllo. Su iPhone, in Safari: Condividi e poi «Aggiungi alla schermata Home». Compare un'icona come per le altre app, si apre a schermo intero e funziona anche senza connessione.
+
+**Sul computer.** Apri lo stesso indirizzo nel browser, oppure scarica il progetto (**Code → Download ZIP**) e apri `index.html` con un doppio clic: non serve installare niente.
+
+**I primi passi.**
+1. Rispondi a quattro domande facili: che prestito è, quanto ti hanno prestato, per quanto tempo, quando hai pagato la prima rata.
+2. Scrivi alcune rate già pagate, come le vedi sull'estratto conto.
+3. Il programma ricava il resto e ti dice che cosa ha capito. Da lì vedi il piano, i costi e le previsioni.
+
+I dati restano sul dispositivo dove li scrivi: per passarli dal computer al telefono usa «Salva un backup» da una parte e «Carica un backup» dall'altra.
+
+<details>
+<summary><strong>Guida completa: tutte le pagine e le impostazioni</strong></summary>
+
+1. Alla prima apertura scegli il **simbolo** del programma fra dieci disegni animati (lo ritrovi in alto e nella scheda del browser, e si cambia quando vuoi nelle Impostazioni); poi la pagina di benvenuto: la scritta «Occhio alla Rata» che compare lettera per lettera (un clic la rifà; con «riduci movimento» nelle impostazioni del sistema vedi tutto fermo), sei riquadri su che cosa fa il programma, i tre passi di come funziona e che cosa tenere a portata di mano. Poi parte la **configurazione guidata**: una domanda per pagina, con una spiegazione corta sotto (e una più lunga a richiesta), e un piccolo assistente animato che commenta ogni pagina. Tieni a portata di mano l'estratto conto o qualche ricevuta delle rate.
    - **Il prestito**: che cos'è (mutuo per la casa a tasso fisso o variabile, prestito personale, finanziamento per l'auto, auto con maxirata finale, acquisto a rate in un negozio, cessione del quinto), importo, durata (in anni o in rate, come la trovi nel contratto: il conto lo fa il programma), data della prima rata (se non la ricordi, va bene quella dell'ultima). Per un mutuo c'è anche la risposta «non so se è fisso o variabile».
    - **Le rate pagate**: prima scegli se partire dalle più recenti o dalla prima, poi scrivi le rate una alla volta, ognuna con il mese e la data dell'addebito per esteso; quelle che non hai si saltano. Dopo ogni rata il programma rifà i conti in sottofondo: una barra dice quanto è sicuro, e un «robottino» racconta, riga per riga, che cosa sta provando.
    - **Ci penso io**: dice che cosa ha capito («Euribor 3 mesi + 1,30%, nessuna spesa, rata ricalcolata ogni mese… le 12 rate tornano al centesimo»). Se non è sicuro chiede solo il dato che manca, con le risposte possibili già pronte; se non lo trovi, chiede un dato che lo sostituisce (le spese scritte sulla ricevuta, la quota capitale di una rata) o altre rate, finché le rate tornano al centesimo. Una rata che non torna si corregge o si toglie (un mese con un addebito in più). Se il prestito non è ancora partito, chiede il tasso del contratto.
    - **Gli ultimi dettagli**: il nome, spese e assicurazioni (facoltative, servono al costo totale e al TAEG) e, se le rate tornano, la proposta di riempire con il calcolo le rate passate che non hai scritto. Poi il **riepilogo**.
 
    Chi conosce bene il contratto può scegliere «Preferisco rispondere io a tutte le domande»: è il percorso completo, lo stesso che si apre con «Rifai la configurazione guidata» nella pagina «Dati del prestito». L'assistente compare anche in cima alle pagine del programma, con un consiglio per la pagina aperta; si richiude con la × e si riapre con un clic sulla sua testa. Quando la pagina è lunga e la scorri, ti segue nell'angolo in basso; e se ti fermi con il mouse su una cosa importante (una rata del piano, un riquadro, un costo, un pulsante) te la spiega, con le cifre del tuo prestito. Con la tastiera basta arrivarci con il tasto Tab. Tutte e due le cose si possono spegnere nelle **Impostazioni**.
-3. **Come è organizzata.** Il menù ha tre voci: **Prestiti** (tutti i prestiti che segui), **Offerte** (per chi deve ancora firmare) e **Pannello di controllo** (backup e impostazioni). Quando entri in un prestito (con «Apri», o da solo se è il **principale**) compaiono le sue pagine: sugli schermi larghi nella barra laterale, rientrate sotto il prestito aperto, che a sua volta sta rientrato sotto «Prestiti» (per passare a un altro prestito si va nella pagina Prestiti); sul telefono in una barra sotto la testata. Le pagine di un prestito sono **Piano**, **Costi e rimborso**, **Tassi** (solo a tasso variabile) e, nella versione avanzata, **Calendario**, **Festività** e **Regole del contratto**; nella pagina **Dati del prestito** (ci porta anche un clic sul suo nome) vedi i dati in parole e, con «Cambia i dati», li correggi lì: il piano si ricalcola subito. La configurazione guidata si rifà solo se lo chiedi. La × chiude il prestito e lascia il menù generale.
+2. **Come è organizzata.** Il menù ha tre voci: **Prestiti** (tutti i prestiti che segui), **Offerte** (per chi deve ancora firmare) e **Pannello di controllo** (backup e impostazioni). Quando entri in un prestito (con «Apri», o da solo se è il **principale**) compaiono le sue pagine: sugli schermi larghi nella barra laterale, rientrate sotto il prestito aperto, che a sua volta sta rientrato sotto «Prestiti» (per passare a un altro prestito si va nella pagina Prestiti); sul telefono in una barra sotto la testata. Le pagine di un prestito sono **Piano**, **Costi e rimborso**, **Tassi** (solo a tasso variabile) e, nella versione avanzata, **Calendario**, **Festività** e **Regole del contratto**; nella pagina **Dati del prestito** (ci porta anche un clic sul suo nome) vedi i dati in parole e, con «Cambia i dati», li correggi lì: il piano si ricalcola subito. La configurazione guidata si rifà solo se lo chiedi. La × chiude il prestito e lascia il menù generale.
    Il primo prestito che aggiungi diventa il **principale**: si apre da solo quando apri la pagina. Nella pagina Prestiti la stella sceglie un altro principale, o lo toglie: allora all'apertura vedi l'elenco e scegli tu.
-4. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no. In cima a ogni pagina del prestito ci sono la rata del mese e la **prossima rata**, con il giorno in cui se ne saprà la cifra esatta (nel variabile, quando la banca legge l'indice), il debito e il tasso; nel piano, sotto, le statistiche: quanto hai pagato, l'ultima rata addebitata, gli interessi ancora da pagare e il totale a fine piano, con più dettagli nella versione avanzata.
-5. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Il grafico mostra tutta la storia dell'Euribor dal 1999 (all'inizio solo il periodo del tuo mutuo) e, a destra, la proiezione in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
-6. Dal **Pannello di controllo** puoi salvare un backup di tutti i dati in un file e ricaricarlo (anche su un altro computer), e scegliere le impostazioni. Le regole del contratto e la taratura automatica stanno nella pagina **Regole del contratto** di ogni prestito (versione avanzata).
-7. Nella pagina **Costi e rimborso** di ogni prestito trovi **quanto costa il prestito**: interessi, spese, assicurazioni, costo totale e TAEG. Se scrivi il TAEG del contratto, il programma ti dice se il suo calcolo coincide. Sotto c'è l'**estinzione anticipata**: scegli quando e quanto rimborsare (tutto o una parte) e vedi interessi risparmiati, penale o indennizzo secondo la legge, costi restituiti e, per un rimborso parziale, la nuova rata o la nuova fine.
-8. **Devi ancora firmare?** Nella pagina **Offerte** (o dalla prima schermata, con «Confronta delle offerte») premi «Aggiungi un'offerta»: come per i prestiti, una domanda per pagina ti chiede i numeri del foglio informativo (PIES per i mutui, SECCI per i finanziamenti), dicendoti dove trovarli, e alla fine ti mostra l'offerta calcolata, con il TAEG confrontato con quello della banca. Se scrivi fra le spese per rata una cifra grande quanto la rata (succede: la rata la calcola il programma), te lo dice. Nel confronto rata, interessi, costo totale e TAEG compaiono uno accanto all'altro, e l'offerta che costa meno è evidenziata. Per il tasso variabile vedi anche quanto potrebbe salire la rata, secondo un modello di previsione dell'indice. Quando hai scelto, «Segui questo prestito» passa i dati alla configurazione guidata.
-9. Hai più di un prestito? Nella pagina **Prestiti** li vedi tutti, con il totale delle rate del mese e del debito residuo, e con «Aggiungi un prestito» ne segui un altro. Le pagine di ciascuno compaiono quando ci entri.
+3. Nella pagina **Piano** scrivi, mese per mese, la rata che la banca ti ha addebitato (colonna «Rata vera»): la riga diventa verde se i conti tornano, rossa se no. In cima a ogni pagina del prestito ci sono la rata del mese e la **prossima rata**, con il giorno in cui se ne saprà la cifra esatta (nel variabile, quando la banca legge l'indice), il debito e il tasso; nel piano, sotto, le statistiche: quanto hai pagato, l'ultima rata addebitata, gli interessi ancora da pagare e il totale a fine piano, con più dettagli nella versione avanzata.
+4. Nella pagina **Tassi** ci sono i valori dell'indice. Se il tuo indice è un Euribor, il programma li scarica da solo a ogni apertura (vedi sotto); altrimenti li scrivi o li incolli a mano. Il grafico mostra tutta la storia dell'Euribor dal 1999 (all'inizio solo il periodo del tuo mutuo) e, a destra, la proiezione in avanti con diversi modelli statistici (media delle variazioni, nessun cambiamento, ARIMA, VAR, GARCH, Vasicek) o con le attese del mercato lette dalla curva degli Euribor di oggi, con le fasce di incertezza. Un confronto all'indietro dice quale modello ha sbagliato di meno negli anni passati. Ogni proiezione mostra anche cosa vorrebbe dire per le tue rate in tre scenari (fascia bassa, atteso, fascia alta), e puoi scegliere quale di questi usa il piano per stimare le rate future.
+5. Dal **Pannello di controllo** puoi salvare un backup di tutti i dati in un file e ricaricarlo (anche su un altro computer), e scegliere le impostazioni. Le regole del contratto e la taratura automatica stanno nella pagina **Regole del contratto** di ogni prestito (versione avanzata).
+6. Nella pagina **Costi e rimborso** di ogni prestito trovi **quanto costa il prestito**: interessi, spese, assicurazioni, costo totale e TAEG. Se scrivi il TAEG del contratto, il programma ti dice se il suo calcolo coincide. Sotto c'è l'**estinzione anticipata**: scegli quando e quanto rimborsare (tutto o una parte) e vedi interessi risparmiati, penale o indennizzo secondo la legge, costi restituiti e, per un rimborso parziale, la nuova rata o la nuova fine.
+7. **Devi ancora firmare?** Nella pagina **Offerte** (o dalla prima schermata, con «Confronta delle offerte») premi «Aggiungi un'offerta»: come per i prestiti, una domanda per pagina ti chiede i numeri del foglio informativo (PIES per i mutui, SECCI per i finanziamenti), dicendoti dove trovarli, e alla fine ti mostra l'offerta calcolata, con il TAEG confrontato con quello della banca. Se scrivi fra le spese per rata una cifra grande quanto la rata (succede: la rata la calcola il programma), te lo dice. Nel confronto rata, interessi, costo totale e TAEG compaiono uno accanto all'altro, e l'offerta che costa meno è evidenziata. Per il tasso variabile vedi anche quanto potrebbe salire la rata, secondo un modello di previsione dell'indice. Quando hai scelto, «Segui questo prestito» passa i dati alla configurazione guidata.
+8. Hai più di un prestito? Nella pagina **Prestiti** li vedi tutti, con il totale delle rate del mese e del debito residuo, e con «Aggiungi un prestito» ne segui un altro. Le pagine di ciascuno compaiono quando ci entri.
 
 Nella pagina Tassi (versione avanzata) il modulo della proiezione sta richiuso in una riga sotto il grafico («Cambia» lo apre). Sul telefono il menù generale è nella barra in basso, le pagine del prestito aperto in una barra sotto la testata (scorre di lato), e la tabella del piano scorre in orizzontale tenendo ferma la colonna delle rate. Il tema chiaro o scuro segue quello del sistema.
 
@@ -35,6 +103,22 @@ Nella pagina Tassi (versione avanzata) il modulo della proiezione sta richiuso i
 **Impostazioni**: dal pulsante «Impostazioni» (o in fondo al pannello di controllo) si sceglie la versione, si decide se l'assistente spiega le cose al passaggio del mouse e se segue la pagina, si sceglie il suo **aspetto** fra tredici (di base il robottino tondo con l'antenna, poi Cupolino, Ovetto, Sfera, Gigante buono, Latta e Pixel, e sei intelligenze artificiali dei film: Codice con la pioggia di cifre verdi, Occhio rosso, Scanner con la luce che corre, Ologramma, Onda e Reattore), si sceglie il **logo** fra dieci disegni animati (di base il gufo, poi occhio, salvadanaio, casa, lente, moneta, calendario, radar, binocolo, grafico: vale anche per l'icona della scheda del browser) e si sceglie fra quattordici temi: Automatico, Chiaro, Notte, Carta, Salvia, Aurora, Ardesia, Contrasto alto, Oceano, Tramonto, Lavanda, Bosco, Brace e Terminale. Con **«Il tuo tema»** i colori li scegli tu: sfondo, riquadri, testo, colore principale e secondo colore, più la forma degli angoli, anche partendo da un tema che ti piace; gli altri colori li ricava il programma, e avverte se il testo si legge male. La **grandezza dei testi** va da Normale a Molto grande (140%). I **caratteri** di testo, titoli e cifre si scelgono a parte e valgono con qualunque tema: otto stili fra quelli già presenti sul computer, oppure un carattere installato scritto per nome. Cambia solo l'aspetto; le scelte restano nel browser. Sugli schermi larghi le pagine sono in una barra laterale ad albero, ognuna con una riga che dice che cosa contiene. Le icone sono disegnate apposta per la pagina e le animazioni (pagine che entrano, cifre che contano, carte che si sollevano) si spengono da sole se nelle impostazioni del sistema è attivo «riduci movimento».
 
 **Dove stanno i dati.** I dati stanno nel browser (`localStorage`) e si salvano da soli a ogni modifica, ma se cancelli i dati di navigazione li perdi. Per questo nel Pannello di controllo c'è **«Salva un backup»**: scarica un file `.json` con tutti i prestiti e le offerte, comprese le scelte della proiezione (modello, orizzonte, scenario). Tienilo al sicuro, ad esempio su una chiavetta o in una cartella di OneDrive o Google Drive. Con **«Carica un backup»** (nel pannello, o nella prima schermata della configurazione) lo riapri, anche su un altro computer o in un altro browser: prima di sostituire i dati la pagina dice di quando è il backup e che cosa contiene. Il pannello mostra la data dell'ultimo backup.
+
+</details>
+
+## Domande frequenti
+
+**Quanto costa?** Niente. È un progetto gratuito e open source, con licenza MIT.
+
+**I miei dati vanno da qualche parte?** No. Restano nel browser del tuo dispositivo. Nessuno, nemmeno chi ha scritto il programma, può vederli.
+
+**Funziona con il mio mutuo?** Conosce le regole più diffuse dei mutui italiani: Euribor da 1 settimana a 12 mesi, aggiornamento ogni 1, 3, 6 o 12 mesi, vari modi di leggere l'indice e di contare i giorni, piano alla francese o all'italiana, tasso minimo e massimo. Le trovi tutte più sotto, in [Cosa sa calcolare](#cosa-sa-calcolare). Il modo più semplice per saperlo è provare: se le tue rate tornano al centesimo, le regole sono quelle giuste.
+
+**Una rata non torna: la banca ha sbagliato?** Non è detto. Spesso la differenza viene da una regola scelta male, o da un addebito in più in quel mese (un'assicurazione, una commissione). Prima di contestare, leggi l'[avvertenza](#avvertenza) e controlla le regole del contratto.
+
+**Funziona su iPhone?** Dovrebbe: usa solo funzioni standard del browser. È stato provato con Edge e Chrome; Safari non ancora. Se lo provi, [raccontaci com'è andata](../../issues/new/choose).
+
+**Posso aiutare?** Sì: soprattutto con il tuo contratto. Il programma riproduce al centesimo un solo contratto vero; ogni contratto diverso che torna, o che non torna, lo rende più affidabile. Vedi [Segnalazioni e contributi](#segnalazioni-e-contributi).
 
 ## Cosa sa calcolare
 
@@ -57,7 +141,7 @@ Le festività considerate sono quelle del calendario TARGET (quello su cui si pu
 
 **Non sono coperti**: preammortamento, rate non mensili; le estinzioni parziali si possono simulare nella pagina Costi e rimborso, ma non registrare nel piano; spread che cambia nel tempo (si può solo scrivere a mano, rata per rata, il tasso applicato).
 
-**Attenzione**: il programma riproduce al centesimo un solo contratto vero, quello su cui è nato (Euribor 6 mesi, rilevazione quattro giorni lavorativi prima della fine del periodo, giorni effettivi su 365/366, quote fissate all'inizio). Le altre combinazioni, compresi tasso fisso e finanziamenti, hanno superato solo controlli di coerenza (per esempio: a tasso fisso la rata è costante; senza costi il TAEG è il TAN composto mese per mese). Se il tuo contratto torna, o non torna, apri una segnalazione: è il modo per migliorarlo.
+**Attenzione**: il programma riproduce al centesimo un solo contratto vero, quello su cui è nato (Euribor 6 mesi, rilevazione quattro giorni lavorativi prima della fine del periodo, giorni effettivi su 365/366, quote fissate all'inizio). Le altre combinazioni, compresi tasso fisso e finanziamenti, hanno superato solo controlli di coerenza (per esempio: a tasso fisso la rata è costante; senza costi il TAEG è il TAN composto mese per mese). Se il tuo contratto torna, o non torna, [apri una segnalazione](../../issues/new/choose): è il modo per migliorarlo.
 
 ## Dati dell'Euribor e licenza
 
@@ -75,6 +159,13 @@ Senza questi file la pagina funziona lo stesso: all'apertura scarica i valori ch
 ## Avvertenza
 
 Questo è uno strumento di controllo fatto da privati, senza alcuna garanzia. Non è una consulenza finanziaria né legale, e non sostituisce i conteggi della banca o di un professionista. Se trovi una differenza fra le rate calcolate e quelle addebitate, prima di contestarla alla banca verifica le regole del contratto: molte differenze dipendono da una regola scelta male, non da un errore della banca.
+
+## Segnalazioni e contributi
+
+- **Il tuo contratto torna, o non torna?** Apri una [segnalazione «Il mio contratto»](../../issues/new/choose): bastano il tipo di prestito e le regole che il programma ha trovato. Non servono nomi, banca o numeri di conto.
+- **Qualcosa non funziona?** Una [segnalazione di problema](../../issues/new/choose), con il browser e il dispositivo che usi.
+- **Un'idea?** Anche quella è benvenuta.
+- **Vuoi modificare il codice?** Leggi [CONTRIBUTING.md](CONTRIBUTING.md): poche regole, tutte per tenere il programma semplice e i dati al sicuro.
 
 ## Per chi vuole modificare il codice
 

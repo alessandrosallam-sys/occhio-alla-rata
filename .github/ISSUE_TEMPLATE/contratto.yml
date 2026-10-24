@@ -1,0 +1,51 @@
+name: Il mio contratto torna (o non torna)
+description: Racconta se il programma riproduce le rate del tuo mutuo o finanziamento. È il modo migliore per renderlo più affidabile.
+title: "Contratto: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie! Ogni contratto diverso aiuta a capire se il programma fa i conti giusti.
+
+        **Attenzione ai dati personali: questa segnalazione è pubblica.** Non scrivere nomi, banca, indirizzo, numeri di conto o di contratto, e non allegare il file di backup. Servono solo le regole del contratto e se le rate tornano: gli importi non sono necessari.
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Che prestito è
+      options:
+        - Mutuo a tasso variabile
+        - Mutuo a tasso fisso
+        - Prestito personale o finanziamento
+        - Finanziamento auto con maxirata
+        - Cessione del quinto
+        - Altro
+    validations:
+      required: true
+  - type: dropdown
+    id: esito
+    attributes:
+      label: Le rate tornano?
+      options:
+        - Sì, tutte al centesimo
+        - Quasi tutte (alcune no)
+        - No, nessuna
+    validations:
+      required: true
+  - type: textarea
+    id: regole
+    attributes:
+      label: Che cosa ha capito il programma
+      description: Copia le righe di «Ecco che cosa ho capito» (fine della configurazione) o della pagina «Dati del prestito». Per esempio «Euribor 3 mesi + spread, rata ricalcolata ogni mese, giorni contati a dodicesimi».
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: dettagli
+    attributes:
+      label: Se qualche rata non torna
+      description: Di quanto sbaglia (anche solo l'ordine di grandezza, per esempio «pochi centesimi» o «circa 2 euro»), in quali mesi, e se nel contratto c'è scritto qualcosa di diverso dalle regole trovate.
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Browser e dispositivo
+      placeholder: per esempio Chrome su Android, Edge su Windows
