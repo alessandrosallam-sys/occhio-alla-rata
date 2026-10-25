@@ -1557,6 +1557,23 @@ button.tessera-grandezza[aria-pressed="true"] { border-color: var(--accento); bo
 .carta-dati-prestito .riepilogo-guida { margin: var(--s4) 0; }
 .carta-dati-prestito .azioni { flex-wrap: wrap; }
 
+/* Cambi del contratto (cambi.js) e storia del prestito nella pagina «Prestiti» (surroga) */
+.carta-cambi h2 { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s3); }
+.carta-cambi .azioni { flex-wrap: wrap; }
+.elenco-cambi { list-style: none; margin: var(--s3) 0; padding: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.elenco-cambi li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); padding: var(--s3); border: 1px solid var(--linea); border-radius: var(--r2); background: var(--superficie-2); }
+.elenco-cambi li > div:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: calc(14px * var(--testo)); }
+.elenco-cambi li small { color: var(--inchiostro-2); font-size: calc(13px * var(--testo)); }
+.elenco-cambi .azioni { margin: 0; }
+#form-cambio h3 { margin: 0 0 var(--s3); font-size: calc(16px * var(--testo)); }
+#form-cambio .spunta span small { display: block; color: var(--inchiostro-2); font-size: calc(13px * var(--testo)); }
+.carta-prestito .storia-prestito { margin: 0; font-size: calc(13.5px * var(--testo)); }
+.carta-prestito .surroga { margin-top: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.carta-prestito .surroga h4 { margin: 0; font-size: calc(15px * var(--testo)); }
+.carta-prestito .surroga label { display: flex; flex-direction: column; gap: 4px; font-size: calc(14px * var(--testo)); font-weight: 600; }
+.carta-prestito .surroga select { width: 100%; font-weight: 400; }
+.carta-prestito .surroga .nota { margin: 0; }
+
 /* Prestiti: la stella del principale, l'elenco vuoto */
 button.scelta-principale[aria-pressed="true"] { color: #8a6100; border-color: #e5a800; background: color-mix(in srgb, #f5b301 14%, var(--superficie)); }
 [data-tema="notte"] button.scelta-principale[aria-pressed="true"], [data-tema="ardesia"] button.scelta-principale[aria-pressed="true"] { color: #f5c542; }

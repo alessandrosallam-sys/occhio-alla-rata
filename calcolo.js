@@ -136,12 +136,34 @@
     ],
   };
 
-  // dati = { parametri, rate, euribor, festivita } così come escono dall'archivio.
+  // Cambi del contratto dopo la firma (dati.cambi: rinegoziazione, tasso fisso rivisto dopo qualche anno, passaggio da
+  // fisso a variabile o al contrario): dalla rata «dalla_rata» valgono le condizioni nuove. Il piano si divide in tratti,
+  // ognuno con il suo tipo di tasso, il suo «tasso» (il TAN a tasso fisso, lo spread nel variabile) e «fine», l'ultima
+  // rata del piano secondo quel tratto (un cambio può allungare o accorciare la durata). Il primo tratto ha le condizioni
+  // della firma. Un cambio che non cade dentro il tratto precedente si ignora; con la maxirata non ci sono cambi.
+  function tratti(dati) {
+    const p = dati.parametri, variabile = (p.tipo_prestito || 'variabile') === 'variabile';
+    const maxi = !variabile && p.tipo_prestito === 'maxirata' && p.maxirata > 0 && p.maxirata < p.importo_iniziale;
+    const elenco = [{ da: 1, variabile, tasso: variabile ? p.spread : (p.tasso_fisso || 0), fine: p.numero_rate + (maxi ? 1 : 0), cambio: null }];
+    if (maxi) return elenco;
+    for (const c of [...(dati.cambi || [])].sort((a, b) => a.dalla_rata - b.dalla_rata)) {
+      const prima = elenco[elenco.length - 1];
+      if (!(c.dalla_rata > prima.da && c.dalla_rata <= prima.fine)) continue;
+      const v = c.tipo === 'variabile';
+      elenco.push({ da: c.dalla_rata, variabile: v, tasso: v ? c.spread : c.tasso_fisso, fine: c.rate_residue > 0 ? c.dalla_rata - 1 + c.rate_residue : prima.fine, cambio: c });
+    }
+    return elenco;
+  }
+  // Il prestito ha almeno un tratto a tasso variabile (servono l'indice e i suoi valori).
+  const conVariabile = dati => tratti(dati).some(t => t.variabile);
+
+  // dati = { parametri, rate, euribor, festivita, cambi } così come escono dall'archivio.
   // opzioni.fino: calcola solo le prime rate (serve alla taratura, che guarda solo quelle già addebitate);
   // opzioni.festivita e opzioni.tassi: gli stessi dati già trasformati, per non rifarlo a ogni prova.
   function calcolaPiano(dati, opzioni = {}) {
     const p = dati.parametri;
-    // A tasso fisso (mutuo o finanziamento) non c'è un indice: il tasso è il TAN, uguale per tutte le rate.
+    // A tasso fisso (mutuo o finanziamento) non c'è un indice: il tasso è il TAN, uguale per tutte le rate (o per tutte
+    // quelle di un tratto, se il contratto è cambiato). "variabile" è il tipo alla firma.
     const variabile = (p.tipo_prestito || 'variabile') === 'variabile';
     const festivita = opzioni.festivita || new Set(dati.festivita.map(isoInGiorno));
     const lavorativo = g => { const s = new Date(g * MS_GIORNO).getUTCDay(); return s !== 0 && s !== 6 && !festivita.has(g); };
@@ -150,7 +172,10 @@
     const [anno0, mese0, giorno0] = p.data_prima_rata.split('-').map(Number);
     // Finanziamento con maxirata: dopo le rate normali c'è una rata in più, molto più grande, che chiude il debito.
     const maxirata = !variabile && p.tipo_prestito === 'maxirata' && p.maxirata > 0 && p.maxirata < p.importo_iniziale ? p.maxirata : 0;
-    const numeroRate = p.numero_rate + (maxirata ? 1 : 0);
+    const elencoTratti = tratti(dati), rateFirmate = elencoTratti[0].fine, numeroRate = elencoTratti[elencoTratti.length - 1].fine;
+    // Prestito chiuso dopo una certa rata (surroga, o rifatto con un prestito nuovo): il piano si ferma lì e il debito che
+    // restava lo paga il prestito nuovo.
+    const estinto = p.estinto_dopo_rata > 0 && p.estinto_dopo_rata < numeroRate ? p.estinto_dopo_rata : 0;
     const ogniMesi = Math.max(1, Math.round(p.mesi_revisione || 1));
     const inizioPeriodo = n => Date.UTC(anno0, mese0 - 1 + (n - 1), giorno0) / MS_GIORNO;   // n = numeroRate + 1: fine piano
     // Preammortamento (25 ottobre 2026): se il prestito è stato accreditato prima dell'inizio del primo periodo, gli
@@ -196,18 +221,22 @@
     }
 
     // Primo passaggio: date del periodo e indice reale (manuale o dal database) nelle rate in cui il tasso si rivede.
-    const righe = [], ultimaDaCalcolare = Math.min(numeroRate, opzioni.fino || numeroRate);
-    for (let n = 1; n <= ultimaDaCalcolare; n++) {
+    // Ogni riga sa in che tratto cade ("tratto": la posizione in elencoTratti); le rate che restano sono quelle del suo tratto.
+    const righe = [], ultimaDaCalcolare = Math.min(numeroRate, opzioni.fino || numeroRate, estinto || numeroRate);
+    for (let n = 1, t = 0; n <= ultimaDaCalcolare; n++) {
+      while (t + 1 < elencoTratti.length && elencoTratti[t + 1].da <= n) t++;
+      const tratto = elencoTratti[t];
       const inizio = inizioPeriodo(n), fine = inizioPeriodo(n + 1) - 1;
       const m = manuali.get(n) || {};
       const date = { inizio: giornoInIso(inizio), fine: giornoInIso(fine), giorniMese: fine - inizio + 1,
-        giorniAnno: 365 + (new Date(fine * MS_GIORNO).getUTCFullYear() % 4 ? 0 : 1), rateResidue: numeroRate - n + 1 };
-      if (!variabile) {
+        giorniAnno: 365 + (new Date(fine * MS_GIORNO).getUTCFullYear() % 4 ? 0 : 1), rateResidue: tratto.fine - n + 1, tratto: t };
+      if (!tratto.variabile) {
         righe.push({ n, riferimento: date.inizio, riferimentoAutomatico: date.inizio, riferimentoManuale: false, conteggio: [], rataRevisione: n, revisione: true,
           eredita: false, mediaDi: 0, ...date, euribor: 0, origineEuribor: 'fisso', manuale: m });
         continue;
       }
-      const rataRevisione = n - ((n - 1) % ogniMesi);   // rata in cui il tasso è stato rivisto l'ultima volta
+      // Rata in cui il tasso è stato rivisto l'ultima volta: le revisioni si contano dall'inizio del tratto.
+      const rataRevisione = n - ((n - tratto.da) % ogniMesi);
       const ril = rilevazione(inizioPeriodo(rataRevisione));
       const riferimentoAutomatico = giornoInIso(ril.giorno);
       const riferimentoIso = m.data_riferimento || riferimentoAutomatico;
@@ -239,13 +268,16 @@
     const primaDelPiano = Number.isFinite(p.euribor_mese_precedente) ? p.euribor_mese_precedente : null;
     // Piano fissato all'inizio: le quote fisse del variabile, oppure la francese a tasso fisso, che ha la rata costante
     // (la quota capitale è la rata meno gli interessi, come nel piano consegnato dalla banca).
-    const pianoFissato = p.tipo_piano === 'quote_fisse' && variabile || (p.tipo_piano !== 'italiana' || maxirata > 0) && !variabile;
-    const tassoPiano = variabile ? p.tasso_annuo_piano : (p.tasso_fisso || 0);
-    const rataPiano = variabile && p.rata_piano > 0 ? p.rata_piano
+    // A ogni cambio del contratto il piano riparte dal debito di quel momento (vedi sotto).
+    let pianoFissato = p.tipo_piano === 'quote_fisse' && variabile || (p.tipo_piano !== 'italiana' || maxirata > 0) && !variabile;
+    let tassoPiano = variabile ? p.tasso_annuo_piano : (p.tasso_fisso || 0);
+    let rataPiano = variabile && p.rata_piano > 0 ? p.rata_piano
       : !variabile ? arrotondaRata(rataConMaxirata(p.importo_iniziale, tassoPiano / 12, p.numero_rate, maxirata), p.arrotonda_rata)
-        : tassoPiano > 0 ? centesimi(rataFrancese(p.importo_iniziale, tassoPiano / 12, numeroRate)) : 0;
-    const quotaItaliana = centesimi(p.importo_iniziale / numeroRate);
+        : tassoPiano > 0 ? centesimi(rataFrancese(p.importo_iniziale, tassoPiano / 12, rateFirmate)) : 0;
+    let quotaItaliana = centesimi(p.importo_iniziale / rateFirmate);
     let debitoPiano = p.importo_iniziale;
+    // Valore dell'indice da cui partire se un tratto variabile comincia dopo un tratto fisso e non ha valori veri: l'ultimo noto.
+    const ultimoNoto = dati.euribor.length ? indiceApplicato(dati.euribor[dati.euribor.length - 1].tasso_360) : 0;
 
     // Orizzonte della stima: oltre «previsione_anni» anni dall'ultimo valore vero l'indice resta fermo (0: fermo da
     // subito, 99: fino alla fine). Nessuno sa dove sarà l'indice fra molti anni: una stima lunga è solo un'ipotesi.
@@ -254,8 +286,8 @@
     // Secondo passaggio: previsione dei tassi futuri e tutte le colonne calcolate.
     let cumulato = 0, ultimoPunto = null;
     for (let i = 0; i < righe.length; i++) {
-      const r = righe[i], prec = righe[i - 1], m = r.manuale;
-      if (!variabile) r.variazione = 0;
+      const r = righe[i], prec = righe[i - 1], m = r.manuale, tratto = elencoTratti[r.tratto];
+      if (!tratto.variabile) r.variazione = 0;
       else if (r.eredita) {
         const base = righe[r.rataRevisione - 1];
         r.euribor = base.euribor; r.origineEuribor = base.origineEuribor; r.alTetto = base.alTetto; r.mediaDi = base.mediaDi;
@@ -273,7 +305,7 @@
           const oltre = r.riferimento > limiteStima;
           const stimata = opzioni.previsione ? opzioni.previsione(oltre ? limiteStima : r.riferimento) : null;
           r.euribor = stimata != null ? stimata : oltre && ultimoPunto ? ultimoPunto.euribor
-            : ultimoPunto ? ultimoPunto.euribor + ultimoPunto.variazione : primaDelPiano != null ? primaDelPiano : 0;
+            : ultimoPunto ? ultimoPunto.euribor + ultimoPunto.variazione : primaDelPiano != null ? primaDelPiano : tratto.da > 1 ? ultimoNoto : 0;
           if (p.floor_attivo > 0) r.euribor = Math.max(r.euribor, p.indice_minimo || 0);
           r.alTetto = tetto != null && r.euribor >= tetto;
           if (r.alTetto) r.euribor = tetto;
@@ -286,13 +318,27 @@
       const reale = r.origineEuribor !== 'previsione';
 
       // A tasso fisso il TAN prende il posto dello spread (e l'indice vale zero): una rata può averne uno suo, scritto a mano.
-      r.spread = m.spread != null ? m.spread : variabile ? p.spread : (p.tasso_fisso || 0);
+      r.spread = m.spread != null ? m.spread : tratto.tasso;
       r.spreadManuale = m.spread != null;
       r.tassoTotale = r.spread + r.euribor;
       if (p.tasso_massimo > 0 && r.tassoTotale > p.tasso_massimo) { r.tassoTotale = p.tasso_massimo; r.tassoLimitato = true; }
 
       r.debito = prec ? prec.debito - prec.quotaCapitale : p.importo_iniziale;
       r.percRimanente = r.debito / (p.valore_riferimento > 0 ? p.valore_riferimento : p.importo_iniziale);
+
+      // Prima rata di un cambio del contratto: il piano riparte dal debito di adesso, con le rate che restano. A tasso fisso
+      // la rata torna costante (ricalcolata con il TAN nuovo); all'italiana la quota resta costante sul debito che resta;
+      // nel variabile le quote fissate all'inizio proseguono solo se la durata non cambia, altrimenti si passa alla
+      // francese ricalcolata. Le spese del cambio (una volta sola) si contano con questa rata.
+      if (r.tratto > 0 && r.n === tratto.da) {
+        const prima = elencoTratti[r.tratto - 1];
+        if (p.tipo_piano === 'italiana') { pianoFissato = false; quotaItaliana = centesimi(r.debito / r.rateResidue); }
+        else if (!tratto.variabile) {
+          pianoFissato = true; tassoPiano = tratto.tasso; debitoPiano = r.debito;
+          rataPiano = arrotondaRata(rataFrancese(r.debito, tassoPiano / 12, r.rateResidue), p.arrotonda_rata);
+        } else if (!(pianoFissato && prima.variabile && tratto.fine === prima.fine)) pianoFissato = false;
+        if (tratto.cambio.spese > 0) r.speseCambio = tratto.cambio.spese;
+      }
 
       // Quota capitale secondo il tipo di piano (l'ultima rata chiude il debito).
       if (pianoFissato) {
@@ -311,6 +357,7 @@
       r.quotaCapitaleManuale = m.quota_capitale != null;
       r.quotaCapitale = r.quotaCapitaleManuale ? m.quota_capitale : r.rateResidue === 1 ? r.debito : Math.min(r.debito, r.quotaPiano);
       r.percQuota = r.quotaCapitale / r.debito;
+      if (r.n === estinto) r.estinto = centesimi(r.debito - r.quotaCapitale);   // il debito che passa al prestito nuovo
 
       // Interessi del periodo secondo il conteggio dei giorni del contratto; la rata è al centesimo.
       const base = p.conteggio_giorni === 'eff_365' ? 365 : p.conteggio_giorni === 'eff_360' ? 360 : r.giorniAnno;
@@ -379,23 +426,26 @@
   // Un'assicurazione facoltativa (assicurazione_facoltativa) resta nel costo totale ma non nel TAEG: per la direttiva
   // 2008/48/CE il TAEG conta solo i servizi accessori obbligatori. Se il premio è dentro il prestito, quella parte è
   // credito ricevuto (paga l'assicurazione per conto del cliente).
+  // Le spese dei cambi del contratto si pagano con la prima rata di ogni cambio. Se il prestito è stato chiuso da un
+  // prestito nuovo (surroga), il debito che restava («estinto» sull'ultima riga) è capitale restituito con l'ultima rata.
   function costi(dati, righe, comeFirmato = false) {
     const p = dati.parametri, quante = righe.length;
     const rata = r => comeFirmato || r.rataVera == null ? r.rataCalcolata : r.rataVera;
-    let totaleRate = 0;
-    const nelTaeg = !p.assicurazione_facoltativa;
+    let totaleRate = 0, speseCambi = 0;
+    const nelTaeg = !p.assicurazione_facoltativa, estinto = quante ? righe[quante - 1].estinto || 0 : 0;
     const pagamenti = righe.map((r, i) => {
       totaleRate += rata(r);
-      return rata(r) + (nelTaeg ? p.assicurazione_rata || 0 : 0) + ((i + 1) % 12 === 0 ? p.spese_annue || 0 : 0);
+      speseCambi += r.speseCambio || 0;
+      return rata(r) + (nelTaeg ? p.assicurazione_rata || 0 : 0) + ((i + 1) % 12 === 0 ? p.spese_annue || 0 : 0) + (r.speseCambio || 0) + (i === quante - 1 ? estinto : 0);
     });
     const speseRate = quante * (p.spese_rata || 0), speseIniziali = p.spese_iniziali || 0, speseAnnue = Math.floor(quante / 12) * (p.spese_annue || 0);
     const assicurazioni = (p.assicurazione_iniziale || 0) + quante * (p.assicurazione_rata || 0);
     const prima = righe[0] || {}, giorniPre = prima.giorniPreammortamento || 0;
     const preAParte = giorniPre > 0 && p.preammortamento === 'a_parte' ? centesimi(prima.interessiPreammortamento) : 0;
-    const interessi = totaleRate - p.importo_iniziale - speseRate + preAParte;
-    const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue;
+    const interessi = totaleRate + estinto - p.importo_iniziale - speseRate + preAParte;
+    const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue + speseCambi;
     const ricevuto = p.importo_iniziale - speseIniziali - (p.assicurazione_iniziale || 0);
-    return { totaleRate, interessi, speseRate, speseIniziali, assicurazioni, speseAnnue, costoTotale, ricevuto,
+    return { totaleRate, interessi, speseRate, speseIniziali, assicurazioni, speseAnnue, speseCambi, estinto, costoTotale, ricevuto,
       totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale,
       taeg: taeg(nelTaeg ? ricevuto : p.importo_iniziale - speseIniziali, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
       giorniPreammortamento: giorniPre, preammortamento: giorniPre > 0 ? centesimi(prima.interessiPreammortamento) : 0, preammortamentoAParte: preAParte > 0 };
@@ -527,7 +577,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tratti, conVariabile, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });

@@ -40,11 +40,12 @@ mutuo-generale/
   prestiti.js           scheda «Prestiti»: tutti i prestiti, totali, apri, aggiungi, elimina (sezione 16)
   costi.js              quanto costa il prestito aperto: costo totale, TAEG calcolato e del contratto, estinzione anticipata (sezione 16)
   offerte.js            scheda «Offerte»: confronto di offerte prima di firmare (sezione 16)
+  cambi.js              cambi del contratto dopo la firma e chiusura con una surroga, nella pagina «Dati del prestito» (sezione 35)
   dati-euribor/         scarica.js e i CSV con gli Euribor dal 1999 (sezione 7)
   README.md, LICENSE, .gitignore, .gitattributes   per la pubblicazione (sezione 11)
 ```
 
-Gli script si caricano in quest'ordine: `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js` (`icone.js` prima di tutti). All'evento `DOMContentLoaded` parte `Mutuo.avvia()`: se non c'è una configurazione apre la guida, altrimenti mostra il programma.
+Gli script si caricano in quest'ordine: `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js` (`icone.js` prima di tutti). All'evento `DOMContentLoaded` parte `Mutuo.avvia()`: se non c'è una configurazione apre la guida, altrimenti mostra il programma.
 
 Dopo una modifica al codice basta ricaricare la pagina. Solo `tassi-precaricati.js` è generato (sezione 7).
 
@@ -73,9 +74,12 @@ I dati stanno in `localStorage`, chiave `mutuo-variabile:dati` (la slim invece n
   "parametri": { "importo_iniziale": 150000, "…": "…" },
   "rate": [ { "n": 1, "rata_vera": 712.35, "rata_copiata": null, "quota_capitale": null, "tasso_applicato": null, "euribor": null, "spread": null, "data_riferimento": null } ],
   "euribor": [ { "giorno": "2024-02-27", "tasso_360": 0.039 } ],
-  "festivita": [ "2024-01-01" ]
+  "festivita": [ "2024-01-01" ],
+  "cambi": [ { "dalla_rata": 61, "tipo": "fisso", "tasso_fisso": 0.035, "rate_residue": null, "spese": 0 } ]
 }
 ```
+
+`cambi` (dal 25 ottobre 2026) sono i cambi del contratto dopo la firma: sezione 35. I prestiti salvati prima non lo hanno e si leggono come se fosse vuoto.
 
 `rate` contiene solo i valori scritti a mano, più `rata_copiata` (vedi "Rate prese dal calcolo" nella sezione 8); `euribor` sono i valori dell'indice del contratto, qualunque esso sia (il nome è rimasto dalla prima versione, nata per un mutuo legato all'Euribor).
 
@@ -255,13 +259,13 @@ Avvertenze pratiche per gli script di prova:
 ## 10. Limiti e punti aperti
 
 - **Tipologie non verificate su contratti veri** (vedi sezione 4): serve qualcuno con un mutuo diverso.
-- **Non coperti**: estinzioni parziali registrate nel piano (si simulano soltanto), rate non mensili, spread che cambia nel tempo (si può solo scrivere a mano rata per rata).
+- **Non coperti**: estinzioni parziali registrate nel piano (si simulano soltanto), rate non mensili. Spread o TAN che cambiano nel tempo, rinegoziazioni e surroghe: dal 25 ottobre 2026 sì (sezione 35).
 - **I dati stanno nel browser**: cancellando i dati di navigazione si perdono, se non c'è un backup (sezione 18). Il backup si salva a mano: la pagina mostra solo la data dell'ultimo. Firefox e Safari non sono stati provati.
 - **Slim**: tolta (sezione 2b).
 - **Scarico da internet**: dipende dal sito della Bundesbank, che si riserva di smettere di pubblicare i valori; se cambia formato o indirizzo il programma lo dice ("Non riconosco più il formato…") e restano i valori precaricati più l'inserimento a mano. Un giorno lavorativo di ritardo: il valore di ieri c'è, quello di oggi no.
 - **Precaricati**: 394 KB caricati a ogni apertura della pagina; da rigenerare ogni tanto (sezione 7) perché chi è senza connessione abbia valori recenti.
 - **Pubblicazione**: il codice è su GitHub (sezione 11), per ora in un repository privato. Prima di renderlo pubblico vanno chiariti la licenza dei dati Euribor (sia i precaricati sia lo scarico dalla Bundesbank, che per l'uso commerciale rimanda a un accordo con EMMI) e l'avvertenza legale (è uno strumento di controllo, non una consulenza).
-- **Idee non realizzate**: confronto "e se" con un'offerta di surroga (si può già fare a mano: un'offerta con il debito residuo e le rate che restano); registrare nel piano un'estinzione parziale fatta davvero.
+- **Idee non realizzate**: confronto "e se" con un'offerta di surroga prima di decidere (si può già fare a mano: un'offerta con il debito residuo e le rate che restano; la surroga fatta si segue con un prestito nuovo, sezione 35); registrare nel piano un'estinzione parziale fatta davvero.
 - **Più prestiti, tasso fisso, finanziamenti, offerte** (sezione 16): mai provati su contratti veri; il TAEG segue la formula della direttiva, ma le banche possono includere costi diversi.
 
 ## 11. Repository git e pubblicazione open source
@@ -902,3 +906,37 @@ I nomi delle finanziarie e gli indirizzi delle pagine non si scrivono, per la re
 Chiesto dall'utente: "visto che è pubblico assicurati che non ci siano chiavi o altri dati che non ci devono essere". Rifatto su 55 file e 56 commit: niente email personali, percorsi, telefoni, IBAN, codici fiscali, chiavi, password o indirizzi di rete; nessuna stringa lunga e casuale che somigli a una chiave o a un token; nessun file sospetto mai entrato nella storia (`.env`, chiavi, backup, database, impostazioni locali); le cifre del mutuo vero non ci sono (stesso confronto con la copia del 5 ottobre della sezione 31). Su GitHub: un solo ramo, nessun tag, release, segnalazione, pull request o copia; il sito non espone `.git`, i CSV né `tassi-precaricati.js`.
 
 **Trovato e corretto**: le sezioni 33 e 34 nominavano le finanziarie (e la marca dell'auto) degli esempi pubblici, contro la regola del CLAUDE.md sui nomi di banche. Ora sono «Finanziaria A, B, C» e «un finanziamento auto». I nomi restano nella storia: nel messaggio di un commit e nelle versioni precedenti della documentazione. Sono esempi pubblicati dalle finanziarie stesse e non dicono niente dell'autore; toglierli dalla storia vorrebbe dire riscriverla e forzare l'invio, che il CLAUDE.md vieta: decide l'autore.
+
+
+## 35. Cambi del contratto e nuovo prestito dal debito residuo (25 ottobre 2026)
+
+L'utente: "mettiamo caso tassi particolari, tipo fisso ma con tasso che si aggiorna ogni tot anni, oppure in caso di riformulazioni o surroghe in corso d'opera?", poi, sulla proposta: "ok procedi, per la surroga va bene aprire un nuovo mutuo con il credito residuo, però voglio poter fare un nuovo prestito direttamente dal capitale restante da pagare di un altro mutuo".
+
+Prima un TAN o uno spread diverso si poteva scrivere solo a mano, rata per rata (`spread` delle rate), e la durata non poteva cambiare.
+
+### Dati (`archivio.js`)
+
+- **`cambi`** in ogni prestito, accanto a `rate`: `[{ dalla_rata, tipo, tasso_fisso | spread, rate_residue, spese }]`. `dalla_rata` va dalla seconda rata in poi; `tipo` è `fisso` (con `tasso_fisso`, il TAN) o `variabile` (con `spread`); `rate_residue` sono le rate da quella alla fine, `null` se la durata non cambia; `spese` sono pagate una volta per il cambio. `pulisciCambio` scarta i cambi non validi; i prestiti salvati prima non hanno `cambi` e restano come erano. Le offerte non hanno cambi.
+- **`PUT cambi`** riceve tutto l'elenco (`{ cambi, parametri }`): due cambi dalla stessa rata sono rifiutati. `parametri` serve quando un prestito fisso diventa variabile: l'indice e ogni quanto si aggiorna (`indice_nome`, `mesi_revisione`) restano nei parametri del prestito, come per il variabile. Le altre regole dell'indice (quando si legge, arrotondamento…) restano quelle di base.
+- **Surroga**: tre parametri nascosti. `estinto_dopo_rata` (0: non chiuso) ferma il prestito vecchio. `origine_prestito` e `origine_rata` dicono da dove è nato quello nuovo. `POST configura` con `nuovo: true` e `origine_rata` chiude il prestito vecchio a quella rata. `DELETE prestiti/<id>` del prestito nuovo lo riapre, se era stato chiuso proprio da quello.
+
+### Motore (`calcolo.js`)
+
+- **`Calcolo.tratti(dati)`**: il piano diviso in tratti. Il primo ha le condizioni della firma, poi uno per ogni cambio valido, in ordine. Ogni tratto ha `da`, `variabile`, `tasso` (il TAN a tasso fisso, lo spread nel variabile) e `fine`, l'ultima rata secondo quel tratto. Un cambio che non cade dentro il tratto precedente si ignora; con la maxirata i cambi non contano. `Calcolo.conVariabile(dati)`: almeno un tratto è variabile.
+- **Righe**: ogni riga ha `tratto`; `rateResidue` è calcolato sulla `fine` del suo tratto, così le rate prima di un cambio di durata restano quelle di prima. A tasso fisso l'indice vale zero (`origineEuribor: 'fisso'`), come prima. Nel variabile le revisioni ogni N mesi si contano dall'inizio del tratto. Se un tratto variabile comincia dopo uno fisso e non c'è un valore vero precedente, la stima parte dall'ultimo valore dell'indice inserito.
+- **Prima rata di un cambio**: il piano riparte dal debito di quel momento con le rate che restano. A tasso fisso la rata torna costante, ricalcolata con il TAN nuovo e con l'arrotondamento del contratto. All'italiana la quota diventa debito / rate che restano. Nel variabile le quote fissate all'inizio proseguono solo se la durata non cambia e il tratto prima era variabile; altrimenti si passa alla francese ricalcolata. `speseCambio` sta su quella riga.
+- **Chiusura**: con `estinto_dopo_rata` il piano si ferma a quella rata, e l'ultima riga ha `estinto`, il debito che restava. `Calcolo.costi`: gli interessi contano il debito passato come capitale restituito (`totaleRate + estinto − importo − spese per rata`); `speseCambi` entra nel costo totale. Nel TAEG le spese del cambio si pagano con la loro rata e il debito passato con l'ultima.
+- **Equivalenza**: senza cambi il piano è identico a quello del commit precedente su 400 prestiti generati (tutti i tipi, piani e regole; 64.465 righe confrontate campo per campo, più tutti i costi).
+
+### Pagine
+
+- **«Dati del prestito»** (`cambi.js`, carta `#carta-cambi` sotto i dati): spiega che cosa sono i cambi e dove trovarli (lettera o accordo con la banca, estratto conto della prima rata cambiata). Mostra l'elenco con l'effetto sulla rata («La rata passa da … a …»), «Modifica» e «Togli». Il modulo chiede: la prima rata con le condizioni nuove (elenco con il mese), fisso o variabile, il TAN o lo spread, l'indice e ogni quanto si aggiorna (solo se il prestito era fisso alla firma), le rate che restano (facoltative) e le spese del cambio. L'anteprima ricalcola la rata a ogni tasto. Quando un prestito fisso diventa variabile, i valori dell'indice vengono dai precaricati e poi da internet (`M.aggiornaTassi`, esposto da `tassi.js`). Nei dati in parole: «Tasso alla firma» e la durata del prestito chiuso.
+- **Variabile o fisso** (`M.variabile()`): ora vuol dire «ha almeno un tratto variabile». Così un fisso che diventa variabile ha le pagine Tassi e Calendario, le colonne dell'indice e la stima delle rate future (`M.perPiano`). Dove serve si guarda la riga: in testa, se la rata del mese è a tasso fisso, il riquadro è «Tasso fisso (TAN)» con il TAN del tratto e «cambia dalla rata di …»; «Quando si saprà» dice «già nota». Il Calendario e la pagina Tassi saltano le righe a tasso fisso.
+- **«Prestiti»**: la descrizione dice il tasso di adesso («Mutuo a tasso fisso · ora TAN 4,2%»). Il TAEG non c'è se il contratto è cambiato, perché vale per il contratto firmato. Sotto i numeri c'è la storia: chiuso dopo la rata di …, con il debito passato a «…»; nato dal debito di «…»; il contratto è cambiato N volte. «Nuovo prestito dal debito residuo» apre nella carta la scelta dell'ultima rata pagata con il prestito vecchio: di base l'ultima già finita, poi debito e rate che restavano. Da lì si apre la configurazione guidata (percorso breve) con tipo, importo uguale al debito, durata uguale alle rate che restavano, nome «… (nuovo)» e i campi `origine_*` già scritti. Il tasso del vecchio non si dà per noto: le condizioni nuove le ricava la guida. Un prestito chiuso dice «Chiuso». «Tutti i prestiti» non conta due volte il debito passato fra i soldi ricevuti. Eliminando il prestito nuovo, l'avviso dice che il vecchio torna aperto. Lo stesso pulsante c'è nella carta dei cambi («Hai cambiato banca?», `M.apriSurroga`).
+- **Costi e rimborso**: righe «Spese dei cambi del contratto» e «Debito passato al prestito nuovo», «TAN alla firma». Per un prestito chiuso l'estinzione anticipata dice che le simulazioni vanno fatte sul prestito nuovo. In testa: «Totale rate fino alla chiusura».
+
+### Prove
+
+- **Motore** (Node, `prova-cambi.js`, 29 controlli, contro conti fatti da capo). Fisso rivisto dal 3% al 4% (rate e quote di tutte le 240 rate, debito chiuso). Durata accorciata e allungata (anche all'italiana). Spread cambiato, uguale allo spread scritto a mano su tutte le rate dopo, per francese, quote fisse e italiana. Da fisso a variabile (formula della francese, indice letto, futuro stimato). Da variabile a fisso (rata costante). Revisione trimestrale contata dal tratto. Chiusura dopo la rata 60 con le spese di un cambio (righe, debito passato, interessi, costo totale, TAEG ricontrollato con il valore attuale). Cambi ignorati (oltre la fine, maxirata). Taratura con un cambio (8 rate su 8).
+- **Pagina** (Edge senza finestra, `prova-pagina.js`, 29 controlli, mutuo fisso inventato di 120.000 € in 240 rate al 3%). Modulo (campi giusti per fisso e variabile, anteprima), cambio salvato e piano ricalcolato, elenco, TAN in testa, «Tasso alla firma». Fisso → variabile (indice e revisione salvati, valori caricati, schede, rate con indice + spread), Calendario senza rilevazioni per le rate fisse. Cambio tolto. Scheda Prestiti: pannello con il debito giusto, guida con l'importo già scritto, prestito nuovo creato, vecchio chiuso alla rata 80, carte e storia, totali senza doppioni, piano del vecchio fino alla chiusura, costi, pagina Dati. Telefono a 390 px senza scorrimento orizzontale (Dati, Prestiti, Costi). Eliminato il nuovo, il vecchio torna aperto. Nessun errore nella pagina. Un mutuo variabile senza cambi apre tutte le pagine come prima.
+- **Non provato**: un contratto vero con un cambio; la guida percorsa fino in fondo per il prestito nuovo (provati l'apertura con l'importo e la conferma finale, cioè la stessa richiesta che fa la guida).

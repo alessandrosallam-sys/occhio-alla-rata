@@ -15,7 +15,7 @@
   function indici() {
     const riferimenti = new Map(), sostituite = new Map(), contati = new Map();
     for (const r of stato.piano.righe) {
-      if (r.eredita) continue;   // fra una revisione e l'altra il tasso non viene riletto
+      if (r.eredita || r.origineEuribor === 'fisso') continue;   // fra una revisione e l'altra (o a tasso fisso) l'indice non si legge
       riferimenti.set(r.riferimento, r);
       if (r.riferimentoManuale) sostituite.set(r.riferimentoAutomatico, r);
       r.conteggio.forEach((giorno, i) => { if (giorno !== r.riferimentoAutomatico) contati.set(giorno, { rata: r, ordine: i + 1 }); });
@@ -93,7 +93,7 @@
     $('#mesi-calendario').replaceChildren(...mesi);
 
     // Elenchi dell'anno
-    const rate = stato.piano.righe.filter(r => !r.eredita && +r.riferimento.slice(0, 4) === annoMostrato);
+    const rate = stato.piano.righe.filter(r => !r.eredita && r.origineEuribor !== 'fisso' && +r.riferimento.slice(0, 4) === annoMostrato);
     $('#riferimenti-anno').replaceChildren(...rate.map(r => {
       const tasso = r.mediaDi ? r.euribor : ix.tassi.get(r.riferimento);
       const valore = r.origineEuribor === 'manuale' ? `${perc(r.euribor, 3)} a mano` : tasso != null ? perc(tasso, 3) : r.riferimento <= stato.oggi ? '⚠ manca' : 'futura';

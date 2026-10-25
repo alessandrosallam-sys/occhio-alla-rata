@@ -47,8 +47,9 @@
   const api = (metodo, percorso, corpo) => Archivio.richiesta(metodo, percorso, corpo);
   // Nome dell'indice del contratto (Euribor 3 mesi, tasso BCE...), per i testi.
   const indice = () => (stato.dati && stato.dati.parametri.indice_nome) || 'indice';
-  // Mutuo a tasso variabile (con indice, rilevazioni, Euribor) oppure a tasso fisso (mutuo fisso, finanziamento).
-  const variabile = () => !stato.dati || (stato.dati.parametri.tipo_prestito || 'variabile') === 'variabile';
+  // Mutuo a tasso variabile (con indice, rilevazioni, Euribor) oppure a tasso fisso (mutuo fisso, finanziamento). Un
+  // prestito fisso che dopo un cambio del contratto diventa variabile conta come variabile: servono l'indice e i suoi valori.
+  const variabile = () => !stato.dati || Calcolo.conVariabile(stato.dati);
   // Versione della pagina, scelta nelle impostazioni (temi.js la mette su <html>): la semplice nasconde gli strumenti
   // per esperti (in stile.css la classe «solo-avanzata», qui schede e colonne del piano).
   const semplice = () => document.documentElement.dataset.versione === 'semplice';
@@ -207,7 +208,7 @@
     function quandoSiSapra(r) {
       if (!r) return 'il prestito finisce con questa rata';
       if (r.rataVera != null) return 'già addebitata';
-      if (!variabile()) return r.maxirata ? 'la maxirata finale: la cifra è già nota' : 'già nota: il tasso è fisso';
+      if (!variabile() || r.origineEuribor === 'fisso') return r.maxirata ? 'la maxirata finale: la cifra è già nota' : 'già nota: il tasso è fisso';
       if (r.origineEuribor === 'manuale') return 'già nota: l\'indice l\'hai scritto tu';
       if (r.origineEuribor === 'db') return r.eredita
         ? `già nota: il tasso resta quello di ${meseAnno(righe[r.rataRevisione - 1].inizio)}`
@@ -222,15 +223,18 @@
       return `stima: la cifra esatta si saprà ${media ? 'dopo il' : 'il'} ${giornoSettimana(giorno)} ${data(giorno)} (${quando})`;
     }
 
+    // Con i cambi del contratto il tasso del mese è quello del tratto in corso, e si dice quando cambia.
+    const elencoTratti = Calcolo.tratti(stato.dati), prossimoCambio = elencoTratti.find(t => t.da > corrente.n && righe[t.da - 1]);
+    const dettaglioFisso = ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}`
+      : prossimoCambio ? `cambia dalla rata di ${meseAnno(righe[prossimoCambio.da - 1].inizio)}` : elencoTratti.length > 1 ? 'dopo il cambio del contratto' : 'uguale fino all\'ultima rata';
     // Ogni riquadro: { etichetta, numero, formato, dettaglio, quota (barra), classe, icona, extra, voci: [etichetta, valore, nota, pallino] }.
-    const tassi = variabile()
+    const tassi = variabile() && corrente.origineEuribor !== 'fisso'
       ? (avanzata
         ? [{ etichetta: indice(), numero: corrente.euribor, formato: perc3, dettaglio: dettaglioEuribor, icona: 'grafico' },
           { etichetta: 'Tasso totale', numero: corrente.tassoTotale, formato: perc3, dettaglio: `indice + spread ${perc(corrente.spread, 3, 1)}`, icona: 'percento' }]
         : [{ etichetta: 'Tasso totale', numero: corrente.tassoTotale, formato: perc3, icona: 'percento',
           dettaglio: `${indice()} ${corrente.euribor != null ? perc(corrente.euribor, 3) : '?'} + spread ${perc(corrente.spread, 3, 1)}` }])
-      : [{ etichetta: 'Tasso fisso (TAN)', numero: p.tasso_fisso, formato: perc31, icona: 'percento',
-        dettaglio: ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}` : 'uguale fino all\'ultima rata' },
+      : [{ etichetta: 'Tasso fisso (TAN)', numero: elencoTratti.length > 1 ? corrente.tassoTotale : p.tasso_fisso, formato: perc31, icona: 'percento', dettaglio: dettaglioFisso },
       ...(avanzata ? [{ etichetta: 'TAEG', numero: Calcolo.costi(stato.dati, righe, true).taeg, formato: perc2, dettaglio: 'il costo vero, con spese e assicurazioni', icona: 'calcolatrice' }] : [])];
     const delMese = [
       { etichetta: nonPartito ? `Prima rata, ${meseAnno(corrente.inizio)}` : `Rata di ${meseAnno(corrente.inizio)}`, numero: rata(corrente), formato: euroV,
@@ -267,7 +271,10 @@
         dettaglio: `${future.length === 1 ? '1 rata' : future.length + ' rate'} da pagare, fino a ${meseAnno(ultima.inizio)}` + (variabile() ? ' (stima)' : ''),
         voci: [['Capitale da rimborsare', euro(future[0].debito)], ['Rata prevista più alta', euro(massima.rataCalcolata), mese(massima)]] });
     }
-    statistiche.push({ etichetta: 'Totale rate a fine piano', numero: ultima.cumulato, formato: euroV, icona: 'somma', dettaglio: `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}` });
+    // Chiuso da un prestito nuovo (surroga): il debito che restava non è nelle rate, l'ha pagato il prestito nuovo.
+    statistiche.push(ultima.estinto
+      ? { etichetta: 'Totale rate fino alla chiusura', numero: ultima.cumulato, formato: euroV, icona: 'somma', dettaglio: `più ${euro(ultima.estinto)} di debito passato al prestito nuovo; interessi e spese ${euro(ultima.cumulato + ultima.estinto - p.importo_iniziale)}` }
+      : { etichetta: 'Totale rate a fine piano', numero: ultima.cumulato, formato: euroV, icona: 'somma', dettaglio: `interessi e spese ${euro(ultima.cumulato - p.importo_iniziale)}` });
     if (avanzata && variabile() && pagate.length) {
       const basso = estremo(pagate, r => r.tassoTotale, -1), alto = estremo(pagate, r => r.tassoTotale, 1);
       statistiche.push({ etichetta: 'Tassi applicati', numero: somma(pagate, r => r.tassoTotale) / pagate.length, formato: perc3, icona: 'percento',
@@ -669,7 +676,7 @@
   // Tasso applicato a mano
   const rataScelta = () => formApplicato.giorno.value ? Calcolo.rataPerData(stato.piano.righe, formApplicato.giorno.value) : null;
   const manualiRata = n => stato.dati.rate.find(x => x.n === n) || {};
-  const ORIGINI = M.ORIGINI = { db: 'dai tassi inseriti', manuale: 'inserito a mano', previsione: 'previsione' };
+  const ORIGINI = M.ORIGINI = { db: 'dai tassi inseriti', manuale: 'inserito a mano', previsione: 'previsione', fisso: 'tasso fisso, senza indice' };
 
   function disegnaInfoRata() {
     const info = $('#info-rata'), r = rataScelta();

@@ -117,6 +117,11 @@
     // mostra la stessa proiezione in qualunque browser.
     previsione_modulo: { tipo: 'testo', iniziale: '', nascosto: true, lunghezza: 400 },
     soglia_differenza: { tipo: 'euro', min: 0, max: 1e6, iniziale: 0.005, nascosto: true },
+    // Surroga, o prestito rifatto per il debito che restava: quello vecchio si ferma dopo la rata «estinto_dopo_rata» (0:
+    // non chiuso) e quello nuovo ricorda da quale prestito e da quale rata è nato.
+    estinto_dopo_rata: { tipo: 'intero', min: 0, max: 600, iniziale: 0, nascosto: true },
+    origine_prestito: { tipo: 'testo', iniziale: '', nascosto: true, lunghezza: 40 },
+    origine_rata: { tipo: 'intero', min: 0, max: 600, iniziale: 0, nascosto: true },
   };
   // "rata_copiata" è la rata presa dal calcolo con «Compila le rate dal calcolo»: vale come rata vera finché
   // non se ne scrive una a mano, ma resta distinta perché non è stata controllata (taratura e guida la ignorano).
@@ -162,6 +167,19 @@
       richiedi(giorni > 0 && giorni <= 366, 'Il giorno in cui hai ricevuto il prestito deve venire prima dell\'inizio del primo periodo, al massimo un anno prima');
     }
   }
+  // Un cambio del contratto (Calcolo.tratti): dalla rata «dalla_rata» (dalla seconda) tasso fisso con il suo TAN, oppure
+  // variabile con il suo spread; «rate_residue» le rate da quella alla fine (null: la durata non cambia); «spese» pagate
+  // una volta per il cambio. Null se non è valido.
+  function pulisciCambio(c) {
+    if (!c || !Number.isInteger(c.dalla_rata) || c.dalla_rata < 2 || c.dalla_rata > 600 || !['fisso', 'variabile'].includes(c.tipo)) return null;
+    const fisso = c.tipo === 'fisso', tasso = fisso ? c.tasso_fisso : c.spread;
+    if (!numero(tasso) || (fisso ? tasso < 0 || tasso > 0.5 : tasso < -0.05 || tasso > 0.2)) return null;
+    const rate = c.rate_residue == null || c.rate_residue === 0 ? null : c.rate_residue;
+    if (rate != null && !(Number.isInteger(rate) && rate >= 1 && c.dalla_rata - 1 + rate <= 600)) return null;
+    const spese = c.spese == null ? 0 : c.spese;
+    if (!numero(spese) || spese < 0 || spese > 1e7) return null;
+    return { dalla_rata: c.dalla_rata, tipo: c.tipo, ...(fisso ? { tasso_fisso: tasso } : { spread: tasso }), rate_residue: rate, spese };
+  }
   const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));
 
   // ---------- Lettura e scrittura nel browser ----------
@@ -195,7 +213,7 @@
 
   let archivio = null, dati = null;
   const nuovoId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const vuoto = () => ({ id: nuovoId(), parametri: {}, rate: [], euribor: [], festivita: [] });
+  const vuoto = () => ({ id: nuovoId(), parametri: {}, rate: [], euribor: [], festivita: [], cambi: [] });
   const configurato = p => p.parametri.importo_iniziale > 0;
   // Apre un prestito; senza prestiti ne prepara uno vuoto, che la guida riempie (e che non viene salvato finché è vuoto).
   function scegli(id) {
@@ -277,9 +295,12 @@
     const euribor = (Array.isArray(grezzo.euribor) ? grezzo.euribor : []).filter(t => t && dataValida(t.giorno) && numero(t.tasso_360))
       .map(t => ({ giorno: t.giorno, tasso_360: t.tasso_360 }));
     const festivita = (Array.isArray(grezzo.festivita) ? grezzo.festivita : []).filter(dataValida);
-    return ordina({ parametri, rate, euribor, festivita });
+    // Dei cambi del contratto si tengono quelli validi, uno per rata.
+    const cambi = [...new Map((Array.isArray(grezzo.cambi) ? grezzo.cambi : []).map(pulisciCambio).filter(Boolean).map(c => [c.dalla_rata, c])).values()];
+    return ordina({ parametri, rate, euribor, festivita, cambi });
   }
   function ordina(d) {
+    d.cambi = (d.cambi || []).sort((a, b) => a.dalla_rata - b.dalla_rata);
     d.rate = d.rate.filter(r => r.data_riferimento != null || CAMPI_RATA.some(c => r[c] != null)).sort((a, b) => a.n - b.n);
     d.euribor = [...new Map(d.euribor.map(t => [t.giorno, t])).values()].sort((a, b) => a.giorno.localeCompare(b.giorno));
     d.festivita = [...new Set(d.festivita)].sort();
@@ -338,6 +359,10 @@
         if (nuovi.length) salvaTassi(nuovi);
         // Rate già pagate inserite nella guida.
         for (const r of corpo.rate || []) salvaRata(r.n, { rata_vera: r.rata_vera, quota_capitale: r.quota_capitale });
+        // Un prestito nuovo nato dal debito residuo di un altro (surroga, o prestito rifatto): quello vecchio si chiude
+        // dopo la rata da cui è nato.
+        const origine = corpo.nuovo && parametri.origine_rata > 0 && archivio.prestiti.find(x => x.id === parametri.origine_prestito && x !== dati && configurato(x));
+        if (origine) origine.parametri.estinto_dopo_rata = parametri.origine_rata;
         // Il primo prestito diventa il principale.
         if (archivio.prestiti.filter(configurato).length === 1) archivio.principale = dati.id;
       }
@@ -347,6 +372,10 @@
       else if (metodo === 'DELETE' && risorsa === 'principale') archivio.principale = null;
       else if (metodo === 'DELETE' && risorsa === 'prestiti') {
         richiedi(esiste(chiave), 'Prestito non trovato');
+        // Eliminato un prestito nato da una surroga: quello vecchio torna aperto, se era stato chiuso proprio da questo.
+        const via = archivio.prestiti.find(p => p.id === chiave).parametri;
+        const vecchio = via.origine_prestito && archivio.prestiti.find(p => p.id === via.origine_prestito);
+        if (vecchio && via.origine_rata > 0 && vecchio.parametri.estinto_dopo_rata === via.origine_rata) vecchio.parametri.estinto_dopo_rata = 0;
         archivio.prestiti = archivio.prestiti.filter(p => p.id !== chiave);
         scegli(archivio.attivo === chiave ? null : archivio.attivo);
         // Eliminato il principale, lo diventa il primo che resta.
@@ -357,6 +386,13 @@
       else if (metodo === 'PUT' && risorsa === 'offerte') { const o = offerta(chiave); o.parametri = { ...o.parametri, ...controllaParametri(corpo, false) }; }
       else if (metodo === 'DELETE' && risorsa === 'offerte') { offerta(chiave); archivio.offerte = archivio.offerte.filter(o => o.id !== chiave); }
       else if (metodo === 'PUT' && risorsa === 'parametri') { dati.parametri = { ...dati.parametri, ...controllaParametri(corpo, false) }; controllaInsieme({ ...predefiniti(), ...dati.parametri }); }
+      // Cambi del contratto: tutto l'elenco, più i parametri che servono (l'indice, se un prestito fisso diventa variabile).
+      else if (metodo === 'PUT' && risorsa === 'cambi') {
+        richiedi(Array.isArray(corpo.cambi) && corpo.cambi.length <= 50, 'Elenco dei cambi non valido');
+        dati.cambi = corpo.cambi.map(c => { const pulito = pulisciCambio(c); richiedi(pulito, `Cambio del contratto non valido${c && c.dalla_rata ? ` (rata ${c.dalla_rata})` : ''}`); return pulito; });
+        richiedi(new Set(dati.cambi.map(c => c.dalla_rata)).size === dati.cambi.length, 'Due cambi non possono partire dalla stessa rata');
+        if (corpo.parametri) dati.parametri = { ...dati.parametri, ...controllaParametri(corpo.parametri, false) };
+      }
       else if (metodo === 'PUT' && risorsa === 'rate') salvaRata(Number(chiave), corpo);
       // Più rate in una volta: righe = [{ n, ...campi }].
       else if (metodo === 'POST' && risorsa === 'rate') {

@@ -491,7 +491,7 @@
       const r = rate.get(riga.n) || { n: riga.n, data_riferimento: null, tasso_applicato: null, euribor: null, spread: null };
       rate.set(riga.n, { ...r, rata_vera: riga.rata_vera, quota_capitale: riga.quota_capitale });
     }
-    return { parametri: { ...b }, rate: [...rate.values()].sort((x, y) => x.n - y.n),
+    return { parametri: { ...b }, cambi: esistenti.cambi || [], rate: [...rate.values()].sort((x, y) => x.n - y.n),
       euribor: [...tassi.values()].sort((x, y) => x.giorno.localeCompare(y.giorno)), festivita: [...festivita].sort() };
   }
   // Quante delle rate inserite tornano con le regole della bozza; se non tornano tutte, cerca regole migliori.
@@ -1766,8 +1766,9 @@
     if (riapertura) for (const r of stato.dati.rate) if (r.rata_vera != null || r.quota_capitale != null) rate[r.n] = { rata: perCampo(r.rata_vera), quota: perCampo(r.quota_capitale), esisteva: true };
     // Senza prestiti si può essere arrivati dalla scheda «Offerte»: «Annulla» ci riporta.
     const daOfferte = !riapertura && !Archivio.configurato() && (stato.soloOfferte || Archivio.offerte().length > 0);
-    // Un'offerta che si comincia a seguire: il suo tasso e le sue spese sono già sicuri.
-    const noti = !partenza ? {} : (partenza.tipo_prestito || 'variabile') === 'variabile' ? { indice_nome: partenza.indice_nome, spread: partenza.spread, spese_rata: partenza.spese_rata || 0 }
+    // Un'offerta che si comincia a seguire: il suo tasso e le sue spese sono già sicuri. Un prestito nuovo nato dal debito
+    // di un altro (prestiti.js) no: le condizioni nuove le ricava la guida.
+    const noti = !partenza || partenza.origine_prestito ? {} : (partenza.tipo_prestito || 'variabile') === 'variabile' ? { indice_nome: partenza.indice_nome, spread: partenza.spread, spese_rata: partenza.spese_rata || 0 }
       : { tasso_fisso: partenza.tasso_fisso, spese_rata: partenza.spese_rata || 0 };
     Object.assign(guida, { percorso: riapertura ? 'completo' : 'breve', passo: 0, massimo: riapertura ? PASSI_COMPLETI.length - 1 : 0, riapertura, nuovo: !riapertura && nuovo && Archivio.configurato(), daOfferte, rate,
       righeRate: Math.max(12, ...Object.keys(rate).map(Number)), caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null, dubbio: null,
@@ -1988,9 +1989,11 @@
       return;
     }
     const voci = [['Tipo', Archivio.categoria(p).etichetta], ['Importo prestato', euro(p.importo_iniziale)],
-      ['Durata', `${p.numero_rate} rate mensili (${durata(p.numero_rate)}), da ${M.meseAnno(righe[0].inizio)} a ${M.meseAnno(righe[righe.length - 1].inizio)}`],
+      ['Durata', righe[righe.length - 1].estinto
+        ? `${p.numero_rate} rate mensili (${durata(p.numero_rate)}) alla firma, da ${M.meseAnno(righe[0].inizio)}; chiuso dopo la rata ${righe.length}, di ${M.meseAnno(righe[righe.length - 1].inizio)}`
+        : `${p.numero_rate} rate mensili (${durata(p.numero_rate)})${righe.length !== p.numero_rate + (p.tipo_prestito === 'maxirata' ? 1 : 0) ? ' alla firma, poi cambiate' : ''}, da ${M.meseAnno(righe[0].inizio)} a ${M.meseAnno(righe[righe.length - 1].inizio)}`],
       ...(p.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(p.maxirata)]] : []), ...(p.anticipo > 0 ? [['Anticipo', euro(p.anticipo)]] : []),
-      ['Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
+      [stato.dati.cambi && stato.dati.cambi.length ? 'Tasso alla firma' : 'Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
       ...descriviRegole(p),
       ...(p.spese_iniziali > 0 ? [['Spese iniziali', euro(p.spese_iniziali)]] : []),
       ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ') + (p.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),

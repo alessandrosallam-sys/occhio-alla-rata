@@ -105,7 +105,7 @@
   const codiceDi = dati => { const propria = Internet.riconosci(dati.parametri.indice_nome); return propria ? propria.codice : 'contratto'; };
   M.modelloMigliore = dati => migliore(codiceDi(dati), dati);
   M.perPiano = function perPiano(dati) {
-    if ((dati.parametri.tipo_prestito || 'variabile') !== 'variabile') return null;
+    if (!Calcolo.conVariabile(dati)) return null;
     const auto = (dati.parametri.previsione_modello || 'auto') === 'auto', modello = auto ? M.modelloMigliore(dati) : dati.parametri.previsione_modello;
     if (modello === 'media' || !Mod.MODELLI[modello]) return null;   // la media delle variazioni la calcola il piano da sé
     let opzioni = {};

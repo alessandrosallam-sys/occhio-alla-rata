@@ -27,13 +27,15 @@
       ...(c.speseIniziali > 0 ? [riga('Spese iniziali', euro(c.speseIniziali))] : []),
       ...(c.assicurazioni > 0 ? [riga('Assicurazioni', euro(c.assicurazioni), c.assicurazioneNelTaeg ? null : 'facoltativa: conta in quanto paghi, non nel TAEG')] : []),
       ...(c.speseAnnue > 0 ? [riga('Spese annuali', euro(c.speseAnnue))] : []),
+      ...(c.speseCambi > 0 ? [riga('Spese dei cambi del contratto', euro(c.speseCambi), 'pagate una volta, quando il contratto è cambiato')] : []),
+      ...(c.estinto > 0 ? [riga('Debito passato al prestito nuovo', euro(c.estinto), `il capitale che restava dopo la rata di ${M.meseAnno(ultima.inizio)}: l'ha pagato il prestito nuovo`)] : []),
       riga('Costo totale del prestito', euro(c.costoTotale), 'tutto quello che paghi oltre al capitale', 'totale'),
       riga('Totale da pagare', euro(c.totaleDaPagare), p.spese_nel_prestito && c.ricevuto !== p.importo_iniziale
         ? 'soldi ricevuti + costo totale: le spese iniziali sono già dentro le rate' : 'capitale + costo totale', 'totale'),
       ...(p.anticipo > 0 ? [riga('In tutto, con l\'anticipo', euro(p.anticipo + c.totaleDaPagare), 'quanto paghi per l\'acquisto, dal primo all\'ultimo euro', 'totale')] : []),
     ];
     const tassi = [
-      ...(variabile ? [] : [riga('TAN', perc(p.tasso_fisso, 3, 1), 'il tasso usato per gli interessi')]),
+      ...(variabile ? [] : [riga(stato.dati.cambi && stato.dati.cambi.length ? 'TAN alla firma' : 'TAN', perc(p.tasso_fisso, 3, 1), 'il tasso usato per gli interessi')]),
       riga(variabile ? 'TAEG stimato' : 'TAEG calcolato', c.taeg == null ? '—' : perc(c.taeg, 2), 'il costo totale in percentuale all\'anno: serve a confrontare prestiti diversi'),
       ...(p.taeg_dichiarato > 0 ? [riga('TAEG del contratto', perc(p.taeg_dichiarato, 3, 2))] : []),
     ];
@@ -155,6 +157,8 @@
     // Un altro prestito: si riparte da capo. Una rata non più valida (il mese è passato): si passa alla prima possibile.
     if (scelta.prestito !== stato.dati.id) Object.assign(scelta, { dopo: null, tutto: true, importo: '', modo: 'rata', penale: '', prestito: stato.dati.id });
     if (scelta.dopo == null || scelta.dopo < prima || scelta.dopo >= righe.length) scelta.dopo = Math.min(prima, righe.length - 1);
+    const chiuso = righe[righe.length - 1].estinto;
+    if (chiuso) { carta.replaceChildren(crea('h3', {}, 'Estinzione anticipata'), crea('p', { className: 'nota' }, `Questo prestito è stato chiuso dopo la rata di ${M.meseAnno(righe[righe.length - 1].inizio)}: il debito che restava (${euro(chiuso)}) è passato al prestito nuovo. Le simulazioni di rimborso falle su quello.`)); return; }
     if (righe.length < 2 || prima >= righe.length) { carta.replaceChildren(crea('h3', {}, 'Estinzione anticipata'), crea('p', { className: 'nota' }, 'Il prestito è alla fine: non c\'è più niente da estinguere in anticipo.')); return; }
     const esito = simula(stato.dati, righe);
     // Il modulo si ridisegna solo se non lo si sta compilando (altrimenti cambiano soltanto i risultati), oppure se

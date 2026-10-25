@@ -25,7 +25,7 @@
   // Rate che leggono davvero il tasso dal database, per data di riferimento.
   const usiDeiTassi = () => new Map(stato.piano.righe.filter(r => r.origineEuribor === 'db' && !r.eredita && !r.mediaDi).map(r => [r.riferimento, r]));
   // Rate per data di riferimento, qualunque sia l'origine del tasso.
-  const ratePerRiferimento = () => new Map(stato.piano.righe.filter(r => !r.eredita && !r.mediaDi).map(r => [r.riferimento, r]));
+  const ratePerRiferimento = () => new Map(stato.piano.righe.filter(r => !r.eredita && !r.mediaDi && r.origineEuribor !== 'fisso').map(r => [r.riferimento, r]));
   // La serie da mostrare: tutta la storia dell'indice (valori nel programma, scaricati e inseriti), scelta nella sezione
   // delle proiezioni (previsioni.js); se quella sezione non c'è, i soli valori inseriti.
   const serieCompleta = () => (M.serieGrafico ? M.serieGrafico() : { nome: M.indice(), valori: stato.dati.euribor, delContratto: true });
@@ -308,7 +308,7 @@
   function disegnaModuli() {
     const righe = stato.piano.righe;
     const mancanti = righe.filter(M.tassoMancante);
-    const prossima = righe.find(r => r.riferimento > stato.oggi);
+    const prossima = righe.find(r => r.riferimento > stato.oggi && r.origineEuribor !== 'fisso');
     for (const modulo of moduli) {
       const blocco = $('.tassi-mancanti', modulo), pannello = modulo.closest('details');
       if (pannello && mancanti.length && !pannello.dataset.aperto) { pannello.open = true; pannello.dataset.aperto = '1'; }
@@ -443,6 +443,7 @@
     }
   }
   M.dopoAvvio.push(aggiornaAutomatico);
+  M.aggiornaTassi = aggiornaAutomatico;   // anche quando un prestito fisso diventa variabile (cambi.js)
 
   // ---------- Lo storico dell'Euribor sul dispositivo (storico.js) ----------
   // All'apertura, con la stessa casella dello scarico automatico, scarica i giorni che mancano allo storico dal 1999 di
