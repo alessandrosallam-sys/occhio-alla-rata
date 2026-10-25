@@ -28,6 +28,12 @@
     importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del prestito (€)', aiuto: 'Il capitale prestato dalla banca o dalla finanziaria.' },
     data_prima_rata: { tipo: 'data', obbligatorio: true, etichetta: 'Inizio del primo periodo',
       aiuto: 'Il giorno da cui partono gli interessi della prima rata: di solito il 1° del mese a cui la rata si riferisce. Ogni periodo dura un mese a partire da questo giorno.' },
+    // Preammortamento: il giorno dell'accredito, se è prima dell'inizio del primo periodo (vuoto: nessun preammortamento).
+    data_erogazione: { tipo: 'data', qualsiasiGiorno: true, iniziale: '', etichetta: 'Giorno in cui hai ricevuto il prestito',
+      aiuto: 'Solo se la prima rata è arrivata più di un mese dopo: per i giorni in più la banca chiede gli interessi di «preammortamento». Lascia vuoto se non lo sai.' },
+    preammortamento: { tipo: 'scelta', iniziale: 'prima_rata', etichetta: 'Gli interessi dei giorni prima del piano', se: p => !!p.data_erogazione,
+      opzioni: [{ valore: 'prima_rata', etichetta: 'Dentro la prima rata', aiuto: 'La prima rata è più alta delle altre: il caso più comune.' },
+        { valore: 'a_parte', etichetta: 'Pagati a parte', aiuto: 'Addebitati da soli, prima della prima rata.' }] },
     numero_rate: { tipo: 'intero', min: 1, max: 600, obbligatorio: true, etichetta: 'Numero di rate mensili', aiuto: 'Ad esempio 360 per 30 anni, 240 per 20, 60 per 5. Con la maxirata, solo le rate normali che vengono prima.' },
     // Con la maxirata le rate normali sono "numero_rate"; la maxirata è una rata in più, il mese dopo l'ultima.
     maxirata: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Maxirata finale (€)', se: maxirata,
@@ -50,6 +56,11 @@
     spese_nel_prestito: { tipo: 'scelta', iniziale: 0, etichetta: 'Come hai pagato le spese iniziali', se: p => p.spese_iniziali > 0 || p.assicurazione_iniziale > 0,
       opzioni: [{ valore: 0, etichetta: 'A parte, con soldi miei', aiuto: 'Le hai pagate alla firma: hai ricevuto tutto l\'importo del prestito.' },
         { valore: 1, etichetta: 'Dentro il prestito', aiuto: 'Sono state tolte dalla somma che hai ricevuto, oppure aggiunte all\'importo prestato: le restituisci con le rate.' }] },
+    // Un'assicurazione facoltativa non conta nel TAEG (per legge ci vanno solo i servizi obbligatori per avere il prestito),
+    // ma resta nel costo totale, perché si paga. Di base obbligatoria: i prestiti salvati prima restano come erano.
+    assicurazione_facoltativa: { tipo: 'scelta', iniziale: 0, etichetta: 'L\'assicurazione era obbligatoria?', se: p => p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0,
+      opzioni: [{ valore: 0, etichetta: 'Sì, la chiedevano per darmi il prestito', aiuto: 'Conta nel TAEG, come vuole la legge.' },
+        { valore: 1, etichetta: 'No, l\'ho scelta io', aiuto: 'Non conta nel TAEG; resta nel costo totale, perché la paghi.' }] },
 
     tasso_fisso: { tipo: 'percento', min: 0, max: 0.5, obbligatorio: true, etichetta: 'Tasso annuo nominale, TAN (%)', se: p => !variabile(p),
       aiuto: 'Il tasso scritto nel contratto: «TAN» o «tasso annuo nominale». Per un finanziamento «a tasso zero» scrivi 0.' },
@@ -126,8 +137,9 @@
       const nome = campo.etichetta || chiave;
       if (campo.tipo === 'testo') { richiedi(typeof valore === 'string' && valore.trim().length <= (campo.lunghezza || 80), `Testo non valido: ${nome}`); puliti[chiave] = valore.trim(); }
       else if (campo.tipo === 'data') {
+        if (!campo.obbligatorio && (valore == null || valore === '')) { puliti[chiave] = ''; continue; }
         richiedi(dataValida(valore), `Data non valida: ${nome}`);
-        richiedi(+valore.slice(8) <= 28, `${nome}: scegli un giorno fra 1 e 28, così ogni mese ha il suo periodo`);
+        if (!campo.qualsiasiGiorno) richiedi(+valore.slice(8) <= 28, `${nome}: scegli un giorno fra 1 e 28, così ogni mese ha il suo periodo`);
         puliti[chiave] = valore;
       } else if (campo.tipo === 'scelta') { richiedi(campo.opzioni.some(o => o.valore === valore), `Scelta non valida: ${nome}`); puliti[chiave] = valore; }
       else {
@@ -145,6 +157,10 @@
   // Controlli che riguardano più parametri insieme.
   function controllaInsieme(p) {
     if (maxirata(p) && p.maxirata > 0 && p.importo_iniziale > 0) richiedi(p.maxirata < p.importo_iniziale, 'La maxirata deve essere più bassa dell\'importo prestato');
+    if (p.data_erogazione && p.data_prima_rata) {
+      const giorni = (Date.parse(p.data_prima_rata) - Date.parse(p.data_erogazione)) / 864e5;
+      richiedi(giorni > 0 && giorni <= 366, 'Il giorno in cui hai ricevuto il prestito deve venire prima dell\'inizio del primo periodo, al massimo un anno prima');
+    }
   }
   const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));
 

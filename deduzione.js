@@ -97,17 +97,18 @@
       // Una quota capitale scritta a mano il motore la usa per il debito: qui lo stesso.
       const qc = c.manuali[i] != null ? c.manuali[i] : res === 1 ? D : Math.min(D, qp);
       if (h < c.quote.length && c.quote[h].i === i) quote[h++] = qp;
-      if (j < m && c.k[j] === i) rate[j++] = tasso * D * c.f[i] + qc;
+      // Prima rata con il preammortamento (c.pre: la parte d'anno dei giorni fra l'accredito e l'inizio del piano).
+      if (j < m && c.k[j] === i) rate[j++] = tasso * D * c.f[i] + qc + (i === 0 && c.pre ? tasso * c.P * c.pre : 0);
       D -= qc;
     }
     return { rate, quote };
   }
   // Debito e quota capitale di ogni rata vera quando non dipendono dal tasso (piano fissato o all'italiana).
   function percorso(c, piano, tp, rataPiano) {
-    const salva = c.x, f = c.f;
-    c.x = new Float64Array(c.fino); c.f = new Float64Array(c.fino).fill(1);   // con tasso 1 e indice 0 la "rata" è debito + quota
+    const salva = c.x, f = c.f, pre = c.pre;
+    c.x = new Float64Array(c.fino); c.f = new Float64Array(c.fino).fill(1); c.pre = 0;   // con tasso 1 e indice 0 la "rata" è debito + quota
     const conDebito = simula(c, piano, 1, tp, rataPiano).rate, senza = simula(c, piano, 0, tp, rataPiano).rate;
-    c.x = salva; c.f = f;
+    c.x = salva; c.f = f; c.pre = pre;
     return { D: conDebito.map((v, j) => v - senza[j]), qc: senza };
   }
 
@@ -199,7 +200,7 @@
     const js = usabili(c);
     if (!js.length) return null;
     const n = js.length, a = new Float64Array(n), y = new Float64Array(n);
-    js.forEach((j, h) => { const i = c.k[j]; a[h] = via.D[j] * c.f[i]; y[h] = c.r[j] - via.qc[j] - a[h] * c.x[i]; });
+    js.forEach((j, h) => { const i = c.k[j]; a[h] = via.D[j] * c.f[i] + (i === 0 && c.pre ? c.P * c.pre : 0); y[h] = c.r[j] - via.qc[j] - a[h] * c.x[i]; });
     // Le spese si separano da theta solo se il peso degli interessi cambia abbastanza fra una rata e l'altra: spostando
     // theta di un centesimo di punto le rate devono cambiare, l'una rispetto all'altra, di almeno un centesimo di euro.
     let sa = 0, saa = 0;
@@ -322,7 +323,7 @@
       const k = vere.map(r => r.n - 1), manuali = new Array(fino).fill(null);
       for (const q of scritte) manuali[q.n - 1] = q.quota_capitale;
       return { P: base.importo_iniziale, N: n, Nn: base.numero_rate, M, fino, k, r: vere.map(r => r.rata_vera), quote: scritte.map(q => ({ i: q.n - 1, valore: q.quota_capitale })),
-        manuali, valide: k.map(() => true), x: new Float64Array(fino), f: null };
+        manuali, valide: k.map(() => true), x: new Float64Array(fino), f: null, pre: 0 };
     };
     // Una combinazione stimata: si ricorda se è la più vicina finora e, se l'errore è abbastanza piccolo da poter
     // tornare, si contano le rate giuste con i numeri arrotondati. "theta" è lo spread (variabile) o il TAN (fisso).
@@ -357,7 +358,10 @@
           if (th == null || !Number.isFinite(th)) continue;
           for (const theta of arrotondati(th)) {
             const esito = contaCon(theta, 0, sp);
-            if (esito.rate + esito.senza === vere.length && esito.quote === scritte.length) trovati.push({ ...t, theta, tp: 0, ...esito, separate: false });
+            // Tutte le rate, o tutte tranne una quando c'è la prima: può contenere gli interessi di preammortamento, e allora
+            // la guida chiede il giorno dell'accredito.
+            const mancano = vere.length - esito.rate - esito.senza, primaFraLeVere = vere.length >= 3 && vere[0].n === 1;
+            if ((mancano === 0 || (mancano === 1 && primaFraLeVere)) && esito.quote === scritte.length) trovati.push({ ...t, theta, tp: 0, ...esito, separate: false });
           }
         }
       }
@@ -365,6 +369,10 @@
 
     for (const [d, data] of date.entries()) {
       const lista = periodi(data, fino);
+      // Preammortamento: giorni fra l'accredito (base.data_erogazione) e l'inizio del primo periodo, in parte d'anno
+      // secondo il conteggio, come nel motore. Pagati a parte non toccano la prima rata.
+      const giorniPre = base.data_erogazione && noti.preammortamento !== 'a_parte' ? (Date.parse(data) - Date.parse(base.data_erogazione)) / MS_GIORNO : 0;
+      const preDi = conteggio => giorniPre > 0 && giorniPre <= 366 ? giorniPre / (conteggio === 'eff_365_366' ? lista[0].anno : conteggio === 'eff_365' ? 365 : 360) : 0;
       const frazioniDi = {};
       for (const conteggio of Object.keys(CONTEGGI)) frazioniDi[conteggio] = frazioni(lista, conteggio);
 
@@ -373,7 +381,7 @@
         const M = tipo === 'maxirata' && base.maxirata > 0 && base.maxirata < base.importo_iniziale ? base.maxirata : 0;
         const c = contesto(M, base.numero_rate + (M ? 1 : 0)), viaItaliana = percorso(c, 'italiana', 0, 0);
         for (const conteggio of ammessi('conteggio_giorni', Object.keys(CONTEGGI))) {
-          c.f = frazioniDi[conteggio];
+          c.f = frazioniDi[conteggio]; c.pre = preDi(conteggio);
           for (const piano of ammessi('tipo_piano', M ? ['francese'] : ['francese', 'italiana'])) {
             for (const arrotonda of piano === 'italiana' ? ['centesimo'] : ammessi('arrotonda_rata', Object.keys(ARROTONDAMENTI))) {
               const rataDi = tan => Calcolo.arrotondaRata(Calcolo.rataConMaxirata(c.P, tan / 12, c.Nn, M), arrotonda);
@@ -432,7 +440,7 @@
               c.x = Float64Array.from(perRata, x => { if (x != null) ultimo = floor ? Math.max(x, noti.indice_minimo || 0) : x; return ultimo; });
               c.valide = c.k.map(i => perRata[i] != null);
               for (const conteggio of ammessi('conteggio_giorni', Object.keys(CONTEGGI))) {
-                c.f = frazioniDi[conteggio];
+                c.f = frazioniDi[conteggio]; c.pre = preDi(conteggio);
                 const comune = { tipo: 'variabile', data, d, codice: s.codice, nomeSerie: s.nome, regola, rango, revisione, floor, conteggio };
                 for (const piano of ammessi('tipo_piano', Object.keys(PIANI))) {
                   let prova, contaCon;

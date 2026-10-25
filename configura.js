@@ -49,7 +49,8 @@
       const testo = $('input', contenitore).value.trim();
       if (!testo) {
         if (campo.obbligatorio) return { errore: `Manca: ${campo.etichetta}` };
-        if (campo.tipo === 'testo' || campo.tipo === 'data') { if (campo.tipo === 'testo') valori[chiave] = ''; continue; }
+        // Una data facoltativa svuotata si salva vuota (così si può togliere, ad esempio il giorno dell'accredito).
+        if (campo.tipo === 'testo' || campo.tipo === 'data') { valori[chiave] = ''; continue; }
         valori[chiave] = campo.iniziale != null ? campo.iniziale : 0;
         continue;
       }
@@ -67,6 +68,9 @@
     for (const chiave of chiavi) {
       const input = $(`[data-campo="${chiave}"] input[type="text"]`, modulo);
       if (input && CAMPI[chiave].tipo !== 'testo') { const v = leggiNumero(input.value); if (typeof v === 'number' && !Number.isNaN(v)) numeri[chiave] = v; }
+      // Anche le date contano (il giorno dell'accredito fa comparire la domanda sul preammortamento).
+      const giorno = CAMPI[chiave].tipo === 'data' && $(`[data-campo="${chiave}"] input[type="date"]`, modulo);
+      if (giorno) numeri[chiave] = giorno.value;
     }
     const p = { ...base, ...numeri, ...letti };
     for (const chiave of chiavi) {
@@ -132,6 +136,16 @@
       cosa: 'Ci sono due modi. O le paghi a parte, con soldi tuoi, e ricevi tutta la somma prestata; oppure la banca le toglie dalla somma che ti accredita, o le aggiunge al prestito, e le restituisci con le rate. Il TAEG non cambia; cambia quanto paghi in tutto, perché nel secondo caso le spese sono già dentro le rate.',
       dove: 'Confronta la somma che hai ricevuto con l\'importo del contratto: se è più bassa, o se l\'importo è più alto del prezzo di quello che hai comprato, le spese sono dentro il prestito. Nel SECCI l\'«importo totale del credito» è la somma che ricevi davvero.',
       seNonSai: 'Lascia «A parte»: cambia solo il totale da pagare, non le rate.' },
+    data_erogazione: { domanda: 'Quando ti hanno accreditato il prestito?',
+      cosa: 'Se il prestito ti è stato accreditato qualche settimana prima dell\'inizio del piano, per quei giorni la banca chiede gli interessi: si chiamano interessi di preammortamento e di solito finiscono nella prima rata, che è più alta delle altre.',
+      dove: 'Nell\'estratto conto, alla voce dell\'accredito, oppure nel contratto alla voce «data di erogazione».', seNonSai: 'Lascia vuoto: se la prima rata non torna, te lo chiedo io.' },
+    preammortamento: { domanda: 'Come hai pagato gli interessi dei giorni prima del piano?',
+      cosa: 'Di solito sono dentro la prima rata, che per questo è più alta. Alcune banche li addebitano a parte, prima della prima rata.',
+      dove: 'Confronta la prima rata con le altre: se è più alta, sono dentro la prima rata.', seNonSai: 'Lascia «Dentro la prima rata».' },
+    assicurazione_facoltativa: { domanda: 'L\'assicurazione era obbligatoria per avere il prestito?',
+      cosa: 'Il TAEG, per legge, conta solo le assicurazioni che la banca chiede per concedere il prestito. Una polizza che hai scelto tu, anche se te l\'ha proposta la banca, non entra nel TAEG: la paghi comunque, quindi resta nel costo totale.',
+      dove: 'Nel SECCI o nel PIES: le assicurazioni obbligatorie sono fra i costi compresi nel TAEG; quelle facoltative sono indicate a parte, di solito con la scritta «facoltativa» o «non obbligatoria».',
+      seNonSai: 'Lascia «Sì»: è il caso più comune per le polizze sulla casa dei mutui e per quelle dei finanziamenti legati allo stipendio.' },
     arrotonda_rata: { domanda: 'La banca arrotonda la rata?',
       cosa: 'A tasso fisso la rata esatta ha tanti decimali. Quasi sempre viene arrotondata al centesimo, ma alcune banche e finanziarie la arrotondano ai 10 centesimi o all\'euro (ad esempio 209,09 diventa 209,10). In quel caso l\'ultima rata è un po\' più bassa e chiude il debito.',
       dove: 'Confronta la rata del contratto con quella che calcola il programma: se differiscono di pochi centesimi è un arrotondamento.',
@@ -228,7 +242,7 @@
     { fase: 4, tipo: 'domanda', chiave: 'stima', titolo: 'Come stimo le rate future?', icona: 'grafico', se: () => variabile(guida.bozza) },
     { fase: 4, tipo: 'domanda', chiave: 'dettagli', titolo: 'Vuoi aggiungere spese e assicurazioni?', icona: 'scudo' },
     // Solo se l'utente ha detto di sì, e solo quelle che hanno senso per il suo prestito.
-    ...['spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'spese_annue', 'taeg_dichiarato', 'valore_riferimento', 'anticipo']
+    ...['spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_annue', 'taeg_dichiarato', 'valore_riferimento', 'anticipo']
       .map(chiave => ({ fase: 4, tipo: 'domanda', chiave, icona: chiave === 'valore_riferimento' ? 'casa' : 'scudo', se: () => conDettagli() && (!CAMPI[chiave].se || CAMPI[chiave].se(guida.bozza)) })),
     // Prima di mostrare il piano: riempire le rate passate che l'utente non ha scritto?
     { fase: 4, tipo: 'domanda', chiave: 'riempi', titolo: 'Riempio io le rate che non hai scritto?', icona: 'piano', se: () => guida.daRiempire.length > 0 },
@@ -253,6 +267,7 @@
     { fase: 2, tipo: 'domanda', chiave: 'assicurazione_iniziale', titolo: 'C\'è un\'assicurazione da pagare all\'inizio?', icona: 'scudo' },
     { fase: 2, tipo: 'domanda', chiave: 'assicurazione_rata', titolo: 'C\'è un\'assicurazione da pagare ogni mese?', icona: 'scudo' },
     { fase: 2, tipo: 'domanda', chiave: 'spese_nel_prestito', titolo: 'Come si pagano le spese iniziali?', icona: 'scudo', se: b => b.spese_iniziali > 0 || b.assicurazione_iniziale > 0 },
+    { fase: 2, tipo: 'domanda', chiave: 'assicurazione_facoltativa', titolo: 'L\'assicurazione è obbligatoria?', icona: 'scudo', se: b => b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 },
     { fase: 2, tipo: 'domanda', chiave: 'anticipo', titolo: 'Paghi un anticipo al venditore?', icona: 'euro', se: () => ['auto', 'maxirata', 'acquisto'].includes(guida.categoria) },
     { fase: 2, tipo: 'domanda', chiave: 'taeg_dichiarato', titolo: 'Che TAEG c\'è scritto nell\'offerta?', icona: 'percento' },
     { fase: 3, tipo: 'riepilogo-offerta', titolo: 'La tua offerta, calcolata', icona: 'spunta' },
@@ -262,9 +277,9 @@
   // "se": il passo serve solo per alcuni prestiti (ad esempio gli aggiornamenti del tasso solo per il variabile).
   const PASSI_COMPLETI = [
     { titolo: 'Prima di iniziare', tipo: 'benvenuto', icona: 'bussola', campi: [] },
-    { titolo: 'Il prestito', icona: 'documento', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'valore_riferimento'],
+    { titolo: 'Il prestito', icona: 'documento', campi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'valore_riferimento'], avanzati: ['data_erogazione', 'preammortamento'],
       testo: 'Cominciamo dai dati di base. Li trovi tutti nella prima pagina del contratto o nel piano di ammortamento.' },
-    { titolo: 'Spese e assicurazioni', icona: 'scudo', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata'], avanzati: ['spese_annue'],
+    { titolo: 'Spese e assicurazioni', icona: 'scudo', campi: ['spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa'], avanzati: ['spese_annue'],
       testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
     { titolo: 'Il tasso', se: variabile, icona: 'grafico', campi: ['indice_nome', 'spread', 'taeg_dichiarato', 'previsione_anni', 'previsione_modello'],
       testo: 'In un mutuo a tasso variabile il tasso di ogni rata è la somma di due numeri: un indice di mercato, che cambia nel tempo, e lo spread, che è fisso.' },
@@ -704,7 +719,8 @@
       ['Tasso', variabile(b) ? `${b.indice_nome} + ${perc(b.spread, 3, 2)} di spread` : `TAN ${perc(b.tasso_fisso, 3, 2)}`],
       ['Spese per rata', b.spese_rata > 0 ? euro(b.spese_rata) : 'nessuna'],
       ...(b.spese_iniziali > 0 ? [['Spese iniziali', euro(b.spese_iniziali)]] : []),
-      ...(b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 ? [['Assicurazioni', [b.assicurazione_iniziale > 0 ? euro(b.assicurazione_iniziale) + ' all\'inizio' : '', b.assicurazione_rata > 0 ? euro(b.assicurazione_rata) + ' al mese' : ''].filter(Boolean).join(', ')]] : []),
+      ...(b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 ? [['Assicurazioni', [b.assicurazione_iniziale > 0 ? euro(b.assicurazione_iniziale) + ' all\'inizio' : '', b.assicurazione_rata > 0 ? euro(b.assicurazione_rata) + ' al mese' : ''].filter(Boolean).join(', ') + (b.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
+      ...righePreammortamento(b),
       ...(b.anticipo > 0 ? [['Anticipo', euro(b.anticipo)]] : [])];
     const blocchi = [lista(dati)];
     if (!e || e.manca) blocchi.push(crea('p', { className: 'nota evidenza' }, e ? e.manca : 'Non riesco a calcolare questa offerta.'));
@@ -750,7 +766,7 @@
   };
   // Le risposte diventano un'offerta: solo i campi che c'entrano con il suo tipo.
   const CHIAVI_OFFERTA = ['nome', 'categoria', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'indice_nome', 'spread',
-    'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'taeg_dichiarato'];
+    'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'taeg_dichiarato'];
   async function salvaOfferta() {
     const b = guida.bozza;
     const parametri = Object.fromEntries(CHIAVI_OFFERTA.filter(k => b[k] != null && (!CAMPI[k].se || CAMPI[k].se(b)) && (k !== 'indice_nome' || variabile(b))).map(k => [k, b[k]]));
@@ -794,6 +810,7 @@
     assicurazione_iniziale: 'Un premio unico pagato all\'inizio. Se non c\'è, lascia vuoto.',
     spese_nel_prestito: 'Se la somma che ti hanno accreditato era più bassa dell\'importo prestato, le spese sono dentro il prestito.',
     assicurazione_rata: 'Solo se la paghi a parte, non dentro la rata. Se non c\'è, lascia vuoto.',
+    assicurazione_facoltativa: 'Se l\'hai scelta tu, non entra nel TAEG: lo dice la legge. La conto comunque in quanto paghi.',
     spese_annue: 'Ad esempio l\'imposta di bollo sul rendiconto, di solito 2 €. Se non ci sono, lascia vuoto.',
     taeg_dichiarato: 'Il «tasso annuo effettivo globale» scritto nel contratto: ti dico se il mio calcolo coincide. Se non lo trovi, lascia vuoto.',
     valore_riferimento: 'Serve solo a mostrarti quanta parte della casa resta da pagare. Se non lo sai, lascia vuoto.',
@@ -812,11 +829,14 @@
     spese_iniziali: 'Istruttoria, perizia, imposta sostitutiva o di bollo: nel foglio informativo, fra i costi. Se non ci sono, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico all\'inizio, se l\'assicurazione è obbligatoria o se la prendi. Se non c\'è, lascia vuoto.',
     assicurazione_rata: 'Un premio ogni mese, pagato a parte. Se non c\'è, lascia vuoto.',
+    assicurazione_facoltativa: 'Nel foglio informativo le facoltative sono a parte: non entrano nel TAEG.',
     anticipo: 'Quello che paghi subito al venditore: non fa parte del prestito. Se non c\'è, lascia vuoto.',
     taeg_dichiarato: 'Il «tasso annuo effettivo globale» scritto nell\'offerta, vicino al TAN: ti dico se il mio calcolo coincide. Se non c\'è, lascia vuoto.',
   };
   const UNITA = { euro: '€', percento: '%', intero: 'rate' };
   const dataChiara = iso => `${+iso.slice(8)} ${M.meseAnno(iso)}`;
+  // Il preammortamento in parole, per i riepiloghi.
+  const righePreammortamento = p => p.data_erogazione ? [['Preammortamento', `prestito accreditato il ${dataChiara(p.data_erogazione)}: gli interessi dei giorni prima del piano ${p.preammortamento === 'a_parte' ? 'pagati a parte' : 'dentro la prima rata'}`]] : [];
   const quanteRate = n => n === 1 ? '1 rata' : `${n} rate`;
 
   // La casella o le scelte di una domanda.
@@ -1047,7 +1067,8 @@
   const conIndice = () => tipiDaProvare().includes('variabile');
   function ingressoAnalisi() {
     const b = guida.bozza;
-    return { base: { importo_iniziale: b.importo_iniziale, numero_rate: b.numero_rate, maxirata: guida.tipoBreve === 'maxirata' ? b.maxirata : 0 },
+    return { base: { importo_iniziale: b.importo_iniziale, numero_rate: b.numero_rate, maxirata: guida.tipoBreve === 'maxirata' ? b.maxirata : 0,
+        ...(b.data_erogazione ? { data_erogazione: b.data_erogazione } : {}) },
       tipi: tipiDaProvare(), date: iniziPossibili(), rate: rateInserite().filter(r => r.rata_vera != null || r.quota_capitale != null), noti: { ...guida.noti } };
   }
   // Gli Euribor che la deduzione può provare: quelli nel programma e quelli scaricati da internet nella guida.
@@ -1176,6 +1197,16 @@
     const primo = primoAddebito();
     if (primo && p.data_prima_rata) voci.push(['Ogni rata copre', p.data_prima_rata.slice(0, 7) === primo.slice(0, 7) ? 'il mese in cui viene addebitata' : 'il mese prima dell\'addebito']);
     return crea('dl', { className: 'riepilogo-guida' }, ...voci.flatMap(([etichetta, valore]) => [crea('dt', {}, etichetta), crea('dd', {}, valore)]));
+  }
+  // Tornano tutte tranne la prima, che è più alta (di almeno 50 centesimi), e il giorno dell'accredito non è ancora scritto.
+  const primaPiuAlta = c => !!c && !guida.bozza.data_erogazione && c.sbagliate && c.sbagliate.length === 1 && c.sbagliate[0].n === 1 && c.sbagliate[0].vera > c.sbagliate[0].calcolata + 0.5;
+  // Il giorno dell'accredito che spiegherebbe la differenza, a tasso fisso: giorni = differenza / (importo × TAN / 360).
+  function stimaErogazione(c) {
+    const p = { ...guida.bozza, ...c.parametri }, s = c.sbagliate[0];
+    if (variabile(p) || !(p.tasso_fisso > 0) || !p.data_prima_rata) return null;
+    const giorni = Math.round((s.vera - s.calcolata) * 360 / (p.importo_iniziale * p.tasso_fisso));
+    if (!(giorni >= 1 && giorni <= 120)) return null;
+    return new Date(Date.parse(p.data_prima_rata) - giorni * 864e5).toISOString().slice(0, 10);
   }
   const titoloEsito = (testo, icona, classe) => crea('h3', { className: 'esito-analisi ' + classe }, Icone.crea(icona, 'icona'), testo);
   // Rate che non tornano: quanto ha scritto l'utente, quanto dice il calcolo, e i pulsanti per correggerle o toglierle.
@@ -1368,6 +1399,17 @@
           : 'Hai già scritto tutte le rate pagate, ma non bastano a decidere.'),
         crea('p', { className: 'nota' }, `Se non hai altre rate, posso usare ${proposto}, che è il valore più probabile: le rate che hai scritto tornano comunque al centesimo.`),
         crea('p', {}, crea('button', { type: 'button', className: 'secondario', id: 'usa-probabile' }, `Uso ${proposto}`)));
+    } else if (s.tipo === 'vicino' && primaPiuAlta(s.candidato)) {
+      // Tornano tutte tranne la prima, più alta: quasi sempre gli interessi dei giorni fra l'accredito e l'inizio del piano.
+      const c = s.candidato, sbagliata = c.sbagliate[0], stima = stimaErogazione(c);
+      blocchi.push(titoloEsito('La prima rata è più alta: forse c\'è il preammortamento', 'calendario', 'quasi'),
+        crea('p', {}, `Tornano tutte le rate tranne la prima, che è più alta di ${euro(sbagliata.vera - sbagliata.calcolata)}. Succede quando il prestito ti è stato accreditato qualche settimana prima dell'inizio del piano: per quei giorni la banca chiede gli interessi, di solito proprio nella prima rata. Si chiamano interessi di preammortamento.`),
+        tabellaSbagliate(c.sbagliate, true),
+        crea('label', { className: 'campo-erogazione' }, 'Quando ti hanno accreditato il prestito?', crea('input', { type: 'date', id: 'campo-erogazione', value: stima || '' })),
+        crea('p', { className: 'nota' }, (stima ? `Dai conti, più o meno il ${dataChiara(stima)}. ` : '') + 'Lo trovi nell\'estratto conto, alla voce dell\'accredito, oppure nel contratto alla voce «data di erogazione». Se non lo trovi, togli la prima rata: le altre bastano.'),
+        crea('div', { className: 'azioni' }, crea('button', { type: 'button', id: 'conferma-erogazione' }, 'Rifai i conti con questa data'),
+          ...(altreRate() ? [crea('button', { type: 'button', className: 'secondario', id: 'altre-rate-analisi' }, 'Aggiungo altre rate')] : [])),
+        crea('details', {}, crea('summary', {}, 'Cosa ho capito dalle altre rate'), capito({ ...guida.bozza, ...c.parametri })));
     } else if (s.tipo === 'vicino') {
       const c = s.candidato;
       blocchi.push(titoloEsito(c.sbagliate.length === 1 ? 'Una rata non torna' : `${c.sbagliate.length} rate non tornano`, 'attenzione', 'quasi'),
@@ -1500,6 +1542,7 @@
     spese_iniziali: 'Le spese per aprire il prestito: istruttoria, perizia, imposte.',
     assicurazione_iniziale: 'Le assicurazioni contano nel costo vero: se sono obbligatorie, scrivile.',
     assicurazione_rata: 'Un premio ogni mese, se lo paghi a parte.',
+    assicurazione_facoltativa: 'Obbligatoria o scelta da te? Cambia il TAEG, non quanto paghi.',
     spese_nel_prestito: 'Un dettaglio: le spese le paghi a parte o te le tolgono dal prestito?',
     anticipo: 'Se paghi qualcosa subito al venditore, scrivilo: ti mostro quanto paghi in tutto.',
     taeg_dichiarato: 'Ultima domanda: il TAEG scritto nell\'offerta. Così controllo i conti della banca.',
@@ -1781,6 +1824,14 @@
     if (correggi) vaiAllaRata(+correggi.dataset.correggiRata);
     const togli = evento.target.closest('[data-togli-rata]');
     if (togli) { const voceRata = guida.rate[togli.dataset.togliRata] || {}; voceRata.rata = ''; voceRata.quota = ''; avviaAnalisi(); }
+    // Il giorno dell'accredito, per il preammortamento della prima rata: i conti si rifanno con quello.
+    if (evento.target.id === 'conferma-erogazione') {
+      const giorno = ($('#campo-erogazione') || {}).value;
+      if (!giorno) { $('#campo-erogazione').focus(); return; }
+      guida.bozza.data_erogazione = giorno;
+      if (!guida.bozza.preammortamento) guida.bozza.preammortamento = 'prima_rata';
+      avviaAnalisi();
+    }
     if (evento.target.id === 'usa-probabile') usaProbabile(guida.situazione);
     // La durata: in anni o in rate (il numero già scritto passa da una forma all'altra), e le durate pronte.
     const durataIn = evento.target.closest('[data-durata-in]');
@@ -1913,8 +1964,8 @@
   // principali (le regole di dettaglio stanno nella pagina «Regole del contratto», versione avanzata) e il piano si
   // ricalcola appena si salva; «Rifai la configurazione guidata» ripete le domande dall'inizio, solo se lo si chiede.
   const CHIAVI_DATI = ['nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'maxirata', 'anticipo', 'valore_riferimento',
-    'tasso_fisso', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'spese_nel_prestito', 'taeg_dichiarato',
-    'previsione_anni', 'previsione_modello'];
+    'tasso_fisso', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_nel_prestito', 'taeg_dichiarato',
+    'data_erogazione', 'preammortamento', 'previsione_anni', 'previsione_modello'];
   let cambiaDati = false;
   const durata = n => { const anni = Math.floor(n / 12), mesi = n % 12;
     return [anni ? (anni === 1 ? '1 anno' : anni + ' anni') : '', mesi ? (mesi === 1 ? '1 mese' : mesi + ' mesi') : ''].filter(Boolean).join(' e '); };
@@ -1942,7 +1993,8 @@
       ['Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
       ...descriviRegole(p),
       ...(p.spese_iniziali > 0 ? [['Spese iniziali', euro(p.spese_iniziali)]] : []),
-      ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ')]] : []),
+      ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ') + (p.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
+      ...righePreammortamento(p),
       ...(p.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(p.taeg_dichiarato, 2)]] : []),
       ...(variabile(p) && M.descriviStima ? [['Rate future', 'stimate con ' + M.descriviStima(p)]] : []),
       ['Rate scritte', scritte + copiate ? (scritte === 1 ? '1 controllata' : `${scritte} controllate`) + ' sull\'estratto conto' + (copiate ? (copiate === 1 ? ', 1 presa dal calcolo' : `, ${copiate} prese dal calcolo`) : '') : 'nessuna, per ora'],

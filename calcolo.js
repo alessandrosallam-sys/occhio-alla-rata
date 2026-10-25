@@ -153,6 +153,11 @@
     const numeroRate = p.numero_rate + (maxirata ? 1 : 0);
     const ogniMesi = Math.max(1, Math.round(p.mesi_revisione || 1));
     const inizioPeriodo = n => Date.UTC(anno0, mese0 - 1 + (n - 1), giorno0) / MS_GIORNO;   // n = numeroRate + 1: fine piano
+    // Preammortamento (25 ottobre 2026): se il prestito è stato accreditato prima dell'inizio del primo periodo, gli
+    // interessi di quei giorni, sul capitale intero e al tasso della prima rata, si pagano con la prima rata oppure a
+    // parte (p.preammortamento === 'a_parte'). Succede spesso nei finanziamenti: la prima rata arriva dopo 30-60 giorni.
+    const erogazione = p.data_erogazione ? isoInGiorno(p.data_erogazione) : null;
+    const giorniPre = erogazione != null ? Math.min(366, Math.max(0, inizioPeriodo(1) - erogazione)) : 0;
 
     // Media delle rilevazioni per mese solare (serve solo alla regola "media del mese precedente").
     const perMese = new Map();
@@ -310,6 +315,13 @@
       // Interessi del periodo secondo il conteggio dei giorni del contratto; la rata è al centesimo.
       const base = p.conteggio_giorni === 'eff_365' ? 365 : p.conteggio_giorni === 'eff_360' ? 360 : r.giorniAnno;
       r.interessi = p.conteggio_giorni === 'mese_12' ? r.tassoTotale * r.debito / 12 : ((r.tassoTotale * r.debito) / base) * r.giorniMese;
+      if (i === 0 && giorniPre > 0) {
+        // Base dei giorni come per gli interessi: anno civile con i giorni effettivi, 360 con il dodicesimo (anno commerciale).
+        const basePre = p.conteggio_giorni === 'eff_365_366' ? r.giorniAnno : p.conteggio_giorni === 'eff_365' ? 365 : 360;
+        r.giorniPreammortamento = giorniPre;
+        r.interessiPreammortamento = r.tassoTotale * p.importo_iniziale * giorniPre / basePre;
+        if (p.preammortamento !== 'a_parte') r.interessi += r.interessiPreammortamento;
+      }
       r.rataCalcolata = centesimi(r.interessi + r.quotaCapitale + p.spese_rata);
       cumulato += r.rataCalcolata;
       r.cumulato = cumulato;
@@ -349,9 +361,11 @@
   // TAEG: il tasso annuo che rende uguali i soldi ricevuti e il valore attuale di tutto quello che si paga dopo
   // (direttiva 2008/48/CE, allegato I). I pagamenti sono uno al mese, alla fine di ogni periodo, e un mese conta come
   // un dodicesimo di anno. Null se non si può calcolare.
-  function taeg(ricevuto, pagamenti) {
+  // Con il preammortamento il primo periodo comincia «inizio» anni dopo l'accredito: i pagamenti si spostano di tanto, e
+  // gli interessi di preammortamento pagati a parte («aParte») cadono all'inizio del primo periodo.
+  function taeg(ricevuto, pagamenti, inizio = 0, aParte = 0) {
     if (!(ricevuto > 0) || !pagamenti.length) return null;
-    const differenza = x => pagamenti.reduce((s, c, i) => s + c * Math.pow(1 + x, -(i + 1) / 12), 0) - ricevuto;
+    const differenza = x => pagamenti.reduce((s, c, i) => s + c * Math.pow(1 + x, -(inizio + (i + 1) / 12)), 0) + aParte * Math.pow(1 + x, -inizio) - ricevuto;
     let basso = -0.99, alto = 10;
     if (differenza(basso) < 0 || differenza(alto) > 0) return null;
     for (let i = 0; i < 100; i++) { const medio = (basso + alto) / 2; if (differenza(medio) > 0) basso = medio; else alto = medio; }
@@ -362,21 +376,29 @@
   // quello che si paga oltre al capitale. "ricevuto" è il capitale meno quello che si paga all'inizio.
   // "totaleDaPagare" è tutto quello che esce di tasca: se le spese iniziali sono tolte dalla somma ricevuta o aggiunte
   // al prestito (spese_nel_prestito), le rate le comprendono già e non si contano una seconda volta.
+  // Un'assicurazione facoltativa (assicurazione_facoltativa) resta nel costo totale ma non nel TAEG: per la direttiva
+  // 2008/48/CE il TAEG conta solo i servizi accessori obbligatori. Se il premio è dentro il prestito, quella parte è
+  // credito ricevuto (paga l'assicurazione per conto del cliente).
   function costi(dati, righe, comeFirmato = false) {
     const p = dati.parametri, quante = righe.length;
     const rata = r => comeFirmato || r.rataVera == null ? r.rataCalcolata : r.rataVera;
     let totaleRate = 0;
+    const nelTaeg = !p.assicurazione_facoltativa;
     const pagamenti = righe.map((r, i) => {
       totaleRate += rata(r);
-      return rata(r) + (p.assicurazione_rata || 0) + ((i + 1) % 12 === 0 ? p.spese_annue || 0 : 0);
+      return rata(r) + (nelTaeg ? p.assicurazione_rata || 0 : 0) + ((i + 1) % 12 === 0 ? p.spese_annue || 0 : 0);
     });
     const speseRate = quante * (p.spese_rata || 0), speseIniziali = p.spese_iniziali || 0, speseAnnue = Math.floor(quante / 12) * (p.spese_annue || 0);
     const assicurazioni = (p.assicurazione_iniziale || 0) + quante * (p.assicurazione_rata || 0);
-    const interessi = totaleRate - p.importo_iniziale - speseRate;
+    const prima = righe[0] || {}, giorniPre = prima.giorniPreammortamento || 0;
+    const preAParte = giorniPre > 0 && p.preammortamento === 'a_parte' ? centesimi(prima.interessiPreammortamento) : 0;
+    const interessi = totaleRate - p.importo_iniziale - speseRate + preAParte;
     const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue;
     const ricevuto = p.importo_iniziale - speseIniziali - (p.assicurazione_iniziale || 0);
     return { totaleRate, interessi, speseRate, speseIniziali, assicurazioni, speseAnnue, costoTotale, ricevuto,
-      totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale, taeg: taeg(ricevuto, pagamenti) };
+      totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale,
+      taeg: taeg(nelTaeg ? ricevuto : p.importo_iniziale - speseIniziali, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
+      giorniPreammortamento: giorniPre, preammortamento: giorniPre > 0 ? centesimi(prima.interessiPreammortamento) : 0, preammortamentoAParte: preAParte > 0 };
   }
 
   // Taratura: prova le combinazioni di regole più comuni e conta quante rate vere (e quote capitale vere)

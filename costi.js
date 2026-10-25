@@ -22,9 +22,10 @@
       ...(conMaxirata ? [riga('Maxirata finale', euro(ultima.rataCalcolata), `l'ultima rata, a ${M.meseAnno(ultima.inizio)}`)] : []),
       ...(c.ricevuto !== p.importo_iniziale ? [riga('Soldi ricevuti davvero', euro(c.ricevuto), 'il prestito meno quello che hai pagato all\'inizio')] : []),
       riga('Interessi', euro(c.interessi), variabile ? 'su tutte le rate: quelle future sono una stima' : 'su tutte le rate'),
+      ...(c.preammortamento > 0 ? [riga('di cui preammortamento', euro(c.preammortamento), `${c.giorniPreammortamento} giorni fra l'accredito e l'inizio del piano, ${c.preammortamentoAParte ? 'pagati a parte' : 'dentro la prima rata'}`)] : []),
       ...(c.speseRate > 0 ? [riga('Spese per rata', euro(c.speseRate), `${euro(p.spese_rata)} × ${stato.piano.righe.length} rate`)] : []),
       ...(c.speseIniziali > 0 ? [riga('Spese iniziali', euro(c.speseIniziali))] : []),
-      ...(c.assicurazioni > 0 ? [riga('Assicurazioni', euro(c.assicurazioni))] : []),
+      ...(c.assicurazioni > 0 ? [riga('Assicurazioni', euro(c.assicurazioni), c.assicurazioneNelTaeg ? null : 'facoltativa: conta in quanto paghi, non nel TAEG')] : []),
       ...(c.speseAnnue > 0 ? [riga('Spese annuali', euro(c.speseAnnue))] : []),
       riga('Costo totale del prestito', euro(c.costoTotale), 'tutto quello che paghi oltre al capitale', 'totale'),
       riga('Totale da pagare', euro(c.totaleDaPagare), p.spese_nel_prestito && c.ricevuto !== p.importo_iniziale
