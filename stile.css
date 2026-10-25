@@ -1701,7 +1701,9 @@ button.scelta-principale[aria-pressed="true"] { color: #8a6100; border-color: #e
   .legenda#legenda-piano li { flex: none; }
   /* Le righe che scorrono in orizzontale sfumano a destra: così si capisce che continuano. */
   .colonne-extra, .legenda#legenda-piano { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
-  .tabella-piano { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-left: 0; border-right: 0; min-height: 360px; }
+  /* La tabella scorre con la pagina, non nel suo riquadro: un solo scorrimento verticale. L'intestazione resta
+     in cima allo schermo grazie ad app.js (fissaTestaPiano), perché il riquadro scorre ancora di lato. */
+  .tabella-piano { margin: 0 calc(-1 * var(--s4)); border-radius: 0; border-left: 0; border-right: 0; max-height: none; min-height: 0; }
   #tabella-piano { font-size: calc(14px * var(--testo)); }
   #tabella-piano th { max-width: 96px; font-size: calc(12.5px * var(--testo)); }
   #tabella-piano td { padding: 9px 10px; }
@@ -1733,7 +1735,31 @@ button.scelta-principale[aria-pressed="true"] { color: #8a6100; border-color: #e
   .campi.in-linea { flex-direction: column; align-items: stretch; }
   .campi.in-linea label input { width: 100%; }
   .campi.in-linea button { width: 100%; }
-  #tabella-tassi th, #tabella-tassi td { padding-right: var(--s3); }
+  /* Tassi inseriti: sei colonne non stanno nello schermo. Ogni valore diventa un blocco di due righe (giorno e valore,
+     poi giorno della settimana e variazione; sotto, se c'è, la rata che lo usa) con il cestino a destra. */
+  .contenitore-tabella:has(> #tabella-tassi) { max-height: min(520px, 60vh); max-height: min(520px, 60dvh); }
+  #tabella-tassi, #tabella-tassi tbody { display: block; }
+  #tabella-tassi thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #tabella-tassi tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: var(--s3); align-items: baseline;
+    padding: 9px var(--s3); background: var(--superficie); border-bottom: 1px solid var(--linea);
+  }
+  #tabella-tassi tbody tr:last-child { border-bottom: 0; }
+  #tabella-tassi tbody tr:nth-child(even) { background: var(--zebra); }
+  #tabella-tassi td { padding: 0; border: 0; background: none; white-space: nowrap; }
+  #tabella-tassi td:nth-child(1) { grid-area: 1 / 1; font-weight: 600; }
+  #tabella-tassi td:nth-child(2) { grid-area: 2 / 1; color: var(--inchiostro-2); font-size: calc(13px * var(--testo)); }
+  #tabella-tassi td:nth-child(3) { grid-area: 1 / 2; text-align: right; font-weight: 650; font-size: calc(15px * var(--testo)); }
+  #tabella-tassi td:nth-child(4) { grid-area: 2 / 2; text-align: right; font-size: calc(13px * var(--testo)); }
+  #tabella-tassi td:nth-child(5) { grid-area: 3 / 1 / 4 / 3; margin-top: 2px; color: var(--accento-testo); font-size: calc(13px * var(--testo)); font-weight: 600; }
+  #tabella-tassi td:nth-child(5):empty { display: none; }
+  #tabella-tassi td.azione { grid-area: 1 / 3 / 4 / 4; align-self: center; padding: 0; }
+  #tabella-tassi td.azione button { min-width: 40px; padding: 0 var(--s2); }
+  #tabella-tassi .testo-elimina { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #tabella-tassi td.in-modifica { padding: 0; }
+  #tabella-tassi td.in-modifica input { width: 8em; }
+  /* Riepilogo per anno: scorre di lato, l'anno resta fermo a sinistra */
+  #tabella-anni th:first-child, #tabella-anni td:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--linea); font-weight: 650; }
 
   /* Calendario: il dettaglio del giorno subito sopra i mesi */
   .calendario { display: flex; flex-direction: column; align-items: stretch; }

@@ -126,7 +126,10 @@
 
   // ---------- Tabella dei tassi ----------
   // Solo i valori inseriti nel mutuo (quelli che il calcolo usa e che si possono modificare), nel periodo scelto.
-  function disegnaTabella(da, a) {
+  // Senza periodo (Esc durante una modifica) ridisegna quello di prima: prima la tabella restava vuota.
+  let periodoTabella = { da: '', a: '' };
+  function disegnaTabella(da = periodoTabella.da, a = periodoTabella.a) {
+    periodoTabella = { da, a };
     const usi = usiDeiTassi();
     const propri = inPunti(stato.dati.euribor).filter(p => p.giorno >= da && p.giorno <= a);
     const righe = [];
@@ -138,7 +141,8 @@
         crea('td', { className: 'modificabile', 'data-campo': 'tasso_360' }, perc(t.tasso_360, 3)),
         crea('td', { className: 'minore' }, prima ? punti(t.tasso_360 - prima.y) : ''),
         crea('td', { className: 'testo' }, uso ? `rata di ${meseAnno(uso.inizio)}` : ''),
-        crea('td', { className: 'azione' }, crea('button', { type: 'button', className: 'secondario piccolo', 'data-elimina': '', 'aria-label': `Elimina il tasso del ${data(t.giorno)}` }, 'Elimina'))));
+        crea('td', { className: 'azione' }, crea('button', { type: 'button', className: 'secondario piccolo', 'data-elimina': '', 'aria-label': `Elimina il tasso del ${data(t.giorno)}` },
+          Icone.crea('cestino', 'icona icona-aggiunta'), crea('span', { className: 'testo-elimina' }, 'Elimina')))));
     }
     $('#tabella-tassi tbody').replaceChildren(...righe);
   }

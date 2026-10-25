@@ -516,6 +516,7 @@
     $('#legenda-target').hidden = obiettivo() == null;
     for (const voce of document.querySelectorAll('#legenda-piano [data-solo-variabile]')) voce.hidden = !variabile();
     disegnaEsitoConti(quante);
+    fissaTestaPiano();
   }
 
   // In testa al piano, in una riga corta: i conti tornano, ci sono rate da controllare, o non c'è ancora niente da
@@ -537,10 +538,33 @@
       ...(daControllare ? [crea('button', { type: 'button', className: 'collegamento-esito', 'data-stato': 'problema' }, 'Vai all\'ultima')] : []));
   }
 
+  // Sui telefoni la tabella del piano non scorre in verticale nel suo riquadro ma insieme alla pagina (stile.css):
+  // con due scorrimenti uno dentro l'altro, e la tabella alta quanto lo schermo, il dito muoveva quasi sempre la
+  // tabella e mai la pagina. Il riquadro però scorre ancora di lato, e così position: sticky non può tenere
+  // l'intestazione in cima allo schermo: la sposta qui sotto, mentre la pagina scorre.
+  const telefono = window.matchMedia ? matchMedia('(max-width: 760px)') : { matches: false };
+  function fissaTestaPiano() {
+    const testa = $('#tabella-piano thead');
+    if (!telefono.matches || $('#scheda-piano').hidden) { testa.style.transform = ''; return; }
+    const sopra = $('.testata').getBoundingClientRect().bottom, t = $('#tabella-piano').getBoundingClientRect();
+    const spostamento = Math.max(0, Math.min(sopra - t.top, t.height - testa.offsetHeight));
+    testa.style.transform = spostamento ? `translateY(${spostamento}px)` : '';
+  }
+  addEventListener('scroll', fissaTestaPiano, { passive: true });
+  addEventListener('resize', fissaTestaPiano);
+
   // Porta una riga al centro della tabella, che scorre nel suo riquadro. Con "mostra" porta in vista anche la tabella.
+  // Sul telefono scorre la pagina, e solo con "mostra": all'apertura del piano resta in vista il riepilogo del mese.
   function centraRiga(riga, mostra) {
     const riquadro = $('#contenitore-piano'), testa = $('#tabella-piano thead').offsetHeight;
     const r = riga.getBoundingClientRect(), c = riquadro.getBoundingClientRect();
+    if (telefono.matches) {
+      if (!mostra) return;
+      const schede = $('.schede').getBoundingClientRect();
+      const sopra = $('.testata').getBoundingClientRect().bottom + testa, sotto = schede.height ? schede.top : innerHeight;
+      window.scrollBy(0, r.top + r.height / 2 - (sopra + sotto) / 2);
+      return;
+    }
     riquadro.scrollTop += r.top + r.height / 2 - (c.top + testa + (riquadro.clientHeight - testa) / 2);
     if (mostra) riquadro.scrollIntoView({ block: 'nearest' });
   }
