@@ -11,6 +11,19 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icone-app/icona-180.png">
   <meta name="theme-color" content="#ffffff">
+  <!-- Descrizione per i motori di ricerca e anteprima del link sui social e nelle chat (docs/progetto-generale.md, sezione 31) -->
+  <meta name="description" content="Controlla il tuo mutuo o finanziamento rata per rata: se la banca addebita la cifra giusta, quanto costa davvero, come andranno le rate. Gratis, senza registrazione, i dati restano sul tuo dispositivo.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:site_name" content="Occhio alla Rata">
+  <meta property="og:title" content="Occhio alla Rata">
+  <meta property="og:description" content="La banca ti addebita la rata giusta? Controllalo al centesimo. Mutui e finanziamenti rata per rata, gratis, senza registrazione, anche offline.">
+  <meta property="og:url" content="https://alessandrosallam-sys.github.io/occhio-alla-rata/">
+  <meta property="og:image" content="https://alessandrosallam-sys.github.io/occhio-alla-rata/docs/immagini/anteprima-social.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Il logo di Occhio alla Rata, la frase «La banca ti addebita la rata giusta?» e la pagina aperta su un telefono">
+  <meta name="twitter:card" content="summary_large_image">
   <!-- Il tema si sceglie qui, prima che la pagina si disegni (temi.js) -->
   <script src="temi.js"></script>
 </head>
@@ -461,6 +474,8 @@
     <section id="scheda-dati" class="scheda scorrevole" role="tabpanel" aria-label="Dati del prestito" hidden>
       <div class="colonna pannello">
         <div class="carta carta-dati-prestito" id="carta-dati-prestito"></div>
+        <!-- Cambi del contratto dopo la firma, e chiusura con una surroga (cambi.js) -->
+        <div class="carta carta-cambi" id="carta-cambi"></div>
       </div>
     </section>
 
@@ -535,6 +550,7 @@
   <script src="prestiti.js"></script>
   <script src="costi.js"></script>
   <script src="offerte.js"></script>
+  <script src="cambi.js"></script>
   <script src="pwa.js"></script>
 </body>
 </html>
