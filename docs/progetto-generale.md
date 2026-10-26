@@ -42,6 +42,7 @@ mutuo-generale/
   offerte.js            scheda «Offerte»: confronto di offerte prima di firmare (sezione 16)
   cambi.js              cambi del contratto dopo la firma e chiusura con una surroga, nella pagina «Dati del prestito» (sezione 35)
   esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte (sezione 38)
+  condividi.js          la carta «Fallo conoscere» del pannello: condivisione, WhatsApp, copia del link (sezione 41)
   dati-euribor/         scarica.js e i CSV con gli Euribor dal 1999 (sezione 7)
   README.md, LICENSE, .gitignore, .gitattributes   per la pubblicazione (sezione 11)
   VERSIONI.md           le versioni e che cosa cambia in ognuna (sezione 37)
@@ -1041,3 +1042,16 @@ Segnalato dall'utente: "le scritte del robottino in mobile vanno a finire sopra 
 - **Testi**: dove si diceva di passare con il mouse, sul telefono si dice di toccare: il consiglio della pagina Tassi («Tocca il grafico»), la spiegazione del grafico e quella della barra «Pagato finora» (le cifre sono nel `title`, che il dito non vede: lì il suggerimento sparisce), la scelta del simbolo alla prima apertura, l'impostazione «Spiega le cose…» e la sua spiegazione. README aggiornato.
 
 **Prove** (`prova-robottino.js`, Edge senza finestra con il tocco emulato e `(hover: none)`, esempi della sezione 38). Telefono a 390 px: `senzaMouse` vero; «Che cos'è?» nel fumetto; un tocco sui totali non fa parlare il robottino e il fumetto non copre niente; dopo «Che cos'è?», attesa con «Annulla»; tocco sui totali: spiegati, con il fumetto sopra la pagina e non sopra il testo; tocco su «Aggiungi un prestito»: spiegato e la guida non si apre; «Annulla» torna al consiglio; dopo, «Apri» apre il prestito; nel piano, sceso di 1.800 pixel, robottino nell'angolo, fumetto aperto con la testa, «Che cos'è?» e tocco su una riga: «Rata 1, luglio 2021: torna al centesimo…»; nella pagina Tassi «Tocca il grafico»; spente le spiegazioni il pulsante sparisce. Computer a 1280 px con il mouse: niente «Che cos'è?»; passando sui totali la spiegazione compare sopra la pagina come prima e se ne va spostando il mouse. Nessun errore. **Non provato**: un telefono vero.
+## 41. «Fallo conoscere»: condividere il link al sito (26 ottobre 2026)
+
+Chiesto dall'utente: "se lo voglio condividere a qualcuno su whatsapp?", poi "ok aggiungi pulsante condividi". Prima, l'immagine dell'anteprima è diventata una JPEG leggera (sezione 31).
+
+- **Dove**: una carta nel Pannello di controllo, sotto «L'app sul telefono» (`#carta-condividi` in `index.html`), con l'icona `condividi` disegnata in `icone.js` (tre cerchi uniti da due tratti). Il testo dice che parte solo l'indirizzo del sito, non i prestiti.
+- **`condividi.js`**: l'indirizzo del sito e il messaggio sono scritti nel file (lo stesso messaggio suggerito per WhatsApp). Si condivide sempre l'indirizzo pubblico, anche dalla pagina aperta dal disco.
+  - **«Condividi»** chiama `navigator.share({ title, text, url })`: sul telefono si apre la scelta dell'app (WhatsApp, Telegram, email…), su Windows la condivisione del sistema. Il pulsante c'è solo dove il browser la offre (non c'è, per esempio, in Firefox sul computer). Chiudere la finestra senza scegliere non dà avvisi; un altro errore suggerisce gli altri due pulsanti.
+  - **«Manda con WhatsApp»** apre `https://wa.me/?text=` con il messaggio e il link: WhatsApp sul telefono, WhatsApp Web o l'app sul computer, dove si sceglie a chi mandarlo.
+  - **«Copia il link»** usa gli appunti del browser (`navigator.clipboard`); dove non ci sono, il vecchio `document.execCommand('copy')` da un campo nascosto; se non riesce nemmeno quello, l'avviso scrive l'indirizzo per intero.
+- Sono collegamenti da aprire, non richieste della pagina: la regola sulle connessioni (sezione 37) non c'entra.
+- L'assistente spiega i tre pulsanti (`spiegazioni.js`).
+
+**Prove** (`prova-condividi.js`, Edge senza finestra; condivisione, `window.open` e appunti sostituiti da spie che registrano che cosa la pagina avrebbe mandato). Telefono a 390 px con la condivisione: carta e icona; «Condividi» manda titolo, messaggio e indirizzo; «Manda con WhatsApp» apre wa.me con il messaggio che finisce con il link; «Copia il link» copia l'indirizzo e lo dice; niente scorrimento orizzontale. Computer a 1280 px senza condivisione e con gli appunti che non funzionano: «Condividi» non c'è, WhatsApp come sopra, la copia passa dal vecchio «copia» (con un clic vero: il browser lo permette solo dopo un gesto dell'utente). Nessun errore. **Non provato**: la condivisione vera su un telefono.
