@@ -211,7 +211,7 @@
     { codice: 'avanzata', nome: 'Avanzata', descrizione: 'Tutto: colonne di approfondimento del piano, calendario delle rilevazioni, festività, previsioni dell\'indice, taratura e regole del contratto.' },
   ];
   const OPZIONI = [
-    { codice: 'spiega', nome: 'Spiega le cose quando ti fermi sopra con il mouse' },
+    { codice: 'spiega', nome: 'Spiega le cose quando ti fermi sopra con il mouse (sul telefono: «Che cos\'è?» nel suo fumetto)' },
     { codice: 'segue', nome: 'Ti segue in un angolo quando scorri la pagina' },
   ];
   let corrente = valido(leggi()) ? leggi() : 'auto';

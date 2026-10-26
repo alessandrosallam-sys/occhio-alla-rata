@@ -42,7 +42,7 @@
     ['TAEG', 'Il costo vero del prestito in percentuale all\'anno: interessi, spese e assicurazioni insieme. Serve a confrontare prestiti diversi.'],
     ['Totale rate', 'Tutto quello che avrai pagato con le rate alla fine del prestito; sotto, la parte di interessi e spese.'],
     ['Prossima rata', 'La rata del mese dopo. Nel variabile la cifra esatta si conosce solo quando la banca legge l\'indice: sotto c\'è il giorno. Fino ad allora è una stima. Nel fisso è già nota.'],
-    ['Pagato finora', 'Quanto hai versato con le rate scritte nel piano. La barra divide il versato in capitale, interessi e spese: passaci sopra per le cifre.'],
+    ['Pagato finora', 'Quanto hai versato con le rate scritte nel piano. La barra divide il versato in capitale, interessi e spese' + (M.senzaMouse() ? '.' : ': passaci sopra per le cifre.')],
     ['Ultima rata addebitata', 'L\'ultima rata che hai scritto nel piano, con il suo mese. Nella versione avanzata sotto ci sono anche la rata media, la più bassa e la più alta.'],
     ['Interessi ancora da pagare', 'Gli interessi delle rate che restano, fino alla fine. Nel variabile è una stima, perché dipende dall\'indice dei prossimi anni.'],
     ['Tassi applicati', 'Il tasso medio delle rate che hai pagato, e sotto il più basso e il più alto.'],
@@ -143,7 +143,8 @@
     // Impostazioni (riquadro e pannello)
     ['[data-scelta-versione="semplice"]', 'La versione semplice mostra solo l\'essenziale: le rate e se tornano, quanto costa il prestito, il rimborso anticipato, il backup.'],
     ['[data-scelta-versione="avanzata"]', 'La versione avanzata aggiunge gli strumenti per chi conosce bene il contratto: colonne del piano, calendario, festività, previsioni, taratura, regole.'],
-    ['label:has([data-opzione-assistente="spiega"])', 'Se lo spegni non spiego più le cose quando ci passi sopra con il mouse.'],
+    ['label:has([data-opzione-assistente="spiega"])', () => M.senzaMouse() ? 'Se lo spegni sparisce «Che cos\'è?» dal mio fumetto, e non spiego più le cose.'
+      : 'Se lo spegni non spiego più le cose quando ci passi sopra con il mouse.'],
     ['label:has([data-opzione-assistente="segue"])', 'Se lo spegni resto in cima alla pagina e non ti seguo quando scorri.'],
     ['[data-scelta-logo]', el => el.title + ' Clic per usarlo come logo.'],
     ['[data-scelta-avatar]', el => el.title + ' Clic e divento così: è solo il disegno, quello che dico resta uguale.'],
@@ -175,7 +176,7 @@
     ['.carta-offerta', 'I dati di un\'offerta: li trovi nel foglio informativo della banca (PIES per i mutui, SECCI per i finanziamenti).'],
     // Tassi
     ['#periodi-tassi', 'Scegli il periodo del grafico: quello del tuo mutuo, gli ultimi anni o tutto dal 1999.'],
-    ['#grafico', 'Il grafico dell\'indice: la linea è il valore giorno per giorno; a destra la previsione, con le fasce di incertezza. Passa sulla linea per leggere i valori; sul telefono tocca un punto, o trascina il dito di lato.'],
+    ['#grafico', 'Il grafico dell\'indice: la linea è il valore giorno per giorno; a destra la previsione, con le fasce di incertezza. ' + (M.senzaMouse() ? 'Tocca un punto per leggerne il valore, o trascina il dito di lato.' : 'Passa sulla linea per leggere i valori.')],
     ['#dettagli-proiezione > summary', 'La previsione dell\'indice: il modello del grafico e quello usato per stimare le rate future. «Cambia» per sceglierne un altro.'],
     ['#usa-previsione', 'Usa questa previsione per stimare le rate future del piano.'],
     ['#togli-previsione', 'Torna al metodo semplice: la media delle variazioni passate.'],

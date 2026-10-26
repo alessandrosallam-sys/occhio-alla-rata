@@ -53,6 +53,9 @@
   // Versione della pagina, scelta nelle impostazioni (temi.js la mette su <html>): la semplice nasconde gli strumenti
   // per esperti (in stile.css la classe «solo-avanzata», qui schede e colonne del piano).
   const semplice = () => document.documentElement.dataset.versione === 'semplice';
+  // Telefoni e tablet: lo schermo si tocca e non c'è un puntatore che passa sopra alle cose. I testi che dicono
+  // «passaci sopra con il mouse» lì dicono «tocca», e le spiegazioni dell'assistente si chiedono con «Che cos'è?».
+  const senzaMouse = () => !!(window.matchMedia && matchMedia('(hover: none)').matches);
 
   // Esegue una modifica: l'archivio risponde con tutti i dati aggiornati.
   async function esegui(metodo, percorso, corpo, messaggio) {
@@ -172,7 +175,7 @@
   const M = window.Mutuo = {
     stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI, rianima, contaFino, movimento,
     data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice, variabile,
-    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], alCambioScheda: [], ricordo, semplice,
+    viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], alCambioScheda: [], ricordo, semplice, senzaMouse,
   };
 
   // ---------- Riepilogo in testata ----------

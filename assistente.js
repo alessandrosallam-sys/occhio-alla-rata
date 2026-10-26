@@ -6,8 +6,9 @@
 // Con «riduci movimento» nelle impostazioni del sistema resta fermo e il testo compare tutto insieme.
 // Se la pagina scorre oltre, l'assistente la segue nell'angolo in basso: resta la testa, e il fumetto compare quando
 // ha qualcosa da dire. Passando con il mouse (o arrivando con la tastiera) su una cosa importante, la spiega
-// (i testi sono in spiegazioni.js); poco dopo torna al suo messaggio. Le due cose si spengono nelle impostazioni
-// (temi.js: «Spiega le cose…», «Ti segue…»).
+// (i testi sono in spiegazioni.js); poco dopo torna al suo messaggio. Sul telefono non si passa sopra a niente, e un
+// tocco non lo fa parlare: nel fumetto c'è «Che cos'è?», poi si tocca la cosa da spiegare. Le due cose si spengono
+// nelle impostazioni (temi.js: «Spiega le cose…», «Ti segue…»).
 (function () {
   'use strict';
   const M = window.Mutuo, { $, crea, euro, meseAnno } = M;
@@ -254,12 +255,14 @@
     if (scrivi(el, testo, umore)) mostraParole(el);
   }
   // Una spiegazione al passaggio del mouse: resta finché si è sopra, poi (torna) l'assistente riprende il suo messaggio.
-  function spiega(el, testo) {
+  // «sopra»: in cima alla pagina il fumetto si apre sopra il resto (sotto). Le spiegazioni chieste col dito non lo
+  // fanno: lì non c'è niente sotto il mouse da tenere fermo, e la pagina si sposta in giù invece di essere coperta.
+  function spiega(el, testo, sopra = true) {
     clearTimeout(el._torna);
     el._torna = null;
     el._spiega = true;
     el.classList.add('spiega');
-    sovrapponi(el, true);
+    sovrapponi(el, sopra);
     if (scrivi(el, testo, 'parla', { veloce: true }) || el.classList.contains('zitto')) mostraParole(el);
   }
   function smettiDiSpiegare(el) {
@@ -383,7 +386,10 @@
     chi._spiegato = trovato.el;
   }
   let attesa = 0, daTastiera = false;
-  document.addEventListener('mouseover', evento => {
+  // Solo un puntatore che passa sopra (mouse, penna): col dito un tocco fa già la sua cosa, e il browser lo farebbe
+  // passare anche per «mouseover».
+  document.addEventListener('pointerover', evento => {
+    if (evento.pointerType === 'touch') return;
     clearTimeout(attesa);
     attesa = setTimeout(() => guarda(evento.target), 350);
   });
@@ -391,12 +397,58 @@
   document.addEventListener('pointerdown', () => { daTastiera = false; }, true);
   document.addEventListener('focusin', evento => { if (daTastiera) guarda(evento.target); });
 
+  // ---------- Sul telefono: «Che cos'è?» ----------
+  // Il pulsante nel fumetto (si vede solo dove non c'è il mouse, stile.css) mette l'assistente in attesa: il tocco
+  // seguente non fa la sua solita cosa (aprire, modificare…) ma chiede la spiegazione di quello che si è toccato.
+  // Toccando l'assistente stesso, o di nuovo il pulsante, si annulla.
+  let inAttesa = null;   // l'assistente che aspetta il tocco
+  const TESTO_ATTESA = 'Tocca una cosa della pagina (un riquadro, una riga, un titolo, un pulsante): ti dico che cos\'è.';
+  function pulsanteSpiegami(el) {
+    const pulsante = crea('button', { type: 'button', className: 'secondario piccolo spiegami', 'aria-pressed': 'false' }, 'Che cos\'è?');
+    pulsante.addEventListener('click', () => {
+      if (inAttesa === el) { smettiDiAspettare(); torna(el, 0); return; }
+      smettiDiAspettare();
+      inAttesa = el;
+      document.documentElement.dataset.spiegami = 'si';
+      pulsante.textContent = 'Annulla';
+      pulsante.setAttribute('aria-pressed', 'true');
+      spiega(el, TESTO_ATTESA, false);
+    });
+    $('.parole', el).append(pulsante);
+  }
+  function smettiDiAspettare() {
+    if (!inAttesa) return;
+    const pulsante = $('.spiegami', inAttesa);
+    pulsante.textContent = 'Che cos\'è?';
+    pulsante.setAttribute('aria-pressed', 'false');
+    inAttesa = null;
+    delete document.documentElement.dataset.spiegami;
+  }
+  // Il tocco si ferma prima che arrivi a quello che si è toccato: niente fuoco (e tastiera) sui campi, niente clic.
+  document.addEventListener('mousedown', evento => { if (inAttesa && !evento.target.closest('.assistente')) evento.preventDefault(); }, true);
+  document.addEventListener('click', evento => {
+    if (!inAttesa) return;
+    if (evento.target.closest('.assistente')) {
+      if (!evento.target.closest('.spiegami')) { const el = inAttesa; smettiDiAspettare(); torna(el, 0); }
+      return;
+    }
+    evento.preventDefault();
+    evento.stopPropagation();
+    const el = inAttesa, trovato = window.Spiegazioni && Spiegazioni.trova(evento.target);
+    smettiDiAspettare();
+    const testo = trovato ? trovato.testo : 'Su questo non ho niente da dirti. Premi di nuovo «Che cos\'è?» e tocca un\'altra cosa.';
+    spiega(el, testo, false);
+    // Il tempo di leggerla, poi torna al suo messaggio.
+    torna(el, Math.max(8000, testo.length * 75));
+  }, true);
+
   window.Assistente = { nuovo, dici, spiega, segui, AVATAR, disegnoAvatar, scegliAvatar, avatarScelto: () => avatarScelto };
 
   // ---------- In cima alle schede del programma ----------
   const nelProgramma = nuovo('nel-programma');
   const chiudi = crea('button', { type: 'button', className: 'chiudi-assistente', title: 'Richiudi l\'assistente', 'aria-label': 'Richiudi l\'assistente' }, '×');
   $('.parole', nelProgramma).append(chiudi);
+  pulsanteSpiegami(nelProgramma);
   $('.avatar', nelProgramma).setAttribute('role', 'button');
   $('.avatar', nelProgramma).tabIndex = 0;
   $('#principale').prepend(nelProgramma);
@@ -433,7 +485,7 @@
       if (nonTornano) return [`${rata} Attenzione: ${nonTornano === 1 ? 'una rata non torna' : `${nonTornano} rate non tornano`} con il calcolo (le righe rosse). Clicca la cifra per correggerla${M.semplice() ? '' : ', oppure prova la taratura nella pagina «Regole del contratto»'}.`, 'dubbio'];
       return [`${rata} Quando ti arriva una rata nuova, scrivila nella colonna «Rata vera»: se la riga diventa verde, la banca ha fatto i conti giusti.`, 'felice'];
     }
-    if (nome === 'tassi') return [M.semplice() ? 'Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Passa sul grafico per leggere il valore di un giorno.'
+    if (nome === 'tassi') return [M.semplice() ? `Qui ci sono i valori dell'Euribor: si aggiornano da soli quando apri la pagina. ${M.senzaMouse() ? 'Tocca il' : 'Passa sul'} grafico per leggere il valore di un giorno.`
       : 'Qui ci sono i valori dell\'Euribor: si aggiornano da soli quando apri la pagina. Sotto il grafico puoi provare le previsioni per le rate future.', 'parla'];
     if (nome === 'calendario') return ['Il calendario mostra in che giorno la banca legge l\'indice per ogni rata. Clicca un giorno per vedere i dettagli.', 'parla'];
     if (nome === 'festivita') return ['Le festività servono a contare i giorni lavorativi. Di solito non c\'è niente da cambiare.', 'parla'];
@@ -445,11 +497,13 @@
     const nome = schedaAperta();
     nelProgramma.hidden = !nome || $('#principale').hidden;
     nelProgramma.classList.toggle('richiuso', chiuso());
+    $('.spiegami', nelProgramma).hidden = !vuole('spiega');   // spente le spiegazioni, niente «Che cos'è?»
     aggiornaSegue(nelProgramma);
     if (!nome || chiuso()) return;
     const [testo, umore] = consiglioPer(nome);
     dici(nelProgramma, testo, umore);
   }
+  document.addEventListener('cambio-assistente', () => { $('.spiegami', nelProgramma).hidden = !vuole('spiega'); });
   M.alCambioScheda.push(() => consiglia());
   M.viste.push(() => consiglia());
 })();

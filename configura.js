@@ -560,7 +560,8 @@
     });
     blocco.append(
       crea('h3', {}, 'Prima di tutto, scegli il simbolo di Occhio alla Rata'),
-      crea('p', { className: 'nota' }, 'Lo vedrai in alto a sinistra e nella scheda del browser. Sono tutti animati: passaci sopra con il mouse. Puoi cambiarlo quando vuoi nelle Impostazioni.'),
+      crea('p', { className: 'nota' }, 'Lo vedrai in alto a sinistra e nella scheda del browser. ' + (M.senzaMouse() ? 'Toccane uno per sceglierlo: puoi cambiarlo quando vuoi nelle Impostazioni.'
+        : 'Sono tutti animati: passaci sopra con il mouse. Puoi cambiarlo quando vuoi nelle Impostazioni.')),
       griglia);
     return blocco;
   }

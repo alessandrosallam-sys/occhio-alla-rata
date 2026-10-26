@@ -9,6 +9,7 @@ Il [sito](https://alessandrosallam-sys.github.io/occhio-alla-rata/) si aggiorna 
 Già sul sito, non ancora in una versione numerata.
 
 - **Il grafico dei tassi sul telefono** si legge meglio: è più alto, sull'asse ci sono tutti gli anni, le cifre restano leggibili anche sopra le linee e i cerchietti delle rate non coprono più la linea. Un tocco mostra il valore di quel giorno e lo lascia visibile; trascinando il dito di lato si scorrono le date.
+- **Il robottino sul telefono**: un tocco non lo fa più parlare, quindi il suo fumetto non si apre più sopra il testo. Per farti spiegare una cosa premi «Che cos'è?» nel fumetto e poi tocca la cosa: la spiegazione sposta la pagina in giù invece di coprirla. I testi che dicevano «passaci sopra con il mouse» sul telefono dicono «tocca».
 
 ## 1.0 (26 ottobre 2026)
 
