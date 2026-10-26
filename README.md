@@ -54,7 +54,7 @@ Tutte con dati inventati.
 
 | | |
 |---|---|
-| <img src="docs/immagini/tassi.png" alt="La pagina Tassi: l'Euribor 6 mesi dal 2022, con la proiezione in avanti e le fasce di incertezza"> | <img src="docs/immagini/costi.png" alt="Costi e rimborso: quanto costa il prestito e la simulazione dell'estinzione anticipata"> |
+| <img src="docs/immagini/tassi.png" alt="La pagina Tassi: l'Euribor 3 mesi dal 2021, con la proiezione in avanti e le fasce di incertezza"> | <img src="docs/immagini/costi.png" alt="Costi e rimborso: quanto costa il prestito e la simulazione dell'estinzione anticipata"> |
 | **Tassi e previsioni**: la storia dell'Euribor e dove potrebbe andare | **Costi e rimborso**: costo totale, TAEG, estinzione anticipata |
 | <img src="docs/immagini/offerte.png" alt="Il confronto di due offerte di mutuo, fisso e variabile"> | <img src="docs/immagini/benvenuto.png" alt="La pagina di benvenuto alla prima apertura"> |
 | **Confronto delle offerte**: quale costa meno, prima di firmare | **La prima apertura**: poche domande, il resto lo capisce lui |
