@@ -63,6 +63,14 @@
     <nav class="sottomenu" id="sottomenu" aria-label="Il prestito aperto" hidden></nav>
   </header>
 
+  <!-- Prova con degli esempi (esempi.js): la striscia si vede solo quando i dati sono quelli degli esempi -->
+  <div class="striscia-esempi" id="striscia-esempi" role="status" hidden>
+    <div class="striscia-esempi-interno">
+      <p><strong>Stai provando con degli esempi.</strong> Prestiti e offerte sono inventati: cambiali come vuoi, i tuoi dati non si toccano. Gli esempi spariscono quando esci o chiudi la pagina.</p>
+      <button type="button" data-esci-esempi>Esci dagli esempi</button>
+    </div>
+  </div>
+
   <!-- I numeri del mese (app.js, disegnaRiepilogo) -->
   <div class="riepilogo" id="riepilogo" aria-label="Il mese in corso e le statistiche del prestito"></div>
 
@@ -94,6 +102,7 @@
           <div>
             <h2 data-icona="prestiti">I tuoi prestiti</h2>
             <p class="nota">Mutui e finanziamenti che segui. Con «Apri» entri in un prestito: compaiono le sue pagine (il piano, i costi, i tassi…), a sinistra o sotto la testata.</p>
+            <p class="nota fuori-esempi">Vuoi vedere come funziona? <button type="button" class="collegamento" data-prova-esempi>Prova con degli esempi</button>: prestiti inventati, i tuoi restano come sono.</p>
           </div>
           <button type="button" id="aggiungi-prestito" data-icona="piu">Aggiungi un prestito</button>
         </div>
@@ -491,8 +500,10 @@
             <h2 data-icona="dati">I tuoi dati</h2>
             <p class="nota">Tutti i prestiti e le offerte restano in questo browser, sul tuo computer, e si salvano da soli a ogni modifica. Se però cancelli i dati di navigazione si perdono: ogni tanto salva un backup, cioè una copia di tutto in un file. Di solito finisce nella cartella Download: tienilo al sicuro, ad esempio su una chiavetta o in OneDrive o Google Drive. Con «Carica un backup» lo riapri qui, o su un altro computer o browser.</p>
             <p class="nota" id="ultimo-backup"></p>
+            <p class="nota evidenza solo-esempi">Adesso stai guardando gli esempi. Il backup, il caricamento e «Cancella tutto» valgono per i tuoi dati veri: tornano quando esci dagli esempi.</p>
           </div>
           <div class="azioni">
+            <button type="button" class="solo-esempi" data-esci-esempi>Esci dagli esempi</button>
             <button type="button" id="salva-file" data-icona="scarica">Salva un backup</button>
             <label class="carica-file secondario" id="carica-file" data-icona="carica">Carica un backup<input type="file" accept=".json,.txt,.js,application/json,text/plain" hidden></label>
             <button type="button" class="pericoloso" id="cancella-tutto" data-icona="cestino">Cancella tutto</button>
@@ -557,6 +568,7 @@
   <script src="costi.js"></script>
   <script src="offerte.js"></script>
   <script src="cambi.js"></script>
+  <script src="esempi.js"></script>
   <script src="pwa.js"></script>
 </body>
 </html>

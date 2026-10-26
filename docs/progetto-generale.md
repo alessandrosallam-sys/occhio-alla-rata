@@ -41,6 +41,7 @@ mutuo-generale/
   costi.js              quanto costa il prestito aperto: costo totale, TAEG calcolato e del contratto, estinzione anticipata (sezione 16)
   offerte.js            scheda «Offerte»: confronto di offerte prima di firmare (sezione 16)
   cambi.js              cambi del contratto dopo la firma e chiusura con una surroga, nella pagina «Dati del prestito» (sezione 35)
+  esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte (sezione 38)
   dati-euribor/         scarica.js e i CSV con gli Euribor dal 1999 (sezione 7)
   README.md, LICENSE, .gitignore, .gitattributes   per la pubblicazione (sezione 11)
   VERSIONI.md           le versioni e che cosa cambia in ognuna (sezione 37)
@@ -81,6 +82,8 @@ I dati stanno in `localStorage`, chiave `mutuo-variabile:dati` (la slim invece n
 ```
 
 `cambi` (dal 25 ottobre 2026) sono i cambi del contratto dopo la firma: sezione 35. I prestiti salvati prima non lo hanno e si leggono come se fosse vuoto.
+
+Mentre si provano gli esempi (dal 26 ottobre 2026) l'archivio è un altro, nello stesso formato, in `sessionStorage` con la chiave `mutuo-variabile:esempi`: sezione 38.
 
 `rate` contiene solo i valori scritti a mano, più `rata_copiata` (vedi "Rate prese dal calcolo" nella sezione 8); `euribor` sono i valori dell'indice del contratto, qualunque esso sia (il nome è rimasto dalla prima versione, nata per un mutuo legato all'Euribor).
 
@@ -984,3 +987,24 @@ I tre moduli mettono un'etichetta: `contratto`, `problema`, `idea`. GitHub la ap
 ### Prove
 
 `prova-csp.js` (Edge senza finestra, nella cartella temporanea della sessione), dal disco e da un server su localhost che fa da GitHub Pages (senza `tassi-precaricati.js`). Tre prestiti inventati (variabile, fisso, finanziamento). Scarico dalla Bundesbank: dal sito tutto lo storico (35.605 valori), più i valori del prestito variabile. Tutte le pagine del menù e di ogni prestito. Riga della versione visibile, con i collegamenti nel colore del tema. Backup. Icona della scheda da `data:`. Una richiesta a `https://example.com` bloccata, unica violazione registrata. Dal sito, service worker attivo e copia offline di 32 file. Nessun errore nella pagina, salvo uno che c'era già dal disco: il browser non legge il manifest da `file://` (regola CORS, non quella nuova).
+
+## 38. Prova con degli esempi (26 ottobre 2026)
+
+Chiesto dall'utente: "magari farei un prestito demo per tipo finto attivabile per provare come funziona".
+
+### Come funziona
+
+- **Dove si attiva**: un riquadro «Vuoi prima vedere come funziona?» nella pagina di benvenuto (percorso breve, solo la prima volta: non quando si aggiunge un prestito, si rivede la configurazione o si arriva dalle offerte) e un collegamento sotto il titolo della pagina Prestiti. Tutti e due hanno `data-prova-esempi`; il clic lo raccoglie `esempi.js`.
+- **Un archivio a parte**: `Archivio.entraInProva()` passa a un archivio vuoto, salvato in `sessionStorage` con la chiave `mutuo-variabile:esempi`. Finché la chiave c'è, `archivio.js` legge e scrive lì (`deposito()` e `chiave()`), e l'archivio vero in `localStorage` non si tocca. Il `sessionStorage` resta ricaricando la pagina e sparisce chiudendola: chi dimentica di uscire ritrova i suoi dati alla prossima apertura. Gli esempi non si mescolano con i prestiti veri, quindi i totali della pagina Prestiti restano giusti.
+- **Gli esempi** (cifre inventate): mutuo variabile «Casa al mare» (180.000 € in 300 rate da luglio 2021, Euribor 3 mesi + 1,10% rivisto ogni 3 mesi, floor a zero, spese); mutuo fisso «Appartamento in città» (150.000 € in 240 rate da ottobre 2020, TAN 1,85%); prestito personale «Lavori in casa» (12.000 € in 60 rate da aprile 2024, TAN 7,90%); auto con maxirata «Auto nuova» (20.000 €, anticipo 6.000 €, 36 rate e maxirata di 11.500 € da marzo 2025, TAN 5,99%); due offerte da 200.000 € in 300 rate, una fissa al 3,10% e una variabile con Euribor 3 mesi + 0,95%. Si creano con le solite richieste (`POST configura` con `nuovo`, `POST rate`, `POST offerte`), quindi passano dagli stessi controlli dei dati veri.
+- **Le rate già pagate**: per ogni prestito, le righe del piano con il periodo finito e l'indice noto (`fine < oggi`, `origineEuribor` diverso da `previsione`) ricevono come `rata_vera` la rata calcolata: il piano è tutto verde. Fa eccezione la rata 38 del mutuo fisso, con 5 € in più, per vedere come appare una rata che non torna.
+- **L'Euribor del mutuo variabile**: prima di creare gli esempi si aspetta `Storico.aggiorna()` (al massimo 20 secondi), poi i valori arrivano da `Archivio.precaricati` come nella guida. Senza connessione e senza storico, l'esempio variabile resta senza le rate passate di cui manca l'indice.
+- **Dopo**: il principale è tolto (si parte dall'elenco dei prestiti) e la pagina si ricarica senza la pagina scritta nell'indirizzo, così ogni scheda rilegge i dati. Lo stesso all'uscita (`Archivio.esciDallaProva()`, che toglie la chiave).
+- **Con gli esempi**: `esempi.js` mette `data-esempi="si"` su `<html>` e mostra la striscia `#striscia-esempi`, fra la testata e il riepilogo, con «Esci dagli esempi». `stile.css` nasconde quello che vale per i dati veri (salva e carica un backup, «Cancella tutto», la data dell'ultimo backup, «Carica un backup» nella guida) e gli inviti a provare gli esempi (`.fuori-esempi`); mostra quello che serve solo lì (`.solo-esempi`: nel pannello un avviso e un altro «Esci dagli esempi»). Se il browser non permette il `sessionStorage` (alcune navigazioni private), `entraInProva` lo dice e si resta sui dati veri.
+- L'assistente ha una spiegazione per i due pulsanti (`spiegazioni.js`).
+
+### Prove
+
+`prova-esempi.js` (Edge senza finestra, nella cartella temporanea della sessione), in due giri. Dal disco, senza dati, entrando dalla pagina di benvenuto. Da un server su localhost come GitHub Pages, senza `tassi-precaricati.js`, con un prestito «vero» già salvato, entrando dalla pagina Prestiti. In tutti e due: esempi pronti in circa 4 secondi (dal server compreso lo scarico di tutto lo storico); striscia e segno su `<html>`; quattro prestiti e due offerte; si parte dalla pagina Prestiti con quattro carte e senza l'invito; rate pagate giuste (variabile 63, fisso 72 con una che non torna, prestito personale 30, maxirata 19) e lo stesso nel piano di ogni prestito (righe `stato-pagata` e una `stato-problema`); nel pannello solo «Esci dagli esempi» e l'avviso; le due offerte nella pagina Offerte; archivio vero identico, carattere per carattere, prima, durante e dopo; ricaricando si resta negli esempi; a 390 px niente scorrimento orizzontale; all'uscita esempi buttati, striscia nascosta e di nuovo la pagina di benvenuto, o il solo prestito vero. Nessun errore e nessuna violazione della regola sulle connessioni (sezione 37). Guardate le schermate di benvenuto, Prestiti, piano e telefono.
+
+**Non provato**: Safari e Firefox; un telefono vero; l'app installata (il `sessionStorage` dovrebbe comportarsi allo stesso modo).

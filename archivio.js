@@ -7,6 +7,14 @@
   // Punto di aggancio per una variante "in un unico file" che non salva niente nel browser (non inclusa qui): con il
   // segnale "MUTUO_UN_FILE" i dati stanno solo in memoria e a ogni modifica viene chiamato Archivio.alCambio.
   const NEL_BROWSER = !window.MUTUO_UN_FILE;
+  // Prova con gli esempi (esempi.js): finché c'è questa chiave nel sessionStorage, l'archivio letto e scritto è quello
+  // degli esempi, tenuto lì, e quello vero in localStorage non si tocca. Il sessionStorage resta ricaricando la pagina e
+  // sparisce quando la si chiude: chi dimentica di uscire dagli esempi ritrova i suoi dati alla prossima apertura.
+  const CHIAVE_ESEMPI = 'mutuo-variabile:esempi';
+  let inProva = false;
+  if (NEL_BROWSER) try { inProva = sessionStorage.getItem(CHIAVE_ESEMPI) != null; } catch { /* sessionStorage non disponibile: niente esempi */ }
+  const deposito = () => inProva ? sessionStorage : localStorage;
+  const chiave = () => inProva ? CHIAVE_ESEMPI : CHIAVE;
   // Il file dei dati (mutuo-dati.txt) è scritto come uno script, così la pagina aperta dal disco può leggerlo
   // da sola se è nella sua cartella.
   const PREFISSO_FILE = 'window.MutuoDatiSalvati = ';
@@ -225,7 +233,7 @@
     if (archivio) return dati;
     archivio = { attivo: null, principale: null, prestiti: [], offerte: [] };
     let testo = null;
-    if (NEL_BROWSER) try { testo = localStorage.getItem(CHIAVE); } catch { /* archivio del browser non disponibile: si lavora in memoria */ }
+    if (NEL_BROWSER) try { testo = deposito().getItem(chiave()); } catch { /* archivio del browser non disponibile: si lavora in memoria */ }
     if (testo) {
       try { archivio = pulisciArchivio(JSON.parse(testo)); }
       catch { /* dati illeggibili: si riparte da zero senza toccare quelli salvati */ }
@@ -237,7 +245,7 @@
   const daSalvare = () => ({ attivo: archivio.attivo, principale: archivio.principale, prestiti: archivio.prestiti.filter(configurato), offerte: archivio.offerte });
   function salva() {
     if (NEL_BROWSER) {
-      try { localStorage.setItem(CHIAVE, JSON.stringify({ versione: 3, ...daSalvare() })); }
+      try { deposito().setItem(chiave(), JSON.stringify({ versione: 3, ...daSalvare() })); }
       catch { throw new ErroreDati('Il browser non permette di salvare i dati (navigazione privata o spazio esaurito). Usa «Salva un backup» per non perderli.'); }
     }
     // La variante in un unico file tiene i dati solo in memoria: a ogni modifica aggiorna il suo file.
@@ -473,7 +481,24 @@
     azzera() {
       archivio = { attivo: null, principale: null, prestiti: [], offerte: [] };
       scegli(null);
-      if (NEL_BROWSER) try { localStorage.removeItem(CHIAVE); } catch { /* niente da cancellare */ }
+      if (NEL_BROWSER) try { deposito().removeItem(chiave()); } catch { /* niente da cancellare */ }
+    },
+    // Prova con gli esempi: «inProva» dice se i dati sono quelli degli esempi; «entraInProva» parte da un archivio
+    // vuoto degli esempi (poi esempi.js lo riempie con le solite richieste); «esciDallaProva» lo butta e torna ai dati
+    // veri. Dopo l'una o l'altra la pagina si ricarica, così ogni scheda rilegge tutto.
+    inProva: () => inProva,
+    entraInProva() {
+      richiedi(NEL_BROWSER, 'Gli esempi non si possono provare in questa versione della pagina');
+      inProva = true;
+      archivio = { attivo: null, principale: null, prestiti: [], offerte: [] };
+      scegli(null);
+      try { salva(); }
+      catch { inProva = false; archivio = null; throw new ErroreDati('Il browser non permette di tenere gli esempi (forse è attiva la navigazione privata).'); }
+    },
+    esciDallaProva() {
+      try { sessionStorage.removeItem(CHIAVE_ESEMPI); } catch { /* già uscito */ }
+      inProva = false;
+      archivio = dati = null;
     },
   };
 })();

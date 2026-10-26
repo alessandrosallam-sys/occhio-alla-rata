@@ -76,6 +76,8 @@ Tutte con dati inventati.
 2. Scrivi alcune rate già pagate, come le vedi sull'estratto conto.
 3. Il programma ricava il resto e ti dice che cosa ha capito. Da lì vedi il piano, i costi e le previsioni.
 
+**Vuoi prima vedere come funziona?** Nella pagina di benvenuto (o in quella dei prestiti) c'è **«Prova con degli esempi»**: un mutuo variabile, un mutuo fisso, un prestito personale, un'auto con la maxirata e due offerte, tutti inventati e con le rate già pagate (una non torna, per vedere come appare). Puoi cambiarli come vuoi. Una striscia in alto ricorda che sono esempi; con «Esci dagli esempi», o chiudendo la pagina, spariscono e ritrovi i tuoi dati come li avevi lasciati.
+
 I dati restano sul dispositivo dove li scrivi: per passarli dal computer al telefono usa «Salva un backup» da una parte e «Carica un backup» dall'altra.
 
 <details>
@@ -193,6 +195,7 @@ prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali e 
 costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione anticipata
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
 cambi.js              cambi del contratto dopo la firma (tasso, spread, durata) e nuovo prestito dal debito residuo (surroga), nella pagina «Dati del prestito»
+esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte, che sparisce uscendo
 icone.js              le icone della pagina, disegnate a mano
 loghi.js              i dieci loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse
 intro.js              la prima apertura: la scritta «Occhio alla Rata» che compare lettera per lettera
@@ -214,7 +217,7 @@ VERSIONI.md           le versioni e che cosa cambia in ognuna
 
 Prima di cambiare il codice leggi `docs/progetto-generale.md`: spiega come funziona ogni parte, perché è fatta così e come è stata provata.
 
-Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js`, `pwa.js`.
+Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js`, `esempi.js`, `pwa.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, principale, prestiti: [...], offerte: [...] }` (`principale`: il prestito che si apre da solo, `null` se nessuno) (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`, `cambi` (i cambi del contratto dopo la firma). I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `PUT principale/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
 

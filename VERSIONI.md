@@ -22,6 +22,7 @@ La prima versione pubblica.
 - **I cambi del contratto** dopo la firma (tasso, spread, durata) e la **surroga**: un prestito nuovo che parte dal debito rimasto.
 - **L'Euribor dal 1999**, scaricato dalla Bundesbank e tenuto sul dispositivo, e la **stima delle rate future** con più modelli di previsione.
 - **Più prestiti insieme**, con i totali del mese.
+- **Prova con degli esempi**: un prestito inventato per tipo e due offerte, per vedere come funziona prima di scrivere i propri dati, che restano come sono.
 - **L'app da installare sul telefono**, che funziona anche senza connessione.
 - Versione semplice e avanzata, un assistente che spiega le cose, quattordici temi più uno con i colori scelti da te, dieci loghi.
 - Il browser blocca qualunque connessione che non sia quella per i valori dell'Euribor.

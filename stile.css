@@ -848,6 +848,21 @@ tr.in-evidenza td { background-color: var(--accento-tenue); }
   max-width: var(--larghezza-pagina); margin: 0 auto; padding: var(--s4) var(--s5) 0;
 }
 .riepilogo:empty { display: none; }
+
+/* Prova con degli esempi (esempi.js): la striscia in cima, sopra il riepilogo e la guida. Con gli esempi (data-esempi
+   su <html>) si nasconde quello che vale per i dati veri (backup, caricamento, «Cancella tutto») e l'invito a provarli;
+   senza, quello che serve solo agli esempi. */
+.striscia-esempi { max-width: var(--larghezza-pagina); margin: 0 auto; padding: var(--s4) var(--s5) 0; }
+.striscia-esempi[hidden] { display: none; }
+.striscia-esempi-interno {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4);
+  padding: var(--s3) var(--s4); border: 1px solid var(--accento); border-radius: var(--r2); background: var(--accento-tenue);
+  font-size: calc(14px * var(--testo));
+}
+.striscia-esempi-interno p { margin: 0; flex: 1 1 320px; }
+html:not([data-esempi="si"]) .solo-esempi { display: none; }
+[data-esempi="si"] .fuori-esempi, [data-esempi="si"] #salva-file, [data-esempi="si"] #carica-file, [data-esempi="si"] #cancella-tutto,
+[data-esempi="si"] #guida-carica, [data-esempi="si"] #ultimo-backup { display: none; }
 .riepilogo-mese { display: grid; grid-template-columns: minmax(280px, 1.7fr) repeat(var(--tessere, 4), minmax(0, 1fr)); gap: var(--s3); }
 .riepilogo-statistiche { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--s3); align-items: start; }
 body:has(#scheda-piano[hidden]) .riepilogo-statistiche { display: none; }
@@ -1683,6 +1698,7 @@ button.scelta-principale[aria-pressed="true"] { color: #8a6100; border-color: #e
   body:has(#scheda-piano[hidden]) .riepilogo { display: none; }
 
   .scheda { padding: var(--s3) var(--s4) var(--s5); }
+  .striscia-esempi { padding: var(--s3) var(--s4) 0; }
   .colonna { gap: var(--s3); }
   .carta { padding: var(--s4); border-radius: var(--r2); }
   .carta-pieghevole { padding: var(--s3) var(--s4); }

@@ -164,6 +164,8 @@
     ['#legenda-piano', 'I colori delle righe: verde la rata torna, rosso è da controllare, il pallino è il mese in corso.'],
     // Prestiti e offerte
     ['#aggiungi-prestito', 'Segui un altro prestito accanto a questo: un mutuo, un finanziamento, un\'auto.'],
+    ['[data-prova-esempi]', 'Apre dei prestiti inventati, uno per tipo, con le rate già pagate: per vedere come funziona. I tuoi dati non si toccano.'],
+    ['[data-esci-esempi]', 'Butta via gli esempi e torna ai tuoi dati, come li avevi lasciati.'],
     ['.totali-prestiti', 'I totali di tutti i tuoi prestiti: rate del mese, debito residuo e interessi ancora da pagare.'],
     ['.carta-prestito', el => `«${etichetta(el)}»: rata del mese, debito residuo e quanto manca. «Apri» per lavorarci.`],
     ['#aggiungi-offerta', 'Aggiungi un\'altra offerta da confrontare.'],

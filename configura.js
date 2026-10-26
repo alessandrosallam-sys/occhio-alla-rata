@@ -572,6 +572,10 @@
     const offerte = guida.riapertura || guida.nuovo || guida.daOfferte ? [] : [crea('div', { className: 'consiglio' },
       crea('p', {}, crea('strong', {}, 'Devi ancora firmare? '), 'Puoi confrontare le offerte di banche e finanziarie: rata, interessi, costo totale e TAEG, uno accanto all\'altro. Quando avrai scelto, la seguirai da qui.'),
       crea('button', { type: 'button', className: 'secondario', id: 'apri-offerte' }, 'Confronta delle offerte'))];
+    // Prima di scrivere i propri dati si può guardare il programma al lavoro su prestiti inventati (esempi.js).
+    const esempi = guida.riapertura || guida.nuovo || guida.daOfferte || Archivio.inProva() ? [] : [crea('div', { className: 'consiglio' },
+      crea('p', {}, crea('strong', {}, 'Vuoi prima vedere come funziona? '), 'Prova con degli esempi: un mutuo variabile, un mutuo fisso, un prestito personale, un\'auto con la maxirata e due offerte, tutti inventati e con le rate già pagate. Puoi cambiarli come vuoi: quando esci spariscono, e i tuoi dati restano come sono.'),
+      crea('button', { type: 'button', className: 'secondario', 'data-prova-esempi': '' }, 'Prova con degli esempi'))];
     if (guida.percorso === 'breve') {
       contenitore.replaceChildren(
         // Da zero: la prima volta si sceglie il simbolo, poi la scritta animata con quel simbolo (intro.js) e sotto la
@@ -585,6 +589,7 @@
           cartaDocumento('documento', 'L\'estratto conto o le ricevute', 'di alcune rate già pagate: servono gli importi addebitati.'),
           cartaDocumento('regole', 'Il contratto, se ce l\'hai', 'potrei chiederti un dato, come il tasso.')),
         crea('p', { className: 'nota' }, 'Niente è definitivo: puoi tornare indietro, e rivedere tutto quando vuoi con il pulsante «Dati del prestito».'),
+        ...esempi,
         ...offerte,
         crea('p', { className: 'nota' }, 'Conosci bene il tuo contratto? ',
           crea('button', { type: 'button', className: 'collegamento', id: 'percorso-completo' }, 'Preferisco rispondere io a tutte le domande')));
