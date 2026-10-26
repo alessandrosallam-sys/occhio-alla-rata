@@ -80,6 +80,8 @@ Tutte con dati inventati.
 
 I dati restano sul dispositivo dove li scrivi: per passarli dal computer al telefono usa «Salva un backup» da una parte e «Carica un backup» dall'altra.
 
+**Per farlo conoscere** a qualcuno: nel Pannello di controllo, la carta «Fallo conoscere». «Condividi» apre la condivisione del telefono (WhatsApp, Telegram, email…) con un messaggio già scritto; ci sono anche «Manda con WhatsApp» e «Copia il link». Parte solo l'indirizzo del sito, non i tuoi prestiti.
+
 <details>
 <summary><strong>Guida completa: tutte le pagine e le impostazioni</strong></summary>
 
@@ -195,6 +197,7 @@ prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali e 
 costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione anticipata
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
 cambi.js              cambi del contratto dopo la firma (tasso, spread, durata) e nuovo prestito dal debito residuo (surroga), nella pagina «Dati del prestito»
+condividi.js          la carta «Fallo conoscere» del pannello: condivisione, WhatsApp e copia del link al sito
 esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte, che sparisce uscendo
 icone.js              le icone della pagina, disegnate a mano
 loghi.js              i dieci loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse
@@ -217,7 +220,7 @@ VERSIONI.md           le versioni e che cosa cambia in ognuna
 
 Prima di cambiare il codice leggi `docs/progetto-generale.md`: spiega come funziona ogni parte, perché è fatta così e come è stata provata.
 
-Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js`, `esempi.js`, `pwa.js`.
+Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js`, `esempi.js`, `condividi.js`, `pwa.js`.
 
 **Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, principale, prestiti: [...], offerte: [...] }` (`principale`: il prestito che si apre da solo, `null` se nessuno) (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`, `cambi` (i cambi del contratto dopo la firma). I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `PUT principale/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
 

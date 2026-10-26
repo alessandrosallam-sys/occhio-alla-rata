@@ -11,6 +11,7 @@ Già sul sito, non ancora in una versione numerata.
 - **Il grafico dei tassi sul telefono** si legge meglio: è più alto, sull'asse ci sono tutti gli anni, le cifre restano leggibili anche sopra le linee e i cerchietti delle rate non coprono più la linea. Un tocco mostra il valore di quel giorno e lo lascia visibile; trascinando il dito di lato si scorrono le date.
 - **Il robottino sul telefono**: un tocco non lo fa più parlare, quindi il suo fumetto non si apre più sopra il testo. Per farti spiegare una cosa premi «Che cos'è?» nel fumetto e poi tocca la cosa: la spiegazione sposta la pagina in giù invece di coprirla. I testi che dicevano «passaci sopra con il mouse» sul telefono dicono «tocca».
 - **Il link mandato su WhatsApp** mostra l'immagine di anteprima: quella di prima era troppo pesante e WhatsApp la saltava.
+- **Fallo conoscere**: nel Pannello di controllo, «Condividi» manda il link al sito con un messaggio già scritto (WhatsApp, Telegram, email…); ci sono anche «Manda con WhatsApp» e «Copia il link». Parte solo l'indirizzo, non i tuoi prestiti.
 - **La prima apertura** non chiede più di scegliere il simbolo: c'è il gufo, e si va subito alla pagina di benvenuto. Se ne preferisci un altro, lo cambi quando vuoi nelle Impostazioni, alla voce «Logo».
 
 ## 1.0 (26 ottobre 2026)
