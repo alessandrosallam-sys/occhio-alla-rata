@@ -175,7 +175,7 @@
     ['.carta-offerta', 'I dati di un\'offerta: li trovi nel foglio informativo della banca (PIES per i mutui, SECCI per i finanziamenti).'],
     // Tassi
     ['#periodi-tassi', 'Scegli il periodo del grafico: quello del tuo mutuo, gli ultimi anni o tutto dal 1999.'],
-    ['#grafico', 'Il grafico dell\'indice: la linea è il valore giorno per giorno; a destra la previsione, con le fasce di incertezza. Passa sulla linea per leggere i valori.'],
+    ['#grafico', 'Il grafico dell\'indice: la linea è il valore giorno per giorno; a destra la previsione, con le fasce di incertezza. Passa sulla linea per leggere i valori; sul telefono tocca un punto, o trascina il dito di lato.'],
     ['#dettagli-proiezione > summary', 'La previsione dell\'indice: il modello del grafico e quello usato per stimare le rate future. «Cambia» per sceglierne un altro.'],
     ['#usa-previsione', 'Usa questa previsione per stimare le rate future del piano.'],
     ['#togli-previsione', 'Torna al metodo semplice: la media delle variazioni passate.'],

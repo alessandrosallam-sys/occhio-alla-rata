@@ -8,7 +8,7 @@ Il [sito](https://alessandrosallam-sys.github.io/occhio-alla-rata/) si aggiorna 
 
 Già sul sito, non ancora in una versione numerata.
 
-- Niente, per ora.
+- **Il grafico dei tassi sul telefono** si legge meglio: è più alto, sull'asse ci sono tutti gli anni, le cifre restano leggibili anche sopra le linee e i cerchietti delle rate non coprono più la linea. Un tocco mostra il valore di quel giorno e lo lascia visibile; trascinando il dito di lato si scorrono le date.
 
 ## 1.0 (26 ottobre 2026)
 

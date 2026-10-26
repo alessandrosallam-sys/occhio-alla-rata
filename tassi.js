@@ -186,7 +186,8 @@
     const pro = M.proiezionePerGrafico ? M.proiezionePerGrafico() : null;
     const futuro = pro ? pro.risultato.proiezione.map(p => ({ x: Calcolo.isoInGiorno(p.giorno), ...p })) : [];
     const partenza = pro ? { x: Calcolo.isoInGiorno(pro.risultato.partenza.giorno), y: pro.risultato.partenza.valore } : null;
-    const larghezza = Math.max(contenitore.clientWidth, 300), stretto = larghezza < 600, altezza = stretto ? 260 : 360;
+    // Sui telefoni il grafico è quasi quadrato: più alto che in proporzione, perché le variazioni dell'indice si leggano.
+    const larghezza = Math.max(contenitore.clientWidth, 300), stretto = larghezza < 600, altezza = stretto ? Math.round(Math.min(340, Math.max(280, larghezza * 0.9))) : 360;
     const margine = { sopra: 22, destra: stretto ? 54 : 70, sotto: 28, sinistra: stretto ? 42 : 48 };
     const x0 = s.primo.x, xStorico = s.ultimo.x, x1 = futuro.length ? Math.max(xStorico, futuro[futuro.length - 1].x) : xStorico;
 
@@ -208,15 +209,19 @@
       radice.append(svg('line', { class: 'griglia', x1: margine.sinistra, x2: larghezza - margine.destra, y1: sy(y), y2: sy(y) }),
         svg('text', { x: margine.sinistra - 8, y: sy(y) + 4, 'text-anchor': 'end' }, perc(y, decimali)));
     }
-    // Asse del tempo: una tacca ogni N mesi, in modo che le etichette non si tocchino
+    // Asse del tempo: una tacca ogni N mesi, in modo che le etichette non si tocchino («gen 24» chiede più spazio di
+    // «2024»). Quando gli anni interi non ci starebbero tutti, invece di saltarne uno si scrivono corti: «’24».
     const pixelPerMese = (larghezza - margine.sinistra - margine.destra) / Math.max((x1 - x0) / 30.44, 0.5);
-    const ogniMesi = [1, 3, 6, 12, 24, 60, 120].find(n => n * pixelPerMese >= 64) || 240;
+    let ogniMesi = [1, 3, 6, 12, 24, 60, 120].find(n => n * pixelPerMese >= (n < 12 ? 64 : 40)) || 240;
+    const anniCorti = ogniMesi === 24 && 12 * pixelPerMese >= 28;
+    if (anniCorti) ogniMesi = 12;
     for (let anno = new Date(x0 * 86400000).getUTCFullYear(), mese = 0; ; mese += ogniMesi) {
       const x = Date.UTC(anno, mese, 1) / 86400000;
       if (x > x1) break;
       if (x < x0) continue;
       const d = new Date(x * 86400000);
-      const etichetta = d.getUTCMonth() === 0 ? String(d.getUTCFullYear()) : `${MESI[d.getUTCMonth()].slice(0, 3)} ${String(d.getUTCFullYear()).slice(2)}`;
+      const etichetta = d.getUTCMonth() === 0 ? (anniCorti ? '’' + String(d.getUTCFullYear()).slice(2) : String(d.getUTCFullYear()))
+        : `${MESI[d.getUTCMonth()].slice(0, 3)} ${String(d.getUTCFullYear()).slice(2)}`;
       radice.append(svg('line', { class: 'asse', x1: sx(x), x2: sx(x), y1: altezza - margine.sotto, y2: altezza - margine.sotto + 5 }),
         svg('text', { x: sx(x), y: altezza - 6, 'text-anchor': 'middle' }, etichetta));
     }
@@ -238,8 +243,12 @@
       const fine = futuro[futuro.length - 1];
       radice.append(svg('text', { class: 'finale proiezione-testo', x: sx(fine.x) + 8, y: sy(fine[pro.campo]) + 4 }, perc(fine[pro.campo], 2)));
     }
-    // Rilevazioni usate per calcolare una rata
-    for (const p of serie) if (usi.has(p.giorno)) radice.append(svg('circle', { class: 'usato', cx: sx(p.x), cy: sy(p.y), r: 3.5 }));
+    // Rilevazioni usate per calcolare una rata. Più sono fitte (un telefono, un periodo lungo, il tasso rivisto ogni mese)
+    // più i cerchi sono piccoli, così non coprono la linea; quasi attaccati diventano punti pieni.
+    const usati = serie.filter(p => usi.has(p.giorno));
+    const distanza = usati.length > 1 ? Math.min(...usati.slice(1).map((p, i) => sx(p.x) - sx(usati[i].x))) : Infinity;
+    const raggio = Math.max(1.8, Math.min(3.5, distanza / 3.2));
+    for (const p of usati) radice.append(svg('circle', { class: distanza < 6 ? 'usato fitto' : 'usato', cx: sx(p.x), cy: sy(p.y), r: raggio.toFixed(1) }));
     // Minimo e massimo del periodo (se non coincidono con l'ultimo punto, che ha già la sua etichetta)
     const etichettaEstremo = (p, testo, sopra) => {
       if (p === s.ultimo) return;
@@ -252,7 +261,10 @@
     radice.append(svg('circle', { class: 'punto', cx: sx(s.ultimo.x), cy: sy(s.ultimo.y), r: 4 }),
       svg('text', { class: 'finale', x: sx(s.ultimo.x) + (futuro.length ? -9 : 9), y: sy(s.ultimo.y) + (futuro.length ? -8 : 4), 'text-anchor': futuro.length ? 'end' : 'start' }, perc(s.ultimo.y, 3)));
 
-    // Lettura dei valori: mirino verticale che si aggancia alla data più vicina (storico o proiezione)
+    // Lettura dei valori: mirino verticale che si aggancia alla data più vicina (storico o proiezione). Con il mouse
+    // segue il puntatore. Con il dito un tocco legge il valore e lo lascia lì (trascinando di lato si scorrono le date):
+    // si nasconde toccando altrove. Il fumetto sta più lontano dal dito che dal mouse, per non finirci sotto.
+    let dito = false;
     const mirino = svg('line', { class: 'mirino', y1: margine.sopra, y2: altezza - margine.sotto, visibility: 'hidden' });
     const segnale = svg('circle', { class: 'punto', r: 4, visibility: 'hidden' });
     const fumetto = crea('div', { className: 'fumetto', hidden: true });
@@ -277,19 +289,23 @@
           crea('span', {}, `80%: ${perc(f.basso80, 2)} – ${perc(f.alto80, 2)}`), crea('span', {}, `95%: ${perc(f.basso95, 2)} – ${perc(f.alto95, 2)}`));
       }
       fumetto.hidden = false;
-      const aDestra = px + 14 + fumetto.offsetWidth <= larghezza;
-      fumetto.style.left = (aDestra ? px + 14 : px - 14 - fumetto.offsetWidth) + 'px';
+      const scosta = dito ? 30 : 14, aDestra = px + scosta + fumetto.offsetWidth <= larghezza;
+      fumetto.style.left = Math.max(0, aDestra ? px + scosta : px - scosta - fumetto.offsetWidth) + 'px';
       fumetto.style.top = Math.max(0, Math.min(py - fumetto.offsetHeight / 2, altezza - fumetto.offsetHeight)) + 'px';
     };
     const nascondi = () => { mirino.setAttribute('visibility', 'hidden'); segnale.setAttribute('visibility', 'hidden'); fumetto.hidden = true; };
-    radice.addEventListener('pointermove', evento => {
+    const leggi = evento => {
+      dito = evento.pointerType === 'touch';
       const riquadro = radice.getBoundingClientRect();
       const x = x0 + (evento.clientX - riquadro.left - margine.sinistra) / (larghezza - margine.sinistra - margine.destra) * (x1 - x0);
       let basso = 0, alto = tutti.length - 1;
       while (alto - basso > 1) { const medio = (basso + alto) >> 1; if (tutti[medio].x < x) basso = medio; else alto = medio; }
       mostra(x - tutti[basso].x <= tutti[alto].x - x ? basso : alto);
-    });
-    radice.addEventListener('pointerleave', nascondi);
+    };
+    radice.addEventListener('pointermove', leggi);
+    // Il tocco si legge quando il dito si alza: se invece la pagina scorre, il browser annulla il tocco e non succede niente.
+    radice.addEventListener('pointerup', evento => { if (evento.pointerType === 'touch') leggi(evento); });
+    radice.addEventListener('pointerleave', evento => { if (evento.pointerType !== 'touch') nascondi(); });
     radice.addEventListener('focus', () => mostra(indice));
     radice.addEventListener('blur', nascondi);
     radice.addEventListener('keydown', evento => {
