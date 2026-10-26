@@ -1886,6 +1886,9 @@ button.piccolo > .icona-aggiunta { width: 16px; height: 16px; }
 .scritta-testo { position: relative; text-align: center; max-width: 100%; }
 .scritta-testo p { margin: 0; }
 .scritta-titolo { font-family: var(--carattere-titoli); font-weight: 800; font-size: calc(clamp(30px, 8cqw, 60px) * var(--testo)); line-height: 1.04; letter-spacing: 0.03em; text-transform: uppercase; color: var(--inchiostro); }
+/* Il simbolo accanto alla scritta, alto quanto le sue due righe; se accanto non c'è posto (telefono, testi grandi) va sopra */
+.scritta-marchio { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(10px, 2.5cqw, 18px) clamp(14px, 3.2cqw, 26px); }
+.intro-scritta .logo { --lato: calc(clamp(30px, 8cqw, 60px) * var(--testo) * 2.1); width: var(--lato); height: var(--lato); border-radius: 27%; box-shadow: var(--ombra-alta); }
 .scritta-parola { display: inline-block; vertical-align: bottom; white-space: nowrap; }
 .scritta-lettera { display: inline-block; }
 .scritta-rata { color: var(--accento); }
@@ -1949,11 +1952,13 @@ p.scritta-motto { margin-top: 12px; font-size: calc(clamp(13.5px, 2.5cqw, 17px) 
 /* La prima apertura: di base le lettere sorgono una dopo l'altra e il motto arriva alla fine (--durata, data dalla
    variante); i riquadri della presentazione seguono. Le varianti aggiungono le loro animazioni nel loro CSS. */
 @media (prefers-reduced-motion: no-preference) {
+  .intro-scritta.in-volo .logo { animation: scritta-logo 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) 0.05s both; }
   .intro-scritta.in-volo .scritta-lettera { animation: scritta-sorge 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(0.2s + var(--i) * 0.045s) both; }
   .intro-scritta.in-volo .scritta-motto { animation: sale 0.5s calc(var(--durata) - 0.45s) both; }
   .intro-scritta.in-volo ~ .intro-punti > li { animation: sale 0.45s calc(var(--durata) + var(--i) * 0.08s) both; }
 }
 @keyframes scritta-sorge { from { opacity: 0; transform: translateY(0.5em); } to { opacity: 1; transform: none; } }
+@keyframes scritta-logo { from { opacity: 0; transform: scale(0.4) rotate(-14deg); } to { opacity: 1; transform: none; } }
 @keyframes logo-apre { from { transform: scaleY(0.06); } to { transform: scaleY(1); } }
 @keyframes logo-batte { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
 @keyframes logo-occhiolino { 0%, 100% { transform: scaleY(1); } 40%, 55% { transform: scaleY(0.08); } }

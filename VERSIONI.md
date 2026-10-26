@@ -12,7 +12,7 @@ Già sul sito, non ancora in una versione numerata.
 - **Il robottino sul telefono**: un tocco non lo fa più parlare, quindi il suo fumetto non si apre più sopra il testo. Per farti spiegare una cosa premi «Che cos'è?» nel fumetto e poi tocca la cosa: la spiegazione sposta la pagina in giù invece di coprirla. I testi che dicevano «passaci sopra con il mouse» sul telefono dicono «tocca».
 - **Il link mandato su WhatsApp** mostra l'immagine di anteprima: quella di prima era troppo pesante e WhatsApp la saltava.
 - **Fallo conoscere**: nel Pannello di controllo, «Condividi» manda il link al sito con un messaggio già scritto (WhatsApp, Telegram, email…); ci sono anche «Manda con WhatsApp» e «Copia il link». Parte solo l'indirizzo, non i tuoi prestiti.
-- **La prima apertura** non chiede più di scegliere il simbolo: c'è il gufo, e si va subito alla pagina di benvenuto. Se ne preferisci un altro, lo cambi quando vuoi nelle Impostazioni, alla voce «Logo».
+- **La prima apertura** non chiede più di scegliere il simbolo: c'è il gufo, e si va subito alla pagina di benvenuto, dove il gufo compare accanto alla scritta «Occhio alla Rata». Se ne preferisci un altro, lo cambi quando vuoi nelle Impostazioni, alla voce «Logo».
 
 ## 1.0 (26 ottobre 2026)
 

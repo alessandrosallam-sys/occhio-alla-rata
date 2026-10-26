@@ -148,7 +148,7 @@
     ['label:has([data-opzione-assistente="segue"])', 'Se lo spegni resto in cima alla pagina e non ti seguo quando scorri.'],
     ['[data-scelta-logo]', el => el.title + ' Clic per usarlo come logo.'],
     ['[data-scelta-avatar]', el => el.title + ' Clic e divento così: è solo il disegno, quello che dico resta uguale.'],
-    ['.intro-scritta', 'Il nome del programma. Clic e rifà l\'animazione. Il simbolo in alto a sinistra si cambia nelle Impostazioni, alla voce «Logo».'],
+    ['.intro-scritta', 'Il simbolo e il nome del programma. Clic e rifà l\'animazione. Il simbolo si cambia nelle Impostazioni, alla voce «Logo».'],
     ['#passa-avanzata', 'Mostra anche gli strumenti per esperti. Si torna alla semplice dalle «Impostazioni».'],
     // Riepilogo in testa
     ['#riepilogo .dato', el => perEtichetta(RIEPILOGO, etichetta(el)) || (/euribor|indice/i.test(etichetta(el)) ? 'Il valore dell\'indice per la rata di questo mese, e il giorno in cui la banca l\'ha letto.' : '')],

@@ -1,5 +1,6 @@
 // La prima apertura: la scritta «OCCHIO ALLA RATA» in cima alla prima pagina della guida, quando si parte da zero
-// (configura.js). Le lettere sorgono una dopo l'altra, poi il motto; l'animazione sta sotto
+// (configura.js), con accanto il simbolo scelto (di base il gufo: è un riquadro .logo, quindi cambia con le Impostazioni).
+// Il simbolo entra, le lettere sorgono una dopo l'altra, poi il motto; l'animazione sta sotto
 // la classe «in-volo», che c'è solo la prima volta che la scritta si disegna in questa apertura della pagina, e un clic
 // la rifà. Stile e animazioni in stile.css («La prima apertura»): senza animazioni si vede tutto fermo, al suo posto.
 (() => {
@@ -13,9 +14,11 @@
     scena.style.setProperty('--durata', DURATA + 's');
     scena.title = 'Clic per rivedere l\'animazione';
     scena.innerHTML = `<div class="scritta-testo">
-        <p class="scritta-titolo" aria-label="Occhio alla Rata">${parola('OCCHIO', 0)} ${parola('ALLA', 6)}<br>${parola('RATA', 10, 'scritta-rata')}</p>
+        <div class="scritta-marchio"><span class="logo" aria-hidden="true"></span>
+          <p class="scritta-titolo" aria-label="Occhio alla Rata">${parola('OCCHIO', 0)} ${parola('ALLA', 6)}<br>${parola('RATA', 10, 'scritta-rata')}</p></div>
         <p class="scritta-motto">Tiene d'occhio le rate del tuo mutuo o finanziamento, al centesimo.</p>
       </div>`;
+    scena.querySelector('.logo').append(Loghi.crea());
     scena.addEventListener('click', () => { scena.classList.remove('in-volo'); void scena.offsetWidth; scena.classList.add('in-volo'); });
     vista = true;
     return scena;
