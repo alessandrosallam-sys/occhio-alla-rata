@@ -2336,3 +2336,33 @@ button[aria-busy="true"]::after {
 @keyframes scorre { from { transform: translateX(-15.5px); } to { transform: translateX(16.5px); } }
 @keyframes tremola { 0%, 44%, 49%, 78%, 100% { opacity: 1; } 46% { opacity: 0.55; } 47.5% { opacity: 0.9; } 80% { opacity: 0.7; } }
 
+/* ---------- 12. Schermata di caricamento ----------
+   #caricamento (index.html) copre tutta la pagina, testata compresa, con lo sfondo del tema, finché app.js non ha
+   disegnato la prima pagina (docs/progetto-generale.md, sezione 42). Il contenuto compare dopo un quarto di secondo:
+   quando la pagina è pronta subito non lampeggia. La barra si muove con transform e il contenuto sfuma con opacity:
+   il browser li anima a parte, quindi continuano anche mentre la pagina è occupata dai conti. */
+.caricamento {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--s5) var(--s4);
+  background: var(--sfondo-pagina); color: var(--inchiostro); text-align: center;
+}
+.caricamento-interno { display: flex; flex-direction: column; align-items: center; gap: var(--s3); max-width: 340px; }
+.caricamento p { margin: 0; }
+.caricamento .logo { width: 76px; height: 76px; margin-bottom: var(--s2); border-radius: 22px; box-shadow: var(--ombra-alta); cursor: default; }
+.caricamento .logo:empty { visibility: hidden; }   /* prima che loghi.js disegni il simbolo, niente riquadro vuoto */
+.caricamento-nome { font-family: var(--carattere-titoli); font-weight: 800; font-size: calc(22px * var(--testo)); letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.15; }
+.caricamento-nome span { color: var(--accento); }
+.caricamento-barra { display: none; width: 168px; height: 5px; border-radius: 3px; background: var(--accento-tenue); overflow: hidden; }
+.caricamento-barra span { display: block; width: 40%; height: 100%; border-radius: 3px; background: var(--accento); }
+.caricamento-testo { color: var(--tenue); font-size: calc(14.5px * var(--testo)); }
+.caricamento-lento { color: var(--tenue); font-size: calc(13.5px * var(--testo)); visibility: hidden; animation: caricamento-lento 0s 12s both; }
+.caricamento.finito { opacity: 0; pointer-events: none; }
+@keyframes caricamento-lento { to { visibility: visible; } }
+@keyframes caricamento-scorre { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+/* Con «riduci movimento» il contenuto c'è subito, la barra non c'è e la schermata se ne va senza sfumare. */
+@media (prefers-reduced-motion: no-preference) {
+  .caricamento-interno { animation: appare 0.3s ease-out 0.25s both; }
+  .caricamento-barra { display: block; }
+  .caricamento-barra span { animation: caricamento-scorre 1.1s ease-in-out infinite; }
+  .caricamento.finito { transition: opacity 0.3s ease; }
+}
+

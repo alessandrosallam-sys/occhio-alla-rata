@@ -34,6 +34,19 @@
   <script src="temi.js"></script>
 </head>
 <body>
+  <!-- La schermata di caricamento (docs/progetto-generale.md, sezione 42): copre la pagina finché app.js non ha fatto i
+       conti e disegnato la prima pagina, poi sfuma e se ne va. Il simbolo scelto lo disegna loghi.js. Se dopo 12 secondi
+       è ancora lì compare l'invito a ricaricare: lo fa solo stile.css, così funziona anche se uno script si è fermato. -->
+  <div class="caricamento" id="caricamento" role="status" aria-live="polite">
+    <div class="caricamento-interno">
+      <span class="logo" aria-hidden="true"></span>
+      <p class="caricamento-nome">Occhio alla <span>Rata</span></p>
+      <div class="caricamento-barra" aria-hidden="true"><span></span></div>
+      <p class="caricamento-testo">Un attimo, sto preparando i conti…</p>
+      <p class="caricamento-lento">Ci sta mettendo troppo? Prova a ricaricare la pagina.</p>
+    </div>
+  </div>
+
   <!-- Testata: nome del programma, menù generale (in basso sui telefoni) con il ramo del prestito aperto (barra laterale),
        impostazioni; sotto, sugli schermi stretti, il sottomenu del prestito aperto (app.js, disegnaMenu) -->
   <header class="testata">

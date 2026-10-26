@@ -941,6 +941,18 @@
   };
   M.disegnaMenu = disegnaMenu;
   M.NOME_PROGRAMMA = NOME_PROGRAMMA;
+  // La schermata di caricamento (#caricamento in index.html) copre la pagina durante il primo avvio: i conti di tutte le
+  // pagine tengono occupato il browser per quasi un secondo sul computer, e per qualche secondo su un telefono. L'avvio
+  // parte dopo che il browser l'ha disegnata (requestAnimationFrame, poi setTimeout): partendo subito, il browser non
+  // disegnerebbe niente fino alla fine dei conti. Finito l'avvio, anche con un errore, la schermata sfuma e se ne va.
+  function togliCaricamento() {
+    const schermata = $('#caricamento');
+    if (!schermata) return;
+    schermata.classList.add('finito');
+    setTimeout(() => schermata.remove(), movimento() ? 350 : 0);
+  }
   // Una variante della pagina può sostituire l'avvio con M.allAvvio (ad esempio per chiedere prima quali dati caricare).
-  window.addEventListener('DOMContentLoaded', () => (M.allAvvio || M.avvia)());
+  window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(() => setTimeout(() => {
+    Promise.resolve().then(() => (M.allAvvio || M.avvia)()).finally(togliCaricamento);
+  })));
 })();
