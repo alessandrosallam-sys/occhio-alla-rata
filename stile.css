@@ -2183,6 +2183,11 @@ button[aria-busy="true"]::after {
 .rate-scritte > .nota { margin: 0; }
 .chip-rate { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s2); }
 .chip-rate button.attuale { border-color: var(--accento); background: var(--accento-tenue); }
+/* Le rate bastano: il programma dice in chiaro che non serve continuare */
+.rate-bastano { margin: 0 0 var(--s4); padding: var(--s3) var(--s4); background: var(--ok-sfondo); color: var(--ok-testo); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); border-radius: var(--r2); font-size: calc(15px * var(--testo)); }
+.rate-bastano p { margin: 0; }
+.rate-bastano p + p, .rate-bastano p + button { margin-top: var(--s2); }
+.rate-bastano strong { font-size: calc(17px * var(--testo)); }
 
 /* Mentre si scrivono le rate: quanto il programma è sicuro, e il robottino che racconta i conti */
 .calcolo-rate { margin-top: var(--s4); padding: var(--s3) var(--s4); background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); }

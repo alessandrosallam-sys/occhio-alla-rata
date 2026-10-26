@@ -306,8 +306,9 @@
   // «Ci penso io»), chiusi (dubbi risolti), nonSoDubbio e nonSoDato (dubbi e dati sostitutivi a cui ha risposto «Non lo
   // trovo»), saltate (risposte lasciate al programma), modoDomande (le rate quasi tornano e l'utente risponde a domande
   // sul contratto), analisi (l'ultima deduzione), serieScaricate (Euribor scaricati da internet nella guida, per
-  // codice), conDettagli (spese e assicurazioni), daRiempire e riempi (le rate passate che il calcolo può riempire).
-  const STATO_BREVE = () => ({ tipoBreve: null, categoria: null, avvisoSpese: null, dataAddebito: null, modoData: 'prima', durataIn: 'anni', ordineRate: null, rataCorrente: 0, noti: {}, chiusi: new Set(), nonSoDubbio: new Set(), nonSoDato: new Set(),
+  // codice), conDettagli (spese e assicurazioni), daRiempire e riempi (le rate passate che il calcolo può riempire),
+  // altreLoStesso (le rate bastano già, ma l'utente vuole scriverne altre).
+  const STATO_BREVE = () => ({ tipoBreve: null, categoria: null, avvisoSpese: null, dataAddebito: null, modoData: 'prima', durataIn: 'anni', ordineRate: null, rataCorrente: 0, altreLoStesso: false, noti: {}, chiusi: new Set(), nonSoDubbio: new Set(), nonSoDato: new Set(),
     saltate: new Set(), modoDomande: false, analisi: null, serieScaricate: {}, serieProvate: false, serieErrore: null, conDettagli: false, daRiempire: [], riempi: null });
   const guida = { percorso: 'breve', passo: 0, massimo: 0, bozza: {}, riapertura: false, nuovo: false, rate: {}, righeRate: 12, caricaTassi: true, scaricati: null, nonSo: new Set(), ricavate: null, ...STATO_BREVE() };
   const passi = () => guida.percorso === 'breve' ? PASSI_BREVI : guida.percorso === 'offerta' ? PASSI_OFFERTA : PASSI_COMPLETI;
@@ -980,6 +981,11 @@
   // Nell'ordine scelto: dalla più recente all'indietro, o dalla prima in avanti (con poche rate, dalla prima).
   const rateInOrdine = () => { const p = periodiIniziati(); return guida.ordineRate === 'recenti' && p.length > 3 ? [...p].reverse() : p; };
   const rateScritte = () => rateInserite().filter(r => r.rata_vera != null);
+  // Le rate scritte bastano: i conti sono finiti e tornano tutti, senza dubbi, con almeno tre rate.
+  function rateBastano() {
+    const a = guida.analisi, primo = a && !a.inCorso && a.risultato && a.risultato.esito === 'trovato' && a.candidati[0];
+    return !!primo && primo.suRate >= 3;
+  }
   function disegnaRataSola(contenitore) {
     const lista = rateInOrdine();
     guida.rataCorrente = Math.max(0, Math.min(guida.rataCorrente, lista.length - 1));
@@ -995,6 +1001,7 @@
         : scritte.length ? `Hai scritto ${quanteRate(scritte.length)}: me ne servono almeno tre.` : 'Me ne servono almeno tre o quattro, anche non di fila.';
     contenitore.replaceChildren(crea('div', { className: 'domanda domanda-sola rata-sola', 'data-campo': 'rata' },
       crea('p', { className: 'data-rata' }, crea('strong', {}, `Rata numero ${n}`), ` di ${rateTotali(guida.bozza)}, addebitata il ${dataChiara(inizio)}`),
+      crea('div', { className: 'rate-bastano', id: 'rate-bastano', role: 'status', hidden: true }),
       crea('label', { className: 'titolo-domanda', htmlFor: 'campo-rata' }, 'Quanto ti è stato addebitato?'),
       casella('rata', 'es. 650,00', `Rata di ${M.meseAnno(inizio)}`),
       crea('p', { className: 'spiegazione-corta' }, `L'importo uscito dal conto per questa rata, spese comprese: lo trovi nell'estratto conto di ${M.meseAnno(inizio)} o nella ricevuta. Se quel giorno era festivo, l'addebito può essere del primo giorno lavorativo dopo.`),
@@ -1440,7 +1447,8 @@
   function aggiungiRate() {
     const lista = rateInOrdine(), scritte = new Set(rateScritte().map(r => r.n));
     guida.passo = PASSI_BREVI.findIndex(p => p.tipo === 'rate');
-    const dopo = lista.findIndex((p, i) => i > guida.rataCorrente && !scritte.has(p.n)), prima = lista.findIndex(p => !scritte.has(p.n));
+    guida.altreLoStesso = true;
+    const dopo =lista.findIndex((p, i) => i > guida.rataCorrente && !scritte.has(p.n)), prima = lista.findIndex(p => !scritte.has(p.n));
     guida.rataCorrente = dopo >= 0 ? dopo : Math.max(0, prima);
     disegnaPasso();
   }
@@ -1597,7 +1605,7 @@
     if ((r.esito === 'trovato' || r.esito === 'dubbio') && scritte < 3) {
       return [`${scritte === 1 ? 'Con una rata sola' : 'Con due rate'} posso solo farmi un'idea (forse ${tasso}): me ne servono almeno tre.`, 'pensa'];
     }
-    if (r.esito === 'trovato') return [`Tornano tutte e ${primo.suRate}, con ${tasso}. Sono sicuro: puoi premere «Ho finito con le rate».`, 'felice'];
+    if (r.esito === 'trovato') return [`Tornano tutte e ${primo.suRate}, con ${tasso}. Sono sicuro: ${guida.altreLoStesso ? 'quando vuoi, premi «Ho finito con le rate».' : 'non serve scriverne altre, premi «Avanti».'}`, 'felice'];
     if (r.esito === 'dubbio') {
       const d = Deduzione.differenzeFra(a.candidati)[0];
       return [`Tornano tutte e ${primo.suRate} con ${tasso}, ma non so ancora ${DETTAGLI[d.chiave] || 'un dettaglio'}: un'altra rata può aiutarmi, altrimenti te lo chiedo dopo.`, 'parla'];
@@ -1630,6 +1638,17 @@
     $('.percento', box).textContent = `${valore}%`;
     $('.barra-sicurezza', box).setAttribute('aria-valuenow', String(valore));
     $('.barra-sicurezza > span', box).style.width = `${valore}%`;
+    // Le rate bastano: lo dice in chiaro sopra la casella, e «Avanti» non chiede la rata dopo.
+    const basta = $('#rate-bastano'), bastano = rateBastano();
+    if (basta && bastano) {
+      const quante = guida.analisi.candidati[0].suRate;
+      basta.replaceChildren(...(guida.altreLoStesso
+        ? [crea('p', {}, crea('strong', {}, 'Ho già abbastanza rate. '), 'Scrivi le altre se vuoi; quando hai finito, premi «Ho finito con le rate».')]
+        : [crea('p', {}, crea('strong', {}, 'Basta così: non serve scrivere altre rate.')),
+          crea('p', {}, `Con le ${quante} rate che hai scritto i conti tornano tutti al centesimo. Premi «Avanti» e ti mostro che cosa ho capito.`),
+          crea('button', { type: 'button', className: 'secondario piccolo', id: 'altre-lo-stesso' }, 'Voglio scriverne altre lo stesso')]));
+    }
+    if (basta) basta.hidden = !bastano;
     Assistente.dici(assistenteGuida, testo, umore);
   }
   const pannelloCalcolo = () => crea('div', { className: 'calcolo-rate', id: 'calcolo-rate' },
@@ -1797,6 +1816,7 @@
       for (const input of document.querySelectorAll('#campi-passo input[data-rata]')) input.value = '';
       $('#form-guida').requestSubmit();
     }
+    if (evento.target.id === 'altre-lo-stesso') { guida.altreLoStesso = true; aggiornaCalcolo(); $('#campo-rata').focus(); }
     if (evento.target.id === 'rate-finite' && leggiRataSola(true)) { invalidaDopoAnalisi(); guida.passo = passoDopo(guida.passo); disegnaPasso(); }
     const vai = evento.target.closest('[data-vai-rata]');
     if (vai && leggiRataSola(false)) { guida.rataCorrente = rateInOrdine().findIndex(p => p.n === +vai.dataset.vaiRata); avviaAnalisi(); disegnaPasso(); }
@@ -1893,6 +1913,8 @@
     evento.preventDefault();
     if (!raccogliPasso(true)) return;
     if (passoAttuale().tipo === 'analisi' && !avantiAnalisi()) return;
+    // Le rate bastano: «Avanti» passa a «Ci penso io» invece di chiedere la rata dopo (salvo «Voglio scriverne altre»).
+    if (guida.percorso === 'breve' && passoAttuale().tipo === 'rate' && rateBastano() && !guida.altreLoStesso) { guida.passo = passoDopo(guida.passo); return disegnaPasso(); }
     if (guida.percorso === 'breve' && passoAttuale().tipo === 'rate' && guida.rataCorrente < rateInOrdine().length - 1) { guida.rataCorrente++; avviaAnalisi(); return disegnaPasso(); }
     if (guida.passo < passi().length - 1) { guida.passo = passoDopo(guida.passo); return disegnaPasso(); }
     if (guida.percorso === 'offerta') return salvaOfferta();

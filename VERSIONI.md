@@ -8,7 +8,7 @@ Il [sito](https://alessandrosallam-sys.github.io/occhio-alla-rata/) si aggiorna 
 
 Già sul sito, non ancora in una versione numerata.
 
-- Niente, per ora.
+- **Le rate bastano**: mentre scrivi le rate, appena i conti tornano tutti al centesimo il programma lo dice in chiaro («Basta così: non serve scrivere altre rate») e «Avanti» passa a «Ci penso io» invece di chiederti la rata dopo. Se vuoi scriverne altre lo stesso, c'è un pulsante apposta.
 
 ## 1.1 (26 ottobre 2026)
 
