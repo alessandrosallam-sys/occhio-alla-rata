@@ -38,6 +38,7 @@ Occhio alla Rata parte da quello che hai sull'estratto conto: scrivi alcune rate
 - **Simula il rimborso anticipato.** Quanto risparmi rimborsando tutto o una parte, con penali e costi restituiti secondo la legge italiana.
 - **Confronta le offerte.** Prima di firmare: rata, interessi, costo totale e TAEG uno accanto all'altro.
 - **Segue più prestiti insieme.** Mutuo, auto, prestito personale, con i totali del mese.
+- **Si prova prima, con degli esempi.** «Prova con degli esempi» apre un prestito inventato per tipo, con le rate già pagate: per vedere come funziona prima di scrivere i propri dati, che restano come sono.
 - **È pensato per chi non sa niente di mutui.** Una domanda per pagina, spiegazioni semplici e un piccolo assistente che spiega ogni cosa al passaggio del mouse (sul telefono con «Che cos'è?»).
 
 ## I tuoi dati restano tuoi
@@ -80,7 +81,7 @@ Tutte con dati inventati.
 
 I dati restano sul dispositivo dove li scrivi: per passarli dal computer al telefono usa «Salva un backup» da una parte e «Carica un backup» dall'altra.
 
-**Per farlo conoscere** a qualcuno: nel Pannello di controllo, la carta «Fallo conoscere». «Condividi» apre la condivisione del telefono (WhatsApp, Telegram, email…) con un messaggio già scritto; ci sono anche «Manda con WhatsApp» e «Copia il link». Parte solo l'indirizzo del sito, non i tuoi prestiti.
+**Per farlo conoscere** a qualcuno c'è **«Condividi»**, sempre in vista: sul telefono è l'icona in alto accanto a quella delle impostazioni, e apre la condivisione del telefono (WhatsApp, Telegram, email…) con un messaggio già scritto; sul computer è sotto «Impostazioni», in fondo alla barra a sinistra, e apre un riquadro con «Manda con WhatsApp», «Copia il link» e «Altre app». Parte solo l'indirizzo del sito, non i tuoi prestiti.
 
 <details>
 <summary><strong>Guida completa: tutte le pagine e le impostazioni</strong></summary>
@@ -197,7 +198,7 @@ prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali e 
 costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione anticipata
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
 cambi.js              cambi del contratto dopo la firma (tasso, spread, durata) e nuovo prestito dal debito residuo (surroga), nella pagina «Dati del prestito»
-condividi.js          la carta «Fallo conoscere» del pannello: condivisione, WhatsApp e copia del link al sito
+condividi.js          il pulsante «Condividi» accanto a «Impostazioni»: condivisione del telefono, oppure il riquadro con WhatsApp e la copia del link
 esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte, che sparisce uscendo
 icone.js              le icone della pagina, disegnate a mano
 loghi.js              i dieci loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse

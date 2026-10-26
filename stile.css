@@ -1479,6 +1479,10 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
 .testa-menu { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
 .testa-menu h2 { margin: 0; font-size: calc(18px * var(--testo)); }
 .menu-temi > .nota { margin: var(--s3) 0 0; }
+/* «Fallo conoscere» (condividi.js): lo stesso riquadro, più stretto */
+.menu-condividi { width: min(460px, calc(100vw - 24px)); }
+.menu-condividi > .nota { margin: 0; }
+.menu-condividi .azioni { margin: var(--s4) 0 0; }
 .griglia-temi { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: var(--s3); }
 button.tessera-tema, button.tessera-versione {
   display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; min-height: 0; padding: 8px 8px 10px;

@@ -59,6 +59,10 @@
         <button type="button" class="secondario pulsante-icona" id="scegli-tema" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu-temi" title="Impostazioni: versione semplice o avanzata, assistente, colori">
           <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M5.5 18.5l2.1-2.1M16.4 7.6l2.1-2.1"/></svg>
           <span class="testo-pulsante">Impostazioni</span><span class="impostazione-attuale"></span></button>
+        <!-- Condividere il link al sito (condividi.js): sul telefono apre subito la condivisione, sul computer il riquadro #menu-condividi -->
+        <button type="button" class="secondario pulsante-icona" id="condividi-testata" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu-condividi" title="Condividi: manda a qualcuno il link al sito">
+          <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.5" cy="5.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/><path d="M8.7 10.7 15.3 6.8M8.7 13.3l6.6 3.9"/></svg>
+          <span class="testo-pulsante">Condividi</span></button>
       </div>
     </div>
     <!-- Sugli schermi stretti: il prestito aperto e le sue pagine (app.js) -->
@@ -522,19 +526,6 @@
           <div class="azioni"><button type="button" id="installa-app" data-icona="scarica" hidden>Installa l'app</button></div>
         </div>
 
-        <!-- Far conoscere il programma: il link al sito con un messaggio pronto (condividi.js) -->
-        <div class="carta carta-versione" id="carta-condividi">
-          <div>
-            <h2 data-icona="condividi">Fallo conoscere</h2>
-            <p class="nota">Conosci qualcuno con un mutuo o un finanziamento? Mandagli il link: c'è già un messaggio pronto che spiega che cos'è. Parte solo l'indirizzo del sito, <strong>alessandrosallam-sys.github.io/occhio-alla-rata</strong>: i tuoi prestiti restano qui.</p>
-          </div>
-          <div class="azioni">
-            <button type="button" id="condividi" data-icona="condividi" hidden>Condividi</button>
-            <button type="button" class="secondario" id="manda-whatsapp">Manda con WhatsApp</button>
-            <button type="button" class="secondario" id="copia-link" data-icona="copia">Copia il link</button>
-          </div>
-        </div>
-
         <!-- Nella versione semplice: che cosa c'è in più nell'avanzata -->
         <div class="carta solo-semplice carta-versione">
           <div>
@@ -559,6 +550,21 @@
 
   <!-- Riquadro delle impostazioni (versione, assistente, temi): si apre dal pulsante «Impostazioni» (temi.js) -->
   <div class="menu-temi" id="menu-temi" role="dialog" hidden></div>
+
+  <!-- Riquadro «Fallo conoscere»: si apre dal pulsante «Condividi» della testata (condividi.js) dove non si apre
+       direttamente la condivisione del telefono. Stesso aspetto di quello delle impostazioni. -->
+  <div class="menu-temi menu-condividi" id="menu-condividi" role="dialog" aria-labelledby="titolo-menu-condividi" hidden>
+    <div class="testa-menu">
+      <h2 id="titolo-menu-condividi" data-icona="condividi">Fallo conoscere</h2>
+      <button type="button" class="secondario piccolo" id="chiudi-condividi">Chiudi</button>
+    </div>
+    <p class="nota">Conosci qualcuno con un mutuo o un finanziamento? Mandagli il link: c'è già un messaggio pronto che spiega che cos'è. Parte solo l'indirizzo del sito, <strong>alessandrosallam-sys.github.io/occhio-alla-rata</strong>: i tuoi prestiti restano qui.</p>
+    <div class="azioni">
+      <button type="button" id="manda-whatsapp">Manda con WhatsApp</button>
+      <button type="button" class="secondario" id="copia-link" data-icona="copia">Copia il link</button>
+      <button type="button" class="secondario" id="condividi" data-icona="condividi" hidden>Altre app</button>
+    </div>
+  </div>
 
   <div id="avviso" class="notifica" role="status" aria-live="polite" hidden></div>
 

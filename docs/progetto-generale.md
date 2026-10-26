@@ -42,7 +42,7 @@ mutuo-generale/
   offerte.js            scheda «Offerte»: confronto di offerte prima di firmare (sezione 16)
   cambi.js              cambi del contratto dopo la firma e chiusura con una surroga, nella pagina «Dati del prestito» (sezione 35)
   esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte (sezione 38)
-  condividi.js          la carta «Fallo conoscere» del pannello: condivisione, WhatsApp, copia del link (sezione 41)
+  condividi.js          il pulsante «Condividi» accanto a «Impostazioni» e il riquadro «Fallo conoscere» (sezione 41)
   dati-euribor/         scarica.js e i CSV con gli Euribor dal 1999 (sezione 7)
   README.md, LICENSE, .gitignore, .gitattributes   per la pubblicazione (sezione 11)
   VERSIONI.md           le versioni e che cosa cambia in ognuna (sezione 37)
@@ -1056,3 +1056,11 @@ Chiesto dall'utente: "se lo voglio condividere a qualcuno su whatsapp?", poi "ok
 - L'assistente spiega i tre pulsanti (`spiegazioni.js`).
 
 **Prove** (`prova-condividi.js`, Edge senza finestra; condivisione, `window.open` e appunti sostituiti da spie che registrano che cosa la pagina avrebbe mandato). Telefono a 390 px con la condivisione: carta e icona; «Condividi» manda titolo, messaggio e indirizzo; «Manda con WhatsApp» apre wa.me con il messaggio che finisce con il link; «Copia il link» copia l'indirizzo e lo dice; niente scorrimento orizzontale. Computer a 1280 px senza condivisione e con gli appunti che non funzionano: «Condividi» non c'è, WhatsApp come sopra, la copia passa dal vecchio «copia» (con un clic vero: il browser lo permette solo dopo un gesto dell'utente). Nessun errore. **Non provato**: la condivisione vera su un telefono.
+
+### Sempre in vista, accanto a «Impostazioni» (26 ottobre 2026)
+
+L'utente: "condividi mettilo sempre a vista su mobile vicino a impostazioni con icona tipica e su desktop sempre sotto impostazioni". La carta nel pannello non c'è più: il suo contenuto è diventato un riquadro.
+
+- **Il pulsante** (`#condividi-testata` in `.azioni-testata`, subito dopo `#scegli-tema`): stesse classi e stessa forma del pulsante delle impostazioni, quindi lo segue da solo. Sotto i 1100 px è un'icona quadrata accanto all'ingranaggio, con il nome solo per i lettori di schermo; sopra i 1100 px, con la barra laterale, è una riga con icona e nome sotto «Impostazioni»; nella pagina di benvenuto (senza barra laterale) sta in alto a destra con il nome. L'icona è quella classica della condivisione, tre cerchi uniti (`condividi` in `icone.js`, ripetuta nell'HTML come quelle della testata).
+- **Che cosa fa**: dove non c'è il mouse e il browser sa condividere (`M.senzaMouse()` e `navigator.share`, cioè i telefoni) apre subito la condivisione del sistema. Altrimenti apre il riquadro `#menu-condividi`: la classe `.menu-temi` (lo stesso aspetto di quello delle impostazioni, dal basso sui telefoni) più `.menu-condividi` (largo al massimo 460 px). Dentro: «Manda con WhatsApp» (il pulsante principale), «Copia il link» e «Altre app» (`navigator.share`, solo dove c'è). Si chiude con «Chiudi», Esc, un clic fuori, o dopo aver mandato o copiato il link. Vicino al pulsante come quello delle impostazioni: a destra della barra laterale, sotto il pulsante quando è in alto.
+- **Prove** (`prova-condividi2.js`, stesse spie di prima). Telefono con la condivisione: l'icona c'è già nella pagina di benvenuto; a 390, 360 e 320 px è quadrata (44 px), accanto all'ingranaggio e alla sua altezza, il titolo non ci arriva sotto e niente esce dallo schermo; un tocco apre subito la condivisione, senza riquadro; la carta del pannello non c'è più. Telefono senza condivisione: il riquadro sale dal basso, largo quanto lo schermo, senza «Altre app»; WhatsApp lo apre e lo chiude. Computer: nella pagina di benvenuto il pulsante ha il nome e il riquadro si apre sotto, Esc lo chiude; con la barra laterale «Condividi» è sotto «Impostazioni», largo uguale, e il riquadro si apre alla sua destra con i tre pulsanti; «Copia il link» e «Altre app» fanno la loro cosa e lo chiudono; un clic fuori lo chiude; aprendo le impostazioni si chiude. Nessun errore.
