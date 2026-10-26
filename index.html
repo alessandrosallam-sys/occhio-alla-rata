@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
+  <!-- Che cosa il browser lascia caricare (docs/progetto-generale.md, sezione 37): file e richieste solo da questo sito, più
+       i valori dell'Euribor dalla Bundesbank; immagini anche data: (l'icona della scheda) e blob:; stili anche in linea.
+       Ogni altro indirizzo è bloccato dal browser: se ne serve uno nuovo, va aggiunto qui. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.statistiken.bundesbank.de; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'">
   <title>Occhio alla Rata</title>
   <link rel="stylesheet" href="stile.css">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
@@ -521,6 +525,8 @@
         </section>
 
         <p class="nota piede">È uno strumento di controllo, non una consulenza: i conti che fanno fede sono quelli della banca.</p>
+        <!-- Il numero della versione (VERSIONI.md; come si fa una versione nuova: CLAUDE.md) -->
+        <p class="nota piede" id="versione">Occhio alla Rata, versione 1.0 del 26 ottobre 2026 · <a href="https://github.com/alessandrosallam-sys/occhio-alla-rata/blob/main/VERSIONI.md" target="_blank" rel="noopener">che cosa c'è di nuovo</a> · <a href="https://github.com/alessandrosallam-sys/occhio-alla-rata/issues/new/choose" target="_blank" rel="noopener">segnala un problema</a></p>
       </div>
     </section>
   </main>

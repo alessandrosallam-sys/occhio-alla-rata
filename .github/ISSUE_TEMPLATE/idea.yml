@@ -1,6 +1,7 @@
 name: Un'idea
 description: Una cosa che manca o che si potrebbe fare meglio.
 title: "Idea: "
+labels: ["idea"]
 body:
   - type: textarea
     id: idea

@@ -43,6 +43,7 @@ mutuo-generale/
   cambi.js              cambi del contratto dopo la firma e chiusura con una surroga, nella pagina «Dati del prestito» (sezione 35)
   dati-euribor/         scarica.js e i CSV con gli Euribor dal 1999 (sezione 7)
   README.md, LICENSE, .gitignore, .gitattributes   per la pubblicazione (sezione 11)
+  VERSIONI.md           le versioni e che cosa cambia in ognuna (sezione 37)
 ```
 
 Gli script si caricano in quest'ordine: `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js` (`icone.js` prima di tutti). All'evento `DOMContentLoaded` parte `Mutuo.avvia()`: se non c'è una configurazione apre la guida, altrimenti mostra il programma.
@@ -272,12 +273,12 @@ Avvertenze pratiche per gli script di prova:
 
 Chiesto dall'utente il 14 ottobre 2026: "far diventare generale un progetto git da condividere opensource", e "prima di farlo su GitHub fai una revisione totale e leva tutti i dati sensibili".
 
-- **Il repository** (`git init` fatto il 14 ottobre 2026; nome interno della cartella `mutuo-generale`) è su GitHub dal 23 ottobre 2026: https://github.com/alessandrosallam-sys/occhio-alla-rata, per ora privato. Si lavora da più computer: all'inizio di ogni sessione `git pull`, dopo ogni commit `git push` (vedi CLAUDE.md).
+- **Il repository** (`git init` fatto il 14 ottobre 2026; nome interno della cartella `mutuo-generale`) è su GitHub dal 23 ottobre 2026: https://github.com/alessandrosallam-sys/occhio-alla-rata, pubblico dal 25 ottobre 2026, con il sito su GitHub Pages (sezione 30). Si lavora da più computer: all'inizio di ogni sessione `git pull`, dopo ogni commit `git push` (vedi CLAUDE.md).
 - **Esclusi con `.gitignore`**: i CSV di `dati-euribor/`, il `LEGGIMI.txt` generato e `tassi-precaricati.js`, per la questione della licenza EMMI (sezione 7). Chi clona rigenera i dati con i due script, oppure usa la pagina così com'è: lo scarico automatico non ha bisogno dei precaricati. Per includerli basta togliere le tre righe dal `.gitignore`.
 - **File per la pubblicazione**: `README.md` (per chi usa la pagina e per chi vuole modificarla: uso, regole supportate, dati e licenza, avvertenza legale, struttura del codice), `LICENSE` (MIT fino al 25 ottobre 2026, poi PolyForm Noncommercial: sezione 32; titolare il nome utente GitHub), `.gitattributes` (fine riga LF).
 - **Revisione dei dati sensibili** (14 ottobre 2026, ripetuta il 23 ottobre su tutta la cronologia prima del primo invio a GitHub): cercati in tutti i file importi, date e tassi di un mutuo vero, nomi, email, percorsi del computer, nomi di banche e riferimenti a progetti privati. Trovati e cambiati gli esempi della guida presi da un mutuo vero e alcuni commenti. I testi che dicono "la banca" o "l'utente" in senso generico vanno bene. I salvataggi di prova non stanno nel repository.
 - **Identità git**: nome e email stanno nella configurazione locale del repository (`git config user.name` / `user.email`). L'email è quella privata di GitHub (`…@users.noreply.github.com`): il 23 ottobre 2026, prima del primo invio, l'autore di tutti i commit è stato riscritto con questo indirizzo, e l'account rifiuta gli invii con un'email diversa. Su un computer nuovo va impostata subito dopo il clone (CLAUDE.md).
-- **Fatto il 23 ottobre 2026**: titolare nella `LICENSE`, repository su GitHub, primo invio. **Deciso il 24 ottobre 2026**: i dati dell'Euribor restano fuori dal repository e dal sito; ogni dispositivo li scarica dalla Bundesbank e ne tiene una copia (sezione 30). **Da fare**, dall'autore su GitHub: Settings → General → Change visibility (pubblico), poi Settings → Pages (sezione 30).
+- **Fatto il 23 ottobre 2026**: titolare nella `LICENSE`, repository su GitHub, primo invio. **Deciso il 24 ottobre 2026**: i dati dell'Euribor restano fuori dal repository e dal sito; ogni dispositivo li scarica dalla Bundesbank e ne tiene una copia (sezione 30). **Fatto dall'autore il 25 ottobre 2026**: repository pubblico e sito su GitHub Pages (sezione 30).
 - **Più computer** (23 ottobre 2026, chiesto dall'utente: "voglio poter lavorare a questo progetto da altri pc sempre con claude"): regole e documentazione stanno nel repository (`CLAUDE.md`, `docs/`), così su un computer nuovo basta il clone. Ogni sessione fa `git pull` all'inizio e `git push` dopo ogni commit. Come si prepara un computer (Git, VS Code con Claude Code, clone in `mutuo-generale`, Node portatile in `..\runtime`), cosa manca (prestiti nel browser, `tassi-precaricati.js`) e i problemi comuni: [lavorare-da-un-altro-pc.md](lavorare-da-un-altro-pc.md).
 
 ## 12. Previsioni: serie storica e modelli (`modelli.js`, `previsioni.js`)
@@ -787,6 +788,8 @@ Chiesto dall'utente: "se volessimo fare un'app Android invece?", poi, fra le str
 
 ### Pubblicazione su GitHub Pages (la fa l'autore)
 
+Fatta il 25 ottobre 2026; il 26 ottobre il sito risponde e serve anche `sw.js`, `cambi.js` e `storico.js`.
+
 1. Su GitHub, nel repository: Settings → General → in fondo «Change visibility» → pubblico. GitHub Pages da un repository privato richiede un piano a pagamento.
 2. Settings → Pages → «Deploy from a branch», ramo `main`, cartella `/ (root)` → Save.
 3. Dopo un minuto o due il sito è su `https://alessandrosallam-sys.github.io/occhio-alla-rata/`. Dal telefono, con Chrome: il sito, poi «Installa app» dal menù o il pulsante nel Pannello di controllo.
@@ -819,7 +822,7 @@ Nella pagina del repository, l'ingranaggio accanto ad «About»:
 - **Topics**: `mutuo`, `euribor`, `finanziamento`, `taeg`, `finanza-personale`, `tasso-variabile`, `pwa`, `javascript`, `vanilla-js`, `italiano`.
 - Togliere le spunte a «Packages» e «Deployments», se non servono.
 
-In Settings → General → Social preview: «Edit» → carica `docs/immagini/anteprima-social.png`.
+In Settings → General → Social preview: «Edit» → carica `docs/immagini/anteprima-social.png`. Il 26 ottobre 2026 non era ancora fatto: il link al repository mostrava l'immagine automatica di GitHub (`opengraph.githubassets.com`). Il link al sito invece usa già `anteprima-social.png`, perché la prende dai tag di `index.html`.
 
 ### Controllo dei dati privati (25 ottobre 2026)
 
@@ -951,3 +954,33 @@ Chiesto dall'utente: sul telefono la tabella dei tassi era poco leggibile, e nel
 - **Errore corretto**: Esc durante la modifica di un tasso svuotava la tabella (`disegnaTabella` richiamata senza periodo). Ora ricorda l'ultimo periodo.
 
 **Prove** (Edge senza finestra, 390×844 con `mobile: true`, e 1280×900): piano alto 12.100 px senza scorrimento proprio; scesa la pagina di 1.500 px, l'intestazione è a 103 px, proprio sotto la testata; «Vai al mese corrente» porta la riga a metà schermo; scorrendo di lato la prima colonna resta ferma. Tassi: tabella larga quanto il riquadro (322 px), modifica di un valore con il campo che non copre la data, 973 righe anche dopo Esc. Sul computer: tassi con sei colonne, piano che scorre nel suo riquadro con la riga del mese dentro, intestazione senza spostamenti. Nessun errore nella pagina. **Non provato**: un telefono vero, Safari su iPhone (lo spostamento dell'intestazione con lo scorrimento a inerzia).
+## 37. Versioni, connessioni bloccate dal browser, etichette delle segnalazioni (26 ottobre 2026)
+
+Chiesto dall'utente dopo un controllo del repository su GitHub ("guarda il mio github e consigliami se c'è qualcosa che manca", poi "sistema punto 1,2,4 e le più piccole").
+
+- **Testi aggiornati**: il repository è pubblico (CLAUDE.md, sezione 11, `lavorare-da-un-altro-pc.md`: il clone non chiede l'accesso, lo chiede il primo invio). Nel README mancava `cambi.js` nell'elenco dei file e nell'ordine degli script, e l'assistente aveva «undici» aspetti invece di tredici (quelli con `nascosto` non contano).
+
+### Versioni
+
+- Il numero sta in due posti: in fondo al Pannello di controllo (`<p id="versione">` in `index.html`, con i collegamenti a `VERSIONI.md` e alle segnalazioni su GitHub, colore `--accento-testo`) e in `VERSIONI.md` (in cima la sezione «Non ancora in una versione», poi una sezione per versione, dalla più nuova). Non c'è una costante in JavaScript: il numero serve solo alle persone. `sw.js` non mette i collegamenti nella copia offline (contengono `:`).
+- Il sito si aggiorna a ogni push, quindi fra due versioni ha già le novità: per questo ogni modifica visibile aggiunge una riga a «Non ancora in una versione». Una versione nuova si fa quando lo chiede l'autore, con la procedura del CLAUDE.md (sezione Git). Il tag è annotato (`v1.0`). La release su GitHub la crea l'autore dal sito: qui non c'è `gh`, e crearla richiede l'accesso all'account. Il README rimanda a Releases per lo ZIP da usare sul computer, e a Code → Download ZIP per la versione in lavorazione.
+- **1.0** (26 ottobre 2026): la prima versione pubblica.
+- I moduli «Problema» e «Contratto» chiedono il numero della versione (facoltativo). Nel modulo «Problema» la scelta fra semplice e avanzata ora si chiama così, per non confonderla con il numero.
+
+### Connessioni bloccate dal browser (`Content-Security-Policy`)
+
+In testa a `index.html`, prima di ogni stile e script: `default-src 'self'; connect-src 'self' https://api.statistiken.bundesbank.de; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'`. La frase del README «l'unica cosa che passa da internet sono i valori dell'Euribor» diventa una regola del browser: richieste, script, stili, immagini e caratteri da qualunque altro indirizzo vengono bloccati.
+
+- Perché così: script e stili sono tutti file del sito (niente `eval`, niente gestori `on…=`); `data:` serve all'icona della scheda disegnata da `loghi.js`; `'unsafe-inline'` negli stili serve agli attributi `style` scritti dagli script e ai due `<style>` che `temi.js` aggiunge per i temi calcolati e per «Il tuo tema». I caratteri scelti nelle impostazioni sono quelli del computer: non si scaricano.
+- `frame-ancestors` (chi può mettere la pagina dentro un'altra) in un `<meta>` non vale: servirebbe un'intestazione del server, che GitHub Pages non permette di scegliere.
+- Non c'è `form-action`: i moduli della pagina non si inviano, e la regola avrebbe solo rischiato di bloccare un invio dimenticato senza `preventDefault`.
+- Con il doppio clic su `index.html` (`file://`) `'self'` copre i file della stessa cartella: provato in Edge. Firefox e Safari non sono stati provati.
+- **Se serve un indirizzo nuovo** (un'altra fonte di dati), va aggiunto a `connect-src`, e solo se l'autore lo chiede (CLAUDE.md).
+
+### Etichette delle segnalazioni
+
+I tre moduli mettono un'etichetta: `contratto`, `problema`, `idea`. GitHub la applica solo se esiste già nel repository: vanno create a mano (Issues → Labels; `bug` ed `enhancement` si possono rinominare in `problema` e `idea`).
+
+### Prove
+
+`prova-csp.js` (Edge senza finestra, nella cartella temporanea della sessione), dal disco e da un server su localhost che fa da GitHub Pages (senza `tassi-precaricati.js`). Tre prestiti inventati (variabile, fisso, finanziamento). Scarico dalla Bundesbank: dal sito tutto lo storico (35.605 valori), più i valori del prestito variabile. Tutte le pagine del menù e di ogni prestito. Riga della versione visibile, con i collegamenti nel colore del tema. Backup. Icona della scheda da `data:`. Una richiesta a `https://example.com` bloccata, unica violazione registrata. Dal sito, service worker attivo e copia offline di 32 file. Nessun errore nella pagina, salvo uno che c'era già dal disco: il browser non legge il manifest da `file://` (regola CORS, non quella nuova).

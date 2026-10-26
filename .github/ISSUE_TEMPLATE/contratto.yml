@@ -1,6 +1,7 @@
 name: Il mio contratto torna (o non torna)
 description: Racconta se il programma riproduce le rate del tuo mutuo o finanziamento. È il modo migliore per renderlo più affidabile.
 title: "Contratto: "
+labels: ["contratto"]
 body:
   - type: markdown
     attributes:
@@ -49,3 +50,9 @@ body:
     attributes:
       label: Browser e dispositivo
       placeholder: per esempio Chrome su Android, Edge su Windows
+  - type: input
+    id: numero-versione
+    attributes:
+      label: Numero della versione
+      description: È scritto in fondo al Pannello di controllo, per esempio «1.0». Se non lo trovi, lascia vuoto.
+      placeholder: per esempio 1.0

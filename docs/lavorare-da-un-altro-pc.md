@@ -1,12 +1,12 @@
 # Lavorare al progetto da un altro computer, con Claude
 
-Il progetto sta su GitHub (https://github.com/alessandrosallam-sys/occhio-alla-rata, per ora privato) e ogni computer ne ha una copia. Claude trova nella copia tutto quello che gli serve: le regole in [CLAUDE.md](../CLAUDE.md) e la documentazione in [progetto-generale.md](progetto-generale.md). Su un computer nuovo non si copia niente a mano, salvo Node se vuoi che Claude faccia le prove nel browser.
+Il progetto sta su GitHub (https://github.com/alessandrosallam-sys/occhio-alla-rata, pubblico) e ogni computer ne ha una copia. Claude trova nella copia tutto quello che gli serve: le regole in [CLAUDE.md](../CLAUDE.md) e la documentazione in [progetto-generale.md](progetto-generale.md). Su un computer nuovo non si copia niente a mano, salvo Node se vuoi che Claude faccia le prove nel browser.
 
 Questa pagina si legge anche su GitHub, dal browser del computer nuovo, prima di aver installato qualsiasi cosa.
 
 ## Cosa serve
 
-- L'account GitHub che ha accesso al repository (è privato: senza accesso non si scarica).
+- L'account GitHub del progetto. Il repository è pubblico, quindi si scarica anche senza; l'account serve per inviare le modifiche.
 - L'account Claude di sempre.
 - Windows con Microsoft Edge, che c'è già: Claude lo usa per provare la pagina.
 
@@ -18,13 +18,13 @@ Questa pagina si legge anche su GitHub, dal browser del computer nuovo, prima di
    ```
    git clone https://github.com/alessandrosallam-sys/occhio-alla-rata.git mutuo-generale
    ```
-   La prima volta si apre il browser per l'accesso a GitHub: scegli **Sign in with your browser** e autorizza. Il nome `mutuo-generale` tiene la stessa struttura del computer principale, così i comandi scritti nella documentazione valgono uguali.
+   Il repository è pubblico, quindi qui non serve l'accesso a GitHub: lo chiede il primo invio (passo 5). Il nome `mutuo-generale` tiene la stessa struttura del computer principale, così i comandi scritti nella documentazione valgono uguali.
 4. **Node** (consigliato): serve a Claude per le prove nel browser e per riscaricare gli Euribor, non alla pagina. Due modi, senza installare niente:
    - copia la cartella `runtime` dal computer principale (chiavetta, OneDrive…) in `C:\MUTUO\runtime`, accanto a `mutuo-generale`;
    - oppure scarica da https://nodejs.org la versione 22 «Windows Binary (.zip)», aprila e copia `node.exe` in `C:\MUTUO\runtime\`.
 
    Claude cerca Node proprio lì (`..\runtime\node.exe` rispetto al repository). Se manca, lo dice e lavora senza prove.
-5. **Il primo avvio**: in VS Code apri la cartella `C:\MUTUO\mutuo-generale` (File → Apri cartella; alla domanda se ti fidi degli autori rispondi di sì) e apri Claude Code. Come prima richiesta va bene: «controlla che il progetto sia aggiornato e pronto». Claude legge il CLAUDE.md, scarica le ultime modifiche e imposta l'email privata per i commit. Al primo invio su GitHub potrebbe aprirsi di nuovo la finestra di accesso: completala nel browser.
+5. **Il primo avvio**: in VS Code apri la cartella `C:\MUTUO\mutuo-generale` (File → Apri cartella; alla domanda se ti fidi degli autori rispondi di sì) e apri Claude Code. Come prima richiesta va bene: «controlla che il progetto sia aggiornato e pronto». Claude legge il CLAUDE.md, scarica le ultime modifiche e imposta l'email privata per i commit. Al primo invio su GitHub si apre la finestra di accesso: scegli **Sign in with your browser** e autorizza nel browser. Basta una volta per computer.
 
 Apri proprio la cartella `mutuo-generale`, non quella sopra: è lì che Claude trova il suo CLAUDE.md.
 
@@ -51,4 +51,4 @@ Da qualunque browser puoi usare Claude Code su https://claude.ai/code, collegand
 - **«push declined due to email privacy restrictions»**: un commit ha un'email diversa da quella privata di GitHub. Chiedi a Claude di impostare l'email del CLAUDE.md e di correggere i commit non ancora inviati.
 - **«detected dubious ownership»**: succede su dischi esterni o chiavette. Chiedi a Claude di aggiungere la cartella a `safe.directory`, oppure scrivi `git config --global --add safe.directory <percorso della cartella>`.
 - **Git chiede nome utente e password nel terminale**: GitHub non accetta più la password da lì. Chiudi e rilancia il comando: deve aprirsi la finestra di accesso nel browser. Se non si apre, reinstalla Git per Windows con le opzioni proposte.
-- **«Repository not found» al clone**: l'account con cui hai fatto l'accesso non vede il repository privato. Controlla di essere entrato con l'account giusto.
+- **«Permission denied» o «403» all'invio**: hai fatto l'accesso con un account che non è quello del progetto (il clone funziona lo stesso, perché il repository è pubblico). In Windows apri «Gestione credenziali» → «Credenziali di Windows», togli quella di `git:https://github.com` e rilancia l'invio: si riapre la finestra di accesso.

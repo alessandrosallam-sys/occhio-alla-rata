@@ -9,6 +9,7 @@ Mutui a tasso variabile o fisso e finanziamenti: il piano rata per rata, il cost
   <a href="https://alessandrosallam-sys.github.io/occhio-alla-rata/"><strong>Apri l'app</strong></a> ·
   <a href="#come-si-usa">Come si usa</a> ·
   <a href="#domande-frequenti">Domande frequenti</a> ·
+  <a href="VERSIONI.md">Novità</a> ·
   <a href="docs/progetto-generale.md">Documentazione</a> ·
   <a href="CONTRIBUTING.md">Contribuire</a>
 </p>
@@ -42,7 +43,7 @@ Occhio alla Rata parte da quello che hai sull'estratto conto: scrivi alcune rate
 ## I tuoi dati restano tuoi
 
 - **Niente server e niente account.** Il programma è una pagina web che gira tutta nel tuo browser. I prestiti che scrivi restano sul tuo computer o sul tuo telefono.
-- **Una sola connessione.** L'unica cosa che passa da internet sono i valori dell'Euribor, presi direttamente dal sito della Bundesbank.
+- **Una sola connessione.** L'unica cosa che passa da internet sono i valori dell'Euribor, presi direttamente dal sito della Bundesbank. Non è solo una promessa: la pagina dice al browser di bloccare qualunque altro indirizzo (la regola `Content-Security-Policy` in testa a `index.html`).
 - **Una copia di sicurezza quando vuoi.** «Salva un backup» mette tutto in un file, che riapri dove vuoi.
 - **Codice aperto.** Puoi leggere ogni riga: è tutto HTML, CSS e JavaScript scritti a mano, senza librerie.
 
@@ -68,7 +69,7 @@ Tutte con dati inventati.
 
 **Sul telefono.** Apri [l'app](https://alessandrosallam-sys.github.io/occhio-alla-rata/) con Chrome e scegli «Installa app» dal menù (i tre puntini), oppure il pulsante «Installa l'app» nel Pannello di controllo. Su iPhone, in Safari: Condividi e poi «Aggiungi alla schermata Home». Compare un'icona come per le altre app, si apre a schermo intero e funziona anche senza connessione.
 
-**Sul computer.** Apri lo stesso indirizzo nel browser, oppure scarica il progetto (**Code → Download ZIP**) e apri `index.html` con un doppio clic: non serve installare niente.
+**Sul computer.** Apri lo stesso indirizzo nel browser, oppure scarica l'ultima versione da [Releases](../../releases) (il file «Source code (zip)»), aprila e fai doppio clic su `index.html`: non serve installare niente. Con **Code → Download ZIP** scarichi invece la versione su cui si sta lavorando, la stessa del sito. Il numero della versione che stai usando è in fondo al Pannello di controllo; che cosa cambia da una all'altra è in [VERSIONI.md](VERSIONI.md).
 
 **I primi passi.**
 1. Rispondi a quattro domande facili: che prestito è, quanto ti hanno prestato, per quanto tempo, quando hai pagato la prima rata.
@@ -186,11 +187,12 @@ calendario.js         schede Calendario e Festività
 previsioni.js         proiezioni dell'indice nella pagina Tassi: modelli, scenari, confronto, scelta per le rate future
 modelli.js            i modelli (media, ARIMA, VAR, GARCH, Vasicek): solo matematica, gira anche in Node
 configura.js          configurazione guidata (percorso breve e completo), regole del contratto, taratura, backup
-assistente.js         l'assistente animato e i suoi undici aspetti: nella guida e in cima alle schede, segue la pagina e spiega al passaggio del mouse
+assistente.js         l'assistente animato e i suoi tredici aspetti: nella guida e in cima alle schede, segue la pagina e spiega al passaggio del mouse
 spiegazioni.js        le spiegazioni dell'assistente sulle cose importanti di ogni pagina
 prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali e il principale
 costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione anticipata
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
+cambi.js              cambi del contratto dopo la firma (tasso, spread, durata) e nuovo prestito dal debito residuo (surroga), nella pagina «Dati del prestito»
 icone.js              le icone della pagina, disegnate a mano
 loghi.js              i dieci loghi animati fra cui scegliere, l'icona della scheda, lo sguardo che segue il mouse
 intro.js              la prima apertura: la scritta «Occhio alla Rata» che compare lettera per lettera
@@ -206,13 +208,15 @@ crea-precaricati.js   genera tassi-precaricati.js dai CSV
 dati-euribor/         scarica.js e i CSV che produce (non nel repository)
 docs/                 progetto-generale.md: la documentazione di sviluppo, sezione per sezione, con le prove fatte
 CLAUDE.md             le regole del progetto per chi ci lavora con Claude Code
+VERSIONI.md           le versioni e che cosa cambia in ognuna
+.github/              i moduli per le segnalazioni
 ```
 
 Prima di cambiare il codice leggi `docs/progetto-generale.md`: spiega come funziona ogni parte, perché è fatta così e come è stata provata.
 
-Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `pwa.js`.
+Gli script si caricano in quest'ordine: `temi.js` (nella testata, prima del disegno), poi `icone.js`, `loghi.js`, `intro.js`, `calcolo.js`, `deduzione.js`, `tassi-precaricati.js`, `tassi-internet.js`, `storico.js`, `archivio.js`, `modelli.js`, `app.js`, `assistente.js`, `spiegazioni.js`, `tassi.js`, `calendario.js`, `previsioni.js`, `configura.js`, `prestiti.js`, `costi.js`, `offerte.js`, `cambi.js`, `pwa.js`.
 
-**Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, principale, prestiti: [...], offerte: [...] }` (`principale`: il prestito che si apre da solo, `null` se nessuno) (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`. I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `PUT principale/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
+**Dati.** Un unico oggetto JSON in `localStorage` (chiave `mutuo-variabile:dati`), lo stesso formato del backup: `{ versione: 2, attivo, principale, prestiti: [...], offerte: [...] }` (`principale`: il prestito che si apre da solo, `null` se nessuno) (un'offerta ha solo `id` e `parametri`), e per ogni prestito `id`, `parametri` (importo, rate, date, regole), `rate` (solo i valori scritti a mano: rata vera, quota capitale, tasso applicato…), `euribor` (i valori dell'indice, `{ giorno, tasso_360 }`), `festivita`, `cambi` (i cambi del contratto dopo la firma). I salvataggi della versione 1 (un solo mutuo, con i campi in cima) si leggono ancora. `Archivio.richiesta(metodo, percorso, corpo)` espone le operazioni sul prestito aperto (`GET dati`, `PUT attivo/<id>`, `PUT principale/<id>`, `DELETE prestiti/<id>`, `POST configura`, `PUT rate/<n>`, `POST euribor`, …): ogni operazione è tutto-o-niente e restituisce i dati aggiornati. Il backup è `Archivio.esporta()` scaricato come file; `Archivio.importa(testo)` lo rilegge e sostituisce tutto l'archivio.
 
 **Modelli.** `Modelli.stima(modello, serieMensile, opzioni)` (in `modelli.js`) restituisce la proiezione con le fasce; `Modelli.perGiorno` la trasforma nella funzione giorno → valore che il piano riceve come `opzioni.previsione`. Il file non tocca la pagina: `node -e "const M = require('./modelli.js'); …"` per provarlo.
 

@@ -646,6 +646,7 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { outlin
 .nota.evidenza { background: var(--avviso-sfondo); color: var(--avviso-testo); padding: 9px var(--s3); border-radius: var(--r1); }
 .nota.conferma { background: var(--ok-sfondo); color: var(--ok-testo); padding: 9px var(--s3); border-radius: var(--r1); }
 .nota.piede { margin: var(--s2) 0 0; font-size: calc(13px * var(--testo)); color: var(--tenue); text-align: center; }
+.nota.piede a { color: var(--accento-testo); }
 .nota.sotto { margin-top: var(--s3); }
 .info { margin: 0 0 var(--s4); padding: var(--s3) var(--s4); background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); font-size: calc(14px * var(--testo)); }
 .info:empty { display: none; }

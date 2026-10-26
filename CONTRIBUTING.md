@@ -10,7 +10,8 @@ Le segnalazioni e il codice sono pubblici. Non scrivere mai nomi, banca, indiriz
 
 - **Tutto in italiano**: testi della pagina, nomi nel codice, commenti, messaggi dei commit.
 - **Niente librerie e niente installazioni.** La pagina è HTML, CSS e JavaScript scritti a mano, senza passaggi di compilazione: si modifica un file e si ricarica la pagina. Gli script usano solo i moduli integrati di Node.
-- **Internet solo per l'Euribor**, dal sito della Bundesbank. I valori dell'Euribor non vanno nel repository (licenza EMMI): ogni dispositivo li scarica da sé.
+- **Internet solo per l'Euribor**, dal sito della Bundesbank. I valori dell'Euribor non vanno nel repository (licenza EMMI): ogni dispositivo li scarica da sé. La regola `Content-Security-Policy` in testa a `index.html` blocca qualunque altro indirizzo: una modifica che ne ha bisogno va discussa prima in una segnalazione.
+- **Le novità in `VERSIONI.md`**: una modifica che si vede nella pagina aggiunge una riga, detta in modo semplice, alla sezione «Non ancora in una versione».
 - **Per chi non sa niente di mutui.** Ogni testo dice che cosa si chiede, dove trovarlo e che cosa fare se non lo si sa. Chi aggiunge una regola o un campo aggiunge anche questi testi.
 - **Grandezza dei testi**: nel foglio di stile ogni `font-size` si scrive `calc(Npx * var(--testo))`, così segue la grandezza scelta nelle impostazioni.
 

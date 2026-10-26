@@ -1,6 +1,7 @@
 name: Qualcosa non funziona
 description: Un errore, una pagina che non si apre, un calcolo strano.
 title: "Problema: "
+labels: ["problema"]
 body:
   - type: markdown
     attributes:
@@ -28,10 +29,16 @@ body:
       placeholder: per esempio Safari su iPhone, Chrome su Windows
     validations:
       required: true
-  - type: dropdown
-    id: versione
+  - type: input
+    id: numero-versione
     attributes:
-      label: Versione della pagina (nelle Impostazioni)
+      label: Numero della versione
+      description: È scritto in fondo al Pannello di controllo, per esempio «1.0». Se non lo trovi, lascia vuoto.
+      placeholder: per esempio 1.0
+  - type: dropdown
+    id: semplice-avanzata
+    attributes:
+      label: Versione semplice o avanzata (si sceglie nelle Impostazioni)
       options:
         - Semplice
         - Avanzata
