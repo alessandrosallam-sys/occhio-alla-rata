@@ -213,7 +213,7 @@
   });
 
   document.addEventListener('DOMContentLoaded', ridisegna);
-  window.Loghi = { ELENCO: LOGHI, crea, scegli, scelto: () => scelto, sceltoDaUtente: () => valido(leggi()) };   // sceltoDaUtente: l'ha scelto lui (la prima pagina lo chiede)
+  window.Loghi = { ELENCO: LOGHI, crea, scegli, scelto: () => scelto };
   // Per chi disegna il logo da sé (la prima pagina della guida): quello scelto.
   if (window.Icone) window.Icone.logo = classe => crea(scelto, classe);
 })();

@@ -1,5 +1,5 @@
 // La prima apertura: la scritta «OCCHIO ALLA RATA» in cima alla prima pagina della guida, quando si parte da zero
-// (configura.js, dopo la scelta del simbolo). Le lettere sorgono una dopo l'altra, poi il motto; l'animazione sta sotto
+// (configura.js). Le lettere sorgono una dopo l'altra, poi il motto; l'animazione sta sotto
 // la classe «in-volo», che c'è solo la prima volta che la scritta si disegna in questa apertura della pagina, e un clic
 // la rifà. Stile e animazioni in stile.css («La prima apertura»): senza animazioni si vede tutto fermo, al suo posto.
 (() => {

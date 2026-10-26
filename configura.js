@@ -540,32 +540,6 @@
     crea('li', {}, crea('span', { className: 'numero-passo', 'aria-hidden': 'true' }), crea('strong', {}, titolo), crea('p', {}, testo))));
   const cartaDocumento = (icona, nome, contenuto) => crea('li', {}, Icone.distintivo(icona, 'piccolo'), crea('div', {}, crea('strong', {}, nome), crea('p', {}, contenuto)));
 
-  // La prima volta: la scelta del simbolo del programma (uno dei loghi). Scelto, la pagina si ridisegna con la scritta animata.
-  function sceltaLogoIniziale(contenitore) {
-    const blocco = crea('div', { className: 'scelta-logo-iniziale' });
-    const griglia = crea('div', { className: 'griglia-loghi', role: 'group', 'aria-label': 'Simboli disponibili' });
-    for (const l of Loghi.ELENCO) {
-      const pulsante = crea('button', { type: 'button', className: 'tessera-logo', 'data-logo-iniziale': l.codice, title: l.descrizione });
-      const riquadro = crea('span', { className: 'logo anteprima-logo', 'aria-hidden': 'true' });
-      riquadro.append(Loghi.crea(l.codice));
-      pulsante.append(riquadro, crea('span', {}, l.nome));
-      griglia.append(pulsante);
-    }
-    griglia.addEventListener('click', evento => {
-      const pulsante = evento.target.closest('[data-logo-iniziale]');
-      if (!pulsante) return;
-      Loghi.scegli(pulsante.dataset.logoIniziale);
-      disegnaBenvenuto(contenitore);
-      contenitore.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    });
-    blocco.append(
-      crea('h3', {}, 'Prima di tutto, scegli il simbolo di Occhio alla Rata'),
-      crea('p', { className: 'nota' }, 'Lo vedrai in alto a sinistra e nella scheda del browser. ' + (M.senzaMouse() ? 'Toccane uno per sceglierlo: puoi cambiarlo quando vuoi nelle Impostazioni.'
-        : 'Sono tutti animati: passaci sopra con il mouse. Puoi cambiarlo quando vuoi nelle Impostazioni.')),
-      griglia);
-    return blocco;
-  }
-
   function disegnaBenvenuto(contenitore) {
     const documento = (nome, contenuto) => crea('li', {}, crea('strong', {}, nome), ' ' + contenuto);
     const presentazione = 'Occhio alla Rata ricostruisce, rata per rata, il tuo mutuo o il tuo finanziamento, a tasso variabile o fisso: ti dice se la banca ti addebita la cifra giusta, quanto costa davvero il prestito, quanto hai pagato finora di interessi e, per il variabile, come potrebbero cambiare le rate future.';
@@ -579,10 +553,10 @@
       crea('button', { type: 'button', className: 'secondario', 'data-prova-esempi': '' }, 'Prova con degli esempi'))];
     if (guida.percorso === 'breve') {
       contenitore.replaceChildren(
-        // Da zero: la prima volta si sceglie il simbolo, poi la scritta animata con quel simbolo (intro.js) e sotto la
-        // presentazione del progetto.
+        // Da zero: la scritta animata (intro.js) e sotto la presentazione del progetto. Il simbolo è il gufo, se non se n'è
+        // scelto un altro: si cambia nelle Impostazioni.
         ...(guida.nuovo ? [crea('p', {}, 'Aggiungi un altro prestito. I prestiti che segui già restano come sono, e li ritrovi tutti nella pagina «Prestiti».')]
-          : Loghi.sceltoDaUtente() ? [Intro.crea(), crea('h3', { className: 'titolo-benvenuto' }, 'Che cosa fa'), presentazioneProgetto()] : [sceltaLogoIniziale(contenitore)]),
+          : [Intro.crea(), crea('h3', { className: 'titolo-benvenuto' }, 'Che cosa fa'), presentazioneProgetto()]),
         crea('h3', { className: 'titolo-benvenuto' }, 'Come funziona'),
         comeFunziona(),
         crea('h3', { className: 'titolo-benvenuto' }, 'Tieni a portata di mano'),
