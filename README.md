@@ -14,7 +14,7 @@ Mutui a tasso variabile, fisso o misto e finanziamenti: il piano rata per rata, 
   <a href="CONTRIBUTING.md">Contribuire</a>
 </p>
 
-<p align="center">Gratis · codice aperto · nessun account · funziona anche senza connessione · i dati restano sul tuo dispositivo</p>
+<p align="center">Gratis · <a href="https://github.com/alessandrosallam-sys/occhio-alla-rata">codice aperto</a> · nessun account · funziona anche senza connessione · i dati restano sul tuo dispositivo</p>
 
 <p align="center">
   <img src="docs/immagini/piano.png" width="74%" alt="Il piano di un mutuo variabile inventato: in cima la rata del mese, la prossima rata e le statistiche; sotto le rate, tutte verdi perché tornano">
@@ -47,7 +47,7 @@ Occhio alla Rata parte da quello che hai sull'estratto conto: scrivi alcune rate
 - **Niente server e niente account.** Il programma è una pagina web che gira tutta nel tuo browser. I prestiti che scrivi restano sul tuo computer o sul tuo telefono.
 - **Una sola connessione.** L'unica cosa che passa da internet sono i valori dell'Euribor, presi direttamente dal sito della Bundesbank. Non è solo una promessa: la pagina dice al browser di bloccare qualunque altro indirizzo (la regola `Content-Security-Policy` in testa a `index.html`).
 - **Una copia di sicurezza quando vuoi.** «Salva un backup» mette tutto in un file, che riapri dove vuoi.
-- **Codice aperto.** Puoi leggere ogni riga: è tutto HTML, CSS e JavaScript scritti a mano, senza librerie.
+- **Codice aperto.** Puoi leggere ogni riga, [qui su GitHub](https://github.com/alessandrosallam-sys/occhio-alla-rata): è tutto HTML, CSS e JavaScript scritti a mano, senza librerie. Il link al codice c'è anche nella pagina, in fondo al Pannello di controllo.
 
 ## Schermate
 

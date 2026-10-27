@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 7, data: '2026-10-27', icona: 'documento', titolo: 'Il codice su GitHub',
+      testo: 'In fondo al Pannello di controllo c\'è il link a GitHub, il sito dove sta il programma: chiunque può leggere come fa i conti, riga per riga.' },
     { n: 6, data: '2026-10-27', icona: 'offerte', titolo: 'Le offerte come i prestiti',
       testo: 'Sotto il confronto ogni offerta ha la sua carta con un riassunto. Per correggerla premi «Cambia i dati»: si apre solo quella.' },
     { n: 5, data: '2026-10-27', icona: 'calendario', titolo: 'Le spese di ogni anno nelle offerte',
