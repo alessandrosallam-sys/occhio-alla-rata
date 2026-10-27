@@ -1,6 +1,6 @@
 // Prova con degli esempi (26 ottobre 2026): per vedere come funziona il programma prima di scrivere i propri dati.
 // «Prova con degli esempi» (pagina di benvenuto, pagina Prestiti) passa a un archivio a parte (Archivio.entraInProva) e
-// lo riempie con un prestito inventato per tipo e due offerte, con le richieste di sempre. Le rate già pagate vengono
+// lo riempie con un prestito inventato per tipo e tre offerte, con le richieste di sempre. Le rate già pagate vengono
 // dal calcolo, come le avrebbe addebitate la banca: il piano è tutto verde, salvo una rata del mutuo fisso con un
 // addebito in più, per vedere come appare una rata che non torna. Una striscia in cima dice che sono esempi;
 // «Esci dagli esempi» torna ai dati veri. Gli esempi si cambiano come i prestiti veri e spariscono uscendo o chiudendo
@@ -16,6 +16,8 @@
       spese_iniziali_voci: [{ cosa: 'Istruttoria', euro: 500 }, { cosa: 'Perizia', euro: 250 }, { cosa: 'Imposta sostitutiva', euro: 450 }] },
     { nome: 'Appartamento in città', categoria: 'fisso', tipo_prestito: 'fisso', importo_iniziale: 150000, numero_rate: 240, data_prima_rata: '2020-10-01',
       valore_riferimento: 210000, tasso_fisso: 0.0185, spese_rata: 2, spese_iniziali: 900, extra: { n: 38, euro: 5 } },
+    { nome: 'Villetta', categoria: 'misto', tipo_prestito: 'misto', importo_iniziale: 160000, numero_rate: 300, data_prima_rata: '2022-05-01',
+      valore_riferimento: 220000, tasso_fisso: 0.0215, anni_tasso_fisso: 5, spread_dopo: 0.012, indice_nome: 'Euribor 3 mesi', spese_rata: 1.5, spese_iniziali: 800 },
     { nome: 'Lavori in casa', categoria: 'finanziamento', tipo_prestito: 'finanziamento', importo_iniziale: 12000, numero_rate: 60, data_prima_rata: '2024-04-01',
       tasso_fisso: 0.079, spese_rata: 3, spese_iniziali: 250 },
     { nome: 'Auto nuova', categoria: 'maxirata', tipo_prestito: 'maxirata', importo_iniziale: 20000, anticipo: 6000, numero_rate: 36, maxirata: 11500,
@@ -26,6 +28,8 @@
       spese_iniziali_voci: [{ cosa: 'Istruttoria', euro: 700 }, { cosa: 'Perizia', euro: 300 }, { cosa: 'Imposta sostitutiva', euro: 500 }] },
     { nome: 'Offerta B, tasso variabile', categoria: 'variabile', tipo_prestito: 'variabile', importo_iniziale: 200000, numero_rate: 300, indice_nome: 'Euribor 3 mesi',
       spread: 0.0095, spese_iniziali: 1000, spese_rata: 2 },
+    { nome: 'Offerta C, tasso misto', categoria: 'misto', tipo_prestito: 'misto', importo_iniziale: 200000, numero_rate: 300, tasso_fisso: 0.0285, anni_tasso_fisso: 5,
+      spread_dopo: 0.011, indice_nome: 'Euribor 3 mesi', spese_iniziali: 1200, spese_rata: 2 },
   ];
   const ATTESA_STORICO = 20000;   // millisecondi: oltre, si va avanti con i valori dell'Euribor che ci sono
 

@@ -25,19 +25,22 @@
     };
   }
   // Un'icona per categoria (archivio.js): la casa per i mutui, l'auto, la borsa degli acquisti, il portafoglio…
-  const iconaTipo = p => { const c = Archivio.categoria(p); return c.tipo === 'variabile' || c.tipo === 'fisso' ? 'casa' : c.icona; };
+  const iconaTipo = p => { const c = Archivio.categoria(p); return ['variabile', 'fisso', 'misto'].includes(c.tipo) ? 'casa' : c.icona; };
   M.iconaTipo = iconaTipo;
   // Che prestito è, in poche parole (a tasso fisso anche il TAEG, che dice quanto costa davvero). Se il contratto è
   // cambiato, il tasso è quello del tratto in corso (Calcolo.tratti) e il TAEG, che vale per il contratto firmato, non c'è.
+  // Nel tasso misto si dice fino a quando vale il TAN, se il cambio di quella rata non è ancora scritto.
   function descriviTipo(r) {
     const p = r.d.parametri, elenco = Calcolo.tratti(r.d);
     const riga = r.corrente || (r.stato === 'futuro' ? r.prima : r.ultima), tratto = elenco[riga.tratto] || elenco[0];
     const tipo = (p.tipo_prestito || 'variabile') === 'variabile' ? 'Mutuo a tasso variabile' : p.tipo_prestito === 'fisso' ? 'Mutuo a tasso fisso'
-      : p.tipo_prestito === 'maxirata' ? `Auto con maxirata di ${M.euro(p.maxirata || 0)}` : Archivio.categoria(p).breve;
+      : p.tipo_prestito === 'misto' ? 'Mutuo a tasso misto' : p.tipo_prestito === 'maxirata' ? `Auto con maxirata di ${M.euro(p.maxirata || 0)}` : Archivio.categoria(p).breve;
     const ora = elenco.length > 1 ? (tratto.variabile ? ' · ora variabile, ' : ' · ora ') : ' · ';
     if (tratto.variabile) return `${tipo}${ora}${p.indice_nome || 'indice'} + ${perc(tratto.tasso, 3, 1)}`;
+    const revisione = Calcolo.revisioneMisto(r.d, riga.n), quando = revisione && r.righe[revisione.rata - 1] ? r.righe[revisione.rata - (revisione.passata ? 1 : 2)] : null;
+    const misto = !quando ? '' : revisione.passata ? ` · da rivedere da ${meseAnno(quando.inizio)}` : ` fino a ${meseAnno(quando.inizio)}`;
     const taeg = elenco.length > 1 ? null : Calcolo.costi(r.d, r.righe, true).taeg;
-    return `${tipo}${ora}TAN ${perc(tratto.tasso || 0, 3, 1)}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
+    return `${tipo}${ora}TAN ${perc(tratto.tasso || 0, 3, 1)}${misto}` + (taeg == null ? '' : ` · TAEG ${perc(taeg, 2)}`);
   }
   // Da dove viene e come è finito: surroga, prestito nuovo nato dal debito di un altro, cambi del contratto.
   function storia(r, tutti) {

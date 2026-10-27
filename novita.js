@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 3, data: '2026-10-27', icona: 'orologio', titolo: 'Il mutuo a tasso misto',
+      testo: 'Fisso per i primi anni, poi il tasso si rivede: ora è un tipo di prestito. Nelle offerte vedi quanto potrebbe diventare la rata dopo gli anni fissi; nei tuoi prestiti, quando finisce il tasso fisso e quanto debito resta.' },
     { n: 2, data: '2026-10-27', icona: 'euro', titolo: 'Le spese iniziali una per una',
       testo: 'Perizia, istruttoria, notaio, consulente…: scrivi ogni spesa nella sua riga, con il nome se vuoi, e il totale lo fa il programma. Vale nella guida, nelle offerte e nei dati del prestito; nel confronto delle offerte le spese si vedono voce per voce.' },
     { n: 1, data: '2026-10-26', icona: 'traguardo', titolo: 'Le rate bastano',

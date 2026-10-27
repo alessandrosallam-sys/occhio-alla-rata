@@ -141,6 +141,7 @@
       const testo = $('input', contenitore).value.trim();
       if (!testo) {
         if (campo.obbligatorio) return { errore: `Manca: ${campo.etichetta}` };
+        if (campo.vuoto) { valori[chiave] = null; continue; }   // «non lo so», diverso da zero
         // Una data facoltativa svuotata si salva vuota (così si può togliere, ad esempio il giorno dell'accredito).
         if (campo.tipo === 'testo' || campo.tipo === 'data') { valori[chiave] = ''; continue; }
         valori[chiave] = campo.iniziale != null ? campo.iniziale : 0;
@@ -176,6 +177,13 @@
   // Descrizione in parole di un insieme di regole.
   const nomeScelta = (chiave, valore) => (CAMPI[chiave].opzioni.find(o => o.valore === valore) || {}).etichetta || String(valore);
   const variabile = p => (p.tipo_prestito || 'variabile') === 'variabile';
+  const misto = p => p.tipo_prestito === 'misto';
+  // Il tasso in parole: indice + spread nel variabile; nel misto il TAN, per quanti anni, e cosa succede dopo.
+  const anniFissi = p => p.anni_tasso_fisso === 1 ? '1 anno' : `${p.anni_tasso_fisso} anni`;
+  const tassoInParole = (p, decimali = 2) => variabile(p) ? `${p.indice_nome || 'indice'} + ${perc(p.spread, 3, decimali)} di spread`
+    : misto(p) ? `${perc(p.tasso_fisso || 0, 3, decimali)} fisso (TAN) per ${anniFissi(p)}, poi si rivede`
+      + (p.spread_dopo != null ? `: fisso nuovo, oppure ${p.indice_nome || 'Euribor 3 mesi'} + ${perc(p.spread_dopo, 3, decimali)}` : '')
+      : `${perc(p.tasso_fisso || 0, 3, decimali)} fisso (TAN)`;
   function descriviRegole(p) {
     const rilevazione = p.regola_rilevazione === 'lavorativi_prima' ? `${p.giorni_anticipo_euribor} giorni lavorativi prima dell'inizio del periodo`
       : p.regola_rilevazione === 'giorno_fisso' ? `il giorno ${p.giorno_rilevazione} del mese precedente` : nomeScelta('regola_rilevazione', p.regola_rilevazione).toLowerCase();
@@ -248,6 +256,14 @@
       cosa: 'Il tasso annuo nominale, cioè il tasso usato per calcolare gli interessi di ogni rata. Non è il TAEG, che è più alto perché conta anche spese e assicurazioni.',
       dove: 'Nel contratto o nel foglio informativo, alla voce «TAN» o «tasso annuo nominale». Nei mutui a tasso fisso è il «tasso di interesse» del contratto.',
       esempio: '3,2 per un mutuo, 7,9 per un finanziamento, 0 per un «tasso zero» (senza il segno %)' },
+    anni_tasso_fisso: { domanda: 'Per quanti anni il tasso è fisso?',
+      cosa: 'Nel mutuo a tasso misto il TAN vale solo per i primi anni. Finiti quelli, il tasso si rivede: a volte diventa variabile, a volte scegli tu fra un fisso nuovo (di solito l\'IRS o Eurirs di quel momento più uno spread) e il variabile, e la scelta si ripete ogni tanti anni.',
+      dove: 'Nel contratto o nel foglio informativo (PIES), dove si parla del tasso: «tasso fisso per i primi 5 anni», «periodo di tasso fisso iniziale», «opzione di cambio tasso ogni 5 anni». Spesso è anche nel nome del prodotto, ad esempio «fisso 5 rinegoziabile».',
+      esempio: '5 oppure 10' },
+    spread_dopo: { domanda: 'Se poi passi al variabile, che spread aggiunge la banca? (facoltativo)',
+      cosa: 'Finiti gli anni fissi, se scegli il variabile il tasso diventa l\'Euribor (di solito a 3 mesi) più uno spread. Mi serve per stimare le rate di dopo, che nessuno conosce: le stimo con le previsioni sull\'Euribor.',
+      dove: 'Nel PIES o nel contratto, nella parte sul tasso dopo il periodo fisso: «Tasso variabile = Euribor 3 mesi + 1,20%». A volte lo spread è lo stesso del periodo fisso.',
+      seNonSai: 'Lascia vuoto: le stime partono dal TAN di oggi e salgono o scendono quanto l\'Euribor.' },
     taeg_dichiarato: { domanda: 'Qual è il TAEG scritto nel contratto? (facoltativo)',
       cosa: 'Il «tasso annuo effettivo globale»: misura il costo totale del prestito, compresi interessi, spese e assicurazioni obbligatorie, in percentuale all\'anno. Serve a confrontare prestiti diversi. Il programma lo calcola da solo e, se lo scrivi, ti dice se il suo calcolo coincide con quello della banca.',
       dove: 'Nel contratto, nel foglio informativo (SECCI per i finanziamenti, PIES per i mutui) o nella pubblicità del prestito, sempre vicino al TAN.',
@@ -327,6 +343,9 @@
     { fase: 1, tipo: 'domanda', chiave: 'importo_iniziale', icona: 'euro' },
     { fase: 1, tipo: 'domanda', chiave: 'numero_rate', titolo: 'Quanto dura il prestito?', icona: 'calendario' },
     { fase: 1, tipo: 'domanda', chiave: 'maxirata', icona: 'auto', se: () => guida.tipoBreve === 'maxirata' },
+    // Tasso misto: gli anni fissi non si ricavano dalle rate (nei primi anni sembra un fisso), quindi si chiedono.
+    { fase: 1, tipo: 'domanda', chiave: 'anni_tasso_fisso', icona: 'orologio', se: () => guida.tipoBreve === 'misto' },
+    { fase: 1, tipo: 'domanda', chiave: 'spread_dopo', titolo: 'E dopo, se passi al variabile?', icona: 'grafico', se: () => guida.tipoBreve === 'misto' },
     { fase: 1, tipo: 'domanda', chiave: 'data_addebito', icona: 'calendario',
       titolo: () => guida.modoData === 'ultima' ? 'Quando pagherai l\'ultima rata?' : 'Quando ti è stata addebitata la prima rata?' },
     { fase: 2, tipo: 'domanda', chiave: 'ordine_rate', titolo: 'Quali rate hai sotto mano?', icona: 'documento', se: () => periodiIniziati().length > 3 },
@@ -355,7 +374,9 @@
     { fase: 1, tipo: 'domanda', chiave: 'maxirata', icona: 'auto', se: () => guida.tipoBreve === 'maxirata' },
     { fase: 1, tipo: 'domanda', chiave: 'indice_nome', titolo: 'A quale indice è legato il tasso?', icona: 'grafico', se: variabileOfferta },
     { fase: 1, tipo: 'domanda', chiave: 'spread', titolo: 'Quanto è lo spread?', icona: 'percento', se: variabileOfferta },
-    { fase: 1, tipo: 'domanda', chiave: 'tasso_fisso', titolo: 'Qual è il TAN?', icona: 'percento', se: () => !variabileOfferta() },
+    { fase: 1, tipo: 'domanda', chiave: 'tasso_fisso', titolo: () => guida.tipoBreve === 'misto' ? 'Qual è il TAN dei primi anni?' : 'Qual è il TAN?', icona: 'percento', se: () => !variabileOfferta() },
+    { fase: 1, tipo: 'domanda', chiave: 'anni_tasso_fisso', icona: 'orologio', se: () => guida.tipoBreve === 'misto' },
+    { fase: 1, tipo: 'domanda', chiave: 'spread_dopo', titolo: 'E dopo, se passi al variabile?', icona: 'grafico', se: () => guida.tipoBreve === 'misto' },
     { fase: 2, tipo: 'domanda', chiave: 'spese_rata', titolo: 'Ci sono spese per ogni rata?', icona: 'scudo' },
     { fase: 2, tipo: 'domanda', chiave: 'spese_iniziali', titolo: 'Ci sono spese da pagare all\'inizio?', icona: 'scudo' },
     { fase: 2, tipo: 'domanda', chiave: 'assicurazione_iniziale', titolo: 'C\'è un\'assicurazione da pagare all\'inizio?', icona: 'scudo' },
@@ -377,8 +398,10 @@
       testo: 'Quello che paghi oltre agli interessi. Le spese per rata servono a far tornare le rate al centesimo; le altre servono a calcolare il costo totale e il TAEG. Se non le hai sotto mano lascia 0 e vai avanti.' },
     { titolo: 'Il tasso', se: variabile, icona: 'grafico', campi: ['indice_nome', 'spread', 'taeg_dichiarato', 'previsione_anni', 'previsione_modello'],
       testo: 'In un mutuo a tasso variabile il tasso di ogni rata è la somma di due numeri: un indice di mercato, che cambia nel tempo, e lo spread, che è fisso.' },
-    { titolo: 'Il tasso', se: b => !variabile(b), icona: 'percento', campi: ['tasso_fisso', 'taeg_dichiarato'],
+    { titolo: 'Il tasso', se: b => !variabile(b) && !misto(b), icona: 'percento', campi: ['tasso_fisso', 'taeg_dichiarato'],
       testo: 'A tasso fisso il tasso è scritto nel contratto e non cambia mai. Nel contratto ne trovi due: il TAN, che serve a calcolare le rate, e il TAEG, che misura il costo totale.' },
+    { titolo: 'Il tasso', se: misto, icona: 'orologio', campi: ['tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'taeg_dichiarato'],
+      testo: 'Nel tasso misto il TAN vale per i primi anni, poi il tasso si rivede. Nel contratto trovi anche il TAEG, che misura il costo totale. Quando arriverà il tasso nuovo, lo scriverai nei «Cambi del contratto».' },
     { titolo: 'Gli aggiornamenti', se: variabile, icona: 'orologio', campi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'],
       testo: 'Ora due dettagli su quando la banca rilegge l\'indice. Se non li trovi nel contratto scegli «Non lo so»: il programma li ricava dalle rate che hai già pagato.' },
     { titolo: 'Gli interessi', icona: 'calcolatrice', campi: ['conteggio_giorni'], avanzati: ['arrotonda_rata', 'arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'],
@@ -480,7 +503,8 @@
       const testo = (campo.suggerimenti ? (scelta ? (scelta.value === 'altro' ? $(`[name="${chiave}_altro"]`, contenitore).value : scelta.value) : '') : $('input', contenitore).value).trim();
       if (!testo) {
         if (campo.suggerimenti || campo.obbligatorio) { if (severo) return { errore: `Manca la risposta: ${titoloDomanda(chiave)}` }; continue; }
-        if (campo.tipo === 'testo') valori[chiave] = '';
+        if (campo.vuoto) valori[chiave] = null;
+        else if (campo.tipo === 'testo') valori[chiave] = '';
         else if (campo.tipo !== 'data') valori[chiave] = campo.iniziale != null ? campo.iniziale : 0;
         continue;
       }
@@ -763,7 +787,7 @@
     const conMaxirata = b.tipo_prestito === 'maxirata' && b.maxirata > 0;
     const voci = [[nomeScelta('tipo_prestito', b.tipo_prestito || 'variabile'), `${b.nome || 'Il mio prestito'}: ${euro(b.importo_iniziale)} in ${b.numero_rate} rate${conMaxirata ? ` più una maxirata di ${euro(b.maxirata)}` : ''} dal ${data(b.data_prima_rata)}`],
       ...(b.anticipo > 0 ? [['Anticipo', euro(b.anticipo)]] : []),
-      ['Tasso', conIndice ? `${b.indice_nome || 'indice'} + ${perc(b.spread, 3, 1)}` : `fisso al ${perc(b.tasso_fisso || 0, 3, 1)} (TAN)`], ...descriviRegole(b),
+      ['Tasso', conIndice ? `${b.indice_nome || 'indice'} + ${perc(b.spread, 3, 1)}` : misto(b) ? tassoInParole(b, 1) : `fisso al ${perc(b.tasso_fisso || 0, 3, 1)} (TAN)`], ...descriviRegole(b),
       ['Altre spese', spese.length ? spese.join(', ') : 'nessuna'],
       ...(b.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(b.taeg_dichiarato, 3, 1)]] : []),
       ...(conIndice ? [['Valori dell\'indice', pronti.length ? `${pronti.length} pronti${scaricati ? ` (${scaricati} scaricati da internet)` : ''}, dal ${data(pronti[0].giorno)} al ${data(pronti[pronti.length - 1].giorno)}` : scaricabile ? 'da scaricare da internet nella pagina «Tassi»' : 'da inserire nella pagina «Tassi»']] : []),
@@ -787,18 +811,18 @@
   function contiOfferta() {
     const b = guida.bozza, e = M.calcolaOfferta(b);
     if (!e || e.manca) return { e };
-    const taeg = e.fisso ? e.atteso.c.taeg : e.oggi.c.taeg;
-    return { e, taeg, coincide: b.taeg_dichiarato > 0 ? Math.abs(taeg - b.taeg_dichiarato) <= 0.00015 : null };
+    const taeg = e.misto || !e.fisso ? e.oggi.c.taeg : e.atteso.c.taeg, confronto = b.taeg_dichiarato > 0 ? M.taegUguale(e, b) : null;
+    return { e, taeg, coincide: confronto ? confronto.uguale : null, soloFissi: !!(confronto && confronto.soloFissi) };
   }
   function disegnaRiepilogoOfferta(contenitore) {
-    const b = guida.bozza, c = Archivio.categoria(b), { e, taeg, coincide } = contiOfferta();
+    const b = guida.bozza, c = Archivio.categoria(b), { e, taeg, coincide, soloFissi } = contiOfferta();
     const lista = voci => crea('dl', { className: 'riepilogo-guida' }, ...voci.flatMap(([etichetta, valore]) => [crea('dt', {}, etichetta), crea('dd', {}, valore)]));
     const mesi = b.numero_rate + (b.tipo_prestito === 'maxirata' ? 1 : 0), anni = Math.floor(mesi / 12), resto = mesi % 12;
     const durataTesto = (b.tipo_prestito === 'maxirata' ? `${b.numero_rate} rate più la maxirata` : `${b.numero_rate} rate mensili`)
       + ` (${[anni ? (anni === 1 ? '1 anno' : anni + ' anni') : '', resto ? (resto === 1 ? '1 mese' : resto + ' mesi') : ''].filter(Boolean).join(' e ')})`;
     const dati = [['Che cosa', c.etichetta], ['Offerta di', b.nome || 'senza nome'], ['Importo', euro(b.importo_iniziale)], ['Durata', durataTesto],
       ...(b.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(b.maxirata)]] : []),
-      ['Tasso', variabile(b) ? `${b.indice_nome} + ${perc(b.spread, 3, 2)} di spread` : `TAN ${perc(b.tasso_fisso, 3, 2)}`],
+      ['Tasso', variabile(b) ? `${b.indice_nome} + ${perc(b.spread, 3, 2)} di spread` : misto(b) ? tassoInParole(b) : `TAN ${perc(b.tasso_fisso, 3, 2)}`],
       ['Spese per rata', b.spese_rata > 0 ? euro(b.spese_rata) : 'nessuna'],
       ...(b.spese_iniziali > 0 ? [['Spese iniziali', speseIniziali(b)]] : []),
       ...(b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 ? [['Assicurazioni', [b.assicurazione_iniziale > 0 ? euro(b.assicurazione_iniziale) + ' all\'inizio' : '', b.assicurazione_rata > 0 ? euro(b.assicurazione_rata) + ' al mese' : ''].filter(Boolean).join(', ') + (b.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
@@ -807,16 +831,21 @@
     const blocchi = [lista(dati)];
     if (!e || e.manca) blocchi.push(crea('p', { className: 'nota evidenza' }, e ? e.manca : 'Non riesco a calcolare questa offerta.'));
     else {
-      const ultima = e.atteso.righe[e.atteso.righe.length - 1];
+      const ultima = e.atteso.righe[e.atteso.righe.length - 1], fissi = e.misto ? e.oggi.c.periodoFisso : null;
       blocchi.push(crea('h3', {}, 'I conti'), lista([
-        ['Rata', e.fisso ? `${euro(e.atteso.prima)} al mese` : `${euro(e.atteso.prima)} all'inizio; fino a ${euro(e.alto.massima)} se l'indice sale`],
+        ['Rata', e.misto ? `${euro(e.atteso.prima)} al mese per ${anniFissi(b)}` + (e.fisso ? '; dopo dipende dal tasso nuovo' : `; dopo, con le previsioni sull'Euribor, intorno a ${euro(e.atteso.rata)}, fino a ${euro(e.alto.massima)} se l'indice sale`)
+          : e.fisso ? `${euro(e.atteso.prima)} al mese` : `${euro(e.atteso.prima)} all'inizio; fino a ${euro(e.alto.massima)} se l'indice sale`],
         ...(b.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(ultima.rataCalcolata)]] : []),
+        ...(fissi ? [[`Dopo ${anniFissi(b)}`, `restano da restituire ${euro(fissi.debitoDopo)}; in quegli anni paghi ${euro(fissi.costo)} di interessi e spese`]] : []),
         ['Interessi', euro(e.atteso.c.interessi) + (e.fisso ? '' : ' (stima)')],
         ['Costo totale', euro(e.atteso.c.costoTotale) + (e.fisso ? '' : ' (stima)')],
         ['Totale da pagare', euro(e.atteso.c.totaleDaPagare)],
-        ['TAEG calcolato', perc(taeg, 2) + (e.fisso ? '' : ' (con l\'indice di oggi, come la banca)')]]));
+        ['TAEG calcolato', perc(taeg, 2) + (e.misto ? ' (con il TAN di oggi fino alla fine, come la banca)' + (fissi ? `; sui soli ${anniFissi(b)} fissi ${perc(fissi.taeg, 2)}` : '')
+          : e.fisso ? '' : ' (con l\'indice di oggi, come la banca)')]]));
       for (const s of M.speseSospette(b, e)) blocchi.push(crea('p', { className: 'nota evidenza' }, 'Attenzione: ' + s.testo));
-      if (coincide === true) blocchi.push(crea('p', { className: 'nota conferma' }, perc(taeg, 2) === perc(b.taeg_dichiarato, 2) ? `✓ Il TAEG che calcolo coincide con quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): i dati sono giusti.`
+      if (fissi) blocchi.push(crea('p', { className: 'nota' }, `Il tasso misto è sicuro solo per ${anniFissi(b)}: dopo, la rata dipende dai tassi di allora. Negli esempi delle banche il costo totale conta spesso solo quegli anni, come se poi restituissi tutto il debito: per questo sembra molto più basso di quello di un mutuo fisso.`));
+      if (coincide === true && soloFissi) blocchi.push(crea('p', { className: 'nota conferma' }, `✓ Il TAEG scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}) coincide con quello che calcolo sui soli ${anniFissi(b)} fissi, come chiede la legge per i mutui a tasso misto: i dati sono giusti.`));
+      else if (coincide === true) blocchi.push(crea('p', { className: 'nota conferma' }, perc(taeg, 2) === perc(b.taeg_dichiarato, 2) ? `✓ Il TAEG che calcolo coincide con quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): i dati sono giusti.`
         : `✓ Il TAEG che calcolo (${perc(taeg, 2)}) è praticamente uguale a quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): la differenza è solo di arrotondamento, i dati sono giusti.`));
       if (coincide === false) blocchi.push(crea('p', { className: 'nota evidenza' }, `Il TAEG scritto nell'offerta è ${perc(b.taeg_dichiarato, 2)}, il mio calcolo dà ${perc(taeg, 2)}. `
         + (taeg < b.taeg_dichiarato ? 'Di solito vuol dire che manca qualche costo: assicurazioni obbligatorie, perizia, spese di incasso. Controlla la parte dei costi del foglio informativo e torna indietro ad aggiungerli.'
@@ -838,7 +867,7 @@
   M.apriGuidaOfferta = function apriGuidaOfferta() {
     const offerte = Archivio.offerte(), ultima = offerte.length ? offerte[offerte.length - 1].parametri : null;
     const base = ultima ? { tipo_prestito: ultima.tipo_prestito, categoria: Archivio.categoria(ultima).valore, importo_iniziale: ultima.importo_iniziale, numero_rate: ultima.numero_rate,
-      ...(ultima.tipo_prestito === 'variabile' ? { indice_nome: ultima.indice_nome } : {}) } : {};
+      ...(ultima.tipo_prestito === 'variabile' ? { indice_nome: ultima.indice_nome } : {}), ...(ultima.tipo_prestito === 'misto' ? { anni_tasso_fisso: ultima.anni_tasso_fisso } : {}) } : {};
     Object.assign(guida, { percorso: 'offerta', passo: 0, massimo: 0, riapertura: false, nuovo: false, daOfferte: true, rate: {}, righeRate: 12, caricaTassi: false, scaricati: null,
       nonSo: new Set(), ricavate: null, dubbio: null, bozza: { ...Archivio.predefiniti(), nome: '', indice_nome: '', ...base },   // l'indice non parte già scelto
       ...STATO_BREVE(), tipoBreve: ultima ? ultima.tipo_prestito : null, categoria: ultima ? base.categoria : null, noti: {} });
@@ -847,12 +876,14 @@
     disegnaPasso();
   };
   // Le risposte diventano un'offerta: solo i campi che c'entrano con il suo tipo.
-  const CHIAVI_OFFERTA = ['nome', 'categoria', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'indice_nome', 'spread',
+  const CHIAVI_OFFERTA = ['nome', 'categoria', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'indice_nome', 'spread',
     'spese_iniziali', 'spese_iniziali_voci', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'taeg_dichiarato'];
   async function salvaOfferta() {
     const b = guida.bozza;
     const parametri = Object.fromEntries(CHIAVI_OFFERTA.filter(k => b[k] != null && (!CAMPI[k].se || CAMPI[k].se(b)) && (k !== 'indice_nome' || variabile(b))).map(k => [k, b[k]]));
     parametri.nome = (b.nome || '').trim() || `Offerta ${Archivio.offerte().length + 1}`;
+    // Nel misto l'indice del variabile di dopo non si chiede: di solito è l'Euribor 3 mesi (si cambia nella carta).
+    if (misto(b)) parametri.indice_nome = b.indice_nome || CAMPI.indice_nome.iniziale;
     try {
       await Archivio.richiesta('POST', 'offerte', { parametri });
     } catch (errore) {
@@ -877,7 +908,9 @@
     dove: 'Nel contratto («durata», «scadenza», «ultima rata il …») o nell\'ultima riga del piano di ammortamento.' };
   // La spiegazione corta sotto ogni domanda; quella lunga (DOMANDE), dove c'è, si apre con «Altre spiegazioni».
   const CORTE = {
-    tipo_breve: 'Se non sai se il tuo mutuo è a tasso fisso o variabile, scegli la terza voce: lo capisco io dalle rate.',
+    tipo_breve: 'Se non sai se il tuo mutuo è a tasso fisso o variabile, scegli «Un mutuo, ma non so…»: lo capisco io dalle rate.',
+    anni_tasso_fisso: 'Nel tasso misto il TAN vale solo per i primi anni: lo trovi nel contratto, a volte anche nel nome, come «fisso 5 rinegoziabile».',
+    spread_dopo: 'Quello che la banca somma all\'Euribor dopo gli anni fissi, se scegli il variabile. Mi serve per stimare le rate di dopo. Se non lo trovi, lascia vuoto.',
     importo_iniziale: 'È la somma che ti ha prestato la banca, non il prezzo della casa o dell\'auto: la trovi nella prima pagina del contratto.',
     numero_rate: 'Scrivila come la trovi nel contratto: in anni (le rate le conto io) oppure in rate. Conta tutta la durata, anche le rate già pagate.',
     durata_maxirata: 'Se il contratto dice «36 mesi», scrivi 3 anni: sono 35 rate più la maxirata. Se dice «35 rate + maxirata», scegli «In rate» e scrivi 35.',
@@ -907,6 +940,8 @@
     indice_nome: 'Lo trovi nel PIES alla voce «tasso di interesse», ad esempio «Euribor 3 mesi + 1,20%».',
     spread: 'Il numero dopo il più: in «Euribor 3 mesi + 1,20%» lo spread è 1,20. Scrivilo senza il segno %.',
     tasso_fisso: 'Il TAN, cioè il tasso con cui si calcolano le rate. Non il TAEG: quello te lo chiedo alla fine. Per un «tasso zero» scrivi 0.',
+    anni_tasso_fisso: 'Nel PIES, dove si parla del tasso: «tasso fisso per i primi 5 anni», oppure nel nome, come «fisso 5 rinegoziabile».',
+    spread_dopo: 'Nel PIES, nella parte sul tasso dopo gli anni fissi: in «Euribor 3 mesi + 1,20%» lo spread è 1,20. Se non c\'è, lascia vuoto.',
     spese_rata: 'Solo la commissione di incasso, di solito fra 0 e 3 €. Non la rata: quella la calcolo io. Se non ci sono, lascia vuoto.',
     spese_iniziali: 'Istruttoria, perizia, imposta sostitutiva o di bollo: nel foglio informativo, fra i costi. Scrivile una per riga, il totale lo faccio io. Se non ci sono, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico all\'inizio, se l\'assicurazione è obbligatoria o se la prendi. Se non c\'è, lascia vuoto.',
@@ -965,7 +1000,8 @@
     // Le domande facoltative partono vuote: uno zero sembrerebbe già una risposta.
     const testo = valore == null || (!campo.obbligatorio && campo.tipo !== 'testo' && !valore) ? '' : campo.tipo === 'testo' ? valore : perCampo(valore, campo.tipo === 'percento');
     const casella = crea('input', { type: 'text', inputMode: campo.tipo === 'testo' ? 'text' : 'decimal', name: chiave, id: 'campo-' + chiave, value: testo, maxLength: 80, autocomplete: 'off', 'aria-label': titoloDomanda(chiave) });
-    return UNITA[campo.tipo] ? crea('div', { className: 'con-unita' }, casella, crea('span', {}, UNITA[campo.tipo])) : casella;
+    const unita = chiave === 'anni_tasso_fisso' ? 'anni' : UNITA[campo.tipo];
+    return unita ? crea('div', { className: 'con-unita' }, casella, crea('span', {}, unita)) : casella;
   }
   function disegnaDomandaBreve(contenitore, passo) {
     const chiave = passo.chiave, ultima = chiave === 'data_addebito' && guida.modoData === 'ultima';
@@ -1066,6 +1102,9 @@
     if (!severo) return true;
     if (chiave === 'importo_iniziale' && !(b.importo_iniziale > 0)) return mostraErrore('Scrivi la somma prestata, ad esempio 150.000.');
     if (chiave === 'maxirata' && !(b.maxirata < b.importo_iniziale)) return mostraErrore('La maxirata deve essere più bassa dell\'importo prestato.');
+    if (chiave === 'anni_tasso_fisso' && !(Number.isInteger(b.anni_tasso_fisso) && b.anni_tasso_fisso > 0 && b.anni_tasso_fisso * 12 < b.numero_rate)) {
+      return mostraErrore(`Scrivi gli anni interi a tasso fisso, ad esempio 5: devono essere meno della durata (${b.numero_rate} rate).`);
+    }
     if (guida.percorso === 'offerta' && (chiave === 'spese_rata' || chiave === 'assicurazione_rata') && b[chiave] > 0 && guida.avvisoSpese !== `${chiave}:${b[chiave]}`) {
       const e = M.calcolaOfferta(b), sospetta = e && !e.manca ? M.speseSospette(b, e).find(s => s.chiave === chiave) : null;
       if (sospetta) { guida.avvisoSpese = `${chiave}:${b[chiave]}`; return mostraErrore(`Attenzione: ${sospetta.testo} Se è davvero così, premi di nuovo «Avanti».`); }
@@ -1280,7 +1319,7 @@
   // Che cosa ha capito, in parole: tipo, tasso, regole, e a quale mese si riferisce ogni rata.
   function capito(p) {
     const voci = [['Tipo', nomeScelta('tipo_prestito', p.tipo_prestito)],
-      ['Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
+      ['Tasso', tassoInParole(p)],
       ...descriviRegole(p)];
     if (variabile(p) && p.floor_attivo > 0) voci.push(['Indice minimo', `${perc(p.indice_minimo || 0, 3, 1)}: quando l'indice era più basso, la banca ha usato questo valore`]);
     const primo = primoAddebito();
@@ -1610,6 +1649,8 @@
     importo_iniziale: 'Perfetto. Adesso un numero che trovi nella prima pagina del contratto.',
     numero_rate: 'Dimmi la durata come la sai, in anni o in rate: il conto lo faccio io.',
     maxirata: 'Un finanziamento con la maxirata: dimmi quanto vale l\'ultima rata, quella grande.',
+    anni_tasso_fisso: 'Un tasso misto: dimmi per quanti anni il tasso resta fisso.',
+    spread_dopo: 'Le rate dopo gli anni fissi nessuno le sa: con questo dato le stimo meglio.',
     data_addebito: 'Ultima domanda sul prestito: una data. Va bene anche approssimativa.',
     ordine_rate: 'Ora la parte più importante: le rate che hai già pagato. Da quelle capisco tutto il resto.',
     nome: 'Ci siamo quasi! Dagli un nome: ti servirà se segui più di un prestito.',
@@ -1629,6 +1670,8 @@
     indice_nome: 'Nel variabile il tasso è un indice più uno spread: prima l\'indice.',
     spread: 'E ora lo spread, il numero dopo il più.',
     tasso_fisso: 'Il TAN: è il tasso con cui calcolo le rate.',
+    anni_tasso_fisso: 'Nel tasso misto il TAN dura solo qualche anno: quanti?',
+    spread_dopo: 'Dopo gli anni fissi la rata cambia: con lo spread del variabile la stimo meglio.',
     spese_rata: 'Attenzione a questa: qui vanno solo le spese di incasso, non la rata!',
     spese_iniziali: 'Le spese per aprire il prestito, una per riga: istruttoria, perizia, imposte. La somma la faccio io.',
     assicurazione_iniziale: 'Le assicurazioni contano nel costo vero: se sono obbligatorie, scrivile.',
@@ -2073,7 +2116,7 @@
   // principali (le regole di dettaglio stanno nella pagina «Regole del contratto», versione avanzata) e il piano si
   // ricalcola appena si salva; «Rifai la configurazione guidata» ripete le domande dall'inizio, solo se lo si chiede.
   const CHIAVI_DATI = ['nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'maxirata', 'anticipo', 'valore_riferimento',
-    'tasso_fisso', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_nel_prestito', 'taeg_dichiarato',
+    'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_nel_prestito', 'taeg_dichiarato',
     'data_erogazione', 'preammortamento', 'previsione_anni', 'previsione_modello'];
   let cambiaDati = false;
   const durata = n => { const anni = Math.floor(n / 12), mesi = n % 12;
@@ -2096,12 +2139,15 @@
       aggiornaVisibili(campi, CHIAVI_DATI, p);
       return;
     }
+    // Tasso misto: l'ultima rata degli anni fissi.
+    const revisione = misto(p) ? Calcolo.prossimaRevisione(p) : null, fineFisso = revisione ? righe[revisione - 2] : null;
     const voci = [['Tipo', Archivio.categoria(p).etichetta], ['Importo prestato', euro(p.importo_iniziale)],
       ['Durata', righe[righe.length - 1].estinto
         ? `${p.numero_rate} rate mensili (${durata(p.numero_rate)}) alla firma, da ${M.meseAnno(righe[0].inizio)}; chiuso dopo la rata ${righe.length}, di ${M.meseAnno(righe[righe.length - 1].inizio)}`
         : `${p.numero_rate} rate mensili (${durata(p.numero_rate)})${righe.length !== p.numero_rate + (p.tipo_prestito === 'maxirata' ? 1 : 0) ? ' alla firma, poi cambiate' : ''}, da ${M.meseAnno(righe[0].inizio)} a ${M.meseAnno(righe[righe.length - 1].inizio)}`],
       ...(p.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(p.maxirata)]] : []), ...(p.anticipo > 0 ? [['Anticipo', euro(p.anticipo)]] : []),
-      [stato.dati.cambi && stato.dati.cambi.length ? 'Tasso alla firma' : 'Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
+      [stato.dati.cambi && stato.dati.cambi.length ? 'Tasso alla firma' : 'Tasso', tassoInParole(p)],
+      ...(fineFisso ? [['Tasso fisso fino a', `${M.meseAnno(fineFisso.inizio)}, la rata ${fineFisso.n}: le condizioni di dopo si scrivono nei «Cambi del contratto», qui sotto`]] : []),
       ...descriviRegole(p),
       ...(p.spese_iniziali > 0 ? [['Spese iniziali', speseIniziali(p)]] : []),
       ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ') + (p.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),

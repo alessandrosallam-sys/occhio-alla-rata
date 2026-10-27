@@ -156,6 +156,28 @@
   }
   // Il prestito ha almeno un tratto a tasso variabile (servono l'indice e i suoi valori).
   const conVariabile = dati => tratti(dati).some(t => t.variabile);
+  // Mutuo a tasso misto (tipo «misto»): il TAN vale per i primi «anni_tasso_fisso» anni, poi il tasso si rivede, e di
+  // solito ancora ogni volta che passano altrettanti anni. Nel piano resta fisso finché il cambio non si scrive (tratti).
+  // Restituisce la prima rata con il tasso rivisto dopo la rata n, oppure null.
+  function prossimaRevisione(p, n = 0) {
+    if (p.tipo_prestito !== 'misto' || !(p.anni_tasso_fisso > 0)) return null;
+    const ogni = p.anni_tasso_fisso * 12, rata = Math.max(1, Math.ceil(n / ogni)) * ogni + 1;
+    return rata <= p.numero_rate ? rata : null;
+  }
+  // Tasso misto, alla rata n (quella del mese): la revisione da guardare, { rata, passata }. Se una revisione è già
+  // arrivata e da lì non c'è un cambio scritto (il tasso di adesso viene da prima), è quella, «passata»: il tasso si è
+  // rivisto, ma il programma non sa come. Altrimenti la prossima, se il tasso di adesso è fisso e prima non c'è un cambio
+  // già scritto. Null se non è un tasso misto, o non ci sono revisioni da guardare.
+  function revisioneMisto(dati, n) {
+    const p = dati.parametri;
+    if (p.tipo_prestito !== 'misto' || !(p.anni_tasso_fisso > 0)) return null;
+    const elenco = tratti(dati), attuale = elenco.filter(t => t.da <= n).pop();
+    if (attuale.variabile) return null;
+    const ogni = p.anni_tasso_fisso * 12, ultima = Math.floor((n - 1) / ogni) * ogni + 1;
+    if (ultima > 1 && ultima > attuale.da && ultima <= p.numero_rate) return { rata: ultima, passata: true };
+    const prossima = prossimaRevisione(p, n);
+    return prossima && !elenco.some(t => t.da > n && t.da <= prossima) ? { rata: prossima, passata: false } : null;
+  }
 
   // dati = { parametri, rate, euribor, festivita, cambi } così come escono dall'archivio.
   // opzioni.fino: calcola solo le prime rate (serve alla taratura, che guarda solo quelle già addebitate);
@@ -455,10 +477,25 @@
     const interessi = totaleRate + estinto - p.importo_iniziale - speseRate + preAParte;
     const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue + speseCambi;
     const ricevuto = p.importo_iniziale - speseIniziali - (p.assicurazione_iniziale || 0);
+    const ricevutoTaeg = (nelTaeg ? ricevuto : p.importo_iniziale - speseIniziali) + fuoriTaeg;
     return { totaleRate, interessi, speseRate, speseIniziali, speseFuoriTaeg: fuoriTaeg, assicurazioni, speseAnnue, speseCambi, estinto, costoTotale, ricevuto,
       totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale,
-      taeg: taeg((nelTaeg ? ricevuto : p.importo_iniziale - speseIniziali) + fuoriTaeg, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
-      giorniPreammortamento: giorniPre, preammortamento: giorniPre > 0 ? centesimi(prima.interessiPreammortamento) : 0, preammortamentoAParte: preAParte > 0 };
+      taeg: taeg(ricevutoTaeg, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
+      giorniPreammortamento: giorniPre, preammortamento: giorniPre > 0 ? centesimi(prima.interessiPreammortamento) : 0, preammortamentoAParte: preAParte > 0,
+      periodoFisso: periodoFisso(p, righe, rata, pagamenti, ricevutoTaeg, giorniPre, preAParte) };
+  }
+  // Tasso misto: i conti dei soli anni fissi, come se alla fine si restituisse tutto il debito che resta. È il TAEG
+  // «illustrativo» che la banca deve dare per questi mutui (direttiva 2014/17/UE, art. 17, par. 5), e il costo che
+  // compare nei loro esempi pubblicitari; il TAEG di sempre tiene invece il TAN di oggi fino alla fine (par. 4).
+  // Null se non è un tasso misto, o se il contratto è cambiato (o il prestito è stato chiuso) prima della fine degli anni fissi.
+  function periodoFisso(p, righe, rata, pagamenti, ricevuto, giorniPre, preAParte) {
+    const revisione = prossimaRevisione(p), k = revisione ? revisione - 1 : 0;
+    if (!k || righe.length <= k || righe[k - 1].tratto !== 0 || righe[k - 1].estinto) return null;
+    const debitoDopo = righe[k].debito, prime = righe.slice(0, k);
+    const pagati = pagamenti.slice(0, k).map((v, i) => i === k - 1 ? v + debitoDopo : v);
+    const interessi = prime.reduce((s, r) => s + rata(r) - r.quotaCapitale - (p.spese_rata || 0), 0) + preAParte;
+    const costo = interessi + k * (p.spese_rata || 0) + (p.spese_iniziali || 0) + (p.assicurazione_iniziale || 0) + k * (p.assicurazione_rata || 0) + Math.floor(k / 12) * (p.spese_annue || 0);
+    return { rate: k, anni: p.anni_tasso_fisso, debitoDopo, interessi, costo, taeg: taeg(ricevuto, pagati, giorniPre / 365, preAParte) };
   }
 
   // Taratura: prova le combinazioni di regole più comuni e conta quante rate vere (e quote capitale vere)
@@ -587,7 +624,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tratti, conVariabile, tara, costi, taeg, fuoriDalTaeg, speseFuoriTaeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tratti, conVariabile, prossimaRevisione, revisioneMisto, tara, costi, taeg, fuoriDalTaeg, speseFuoriTaeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });

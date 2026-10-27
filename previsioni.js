@@ -149,6 +149,25 @@
     }
     return cacheOfferte.get(chiave);
   };
+  // Mutuo a tasso misto: le rate dopo gli anni fissi, che oggi nessuno conosce. Il piano prende un cambio a tasso
+  // variabile dalla rata «dalla» e l'Euribor viene dal modello, nei tre scenari (atteso, fascia alta e bassa dell'80%).
+  // Il tasso è l'Euribor più lo spread del variabile scritto nel contratto (spread_dopo); senza, parte dal TAN di prima e
+  // sale o scende quanto l'Euribor da oggi, come farebbe all'incirca anche un fisso nuovo (l'IRS segue le attese
+  // sull'Euribor). Per ogni scenario: righe, costi, prima rata, rata alla revisione e rata più alta. Null se l'indice
+  // non è un Euribor o se il modello non ha abbastanza dati.
+  M.scenariMisto = function scenariMisto(dati, dalla, modello) {
+    const p = dati.parametri, indice = p.indice_nome || Archivio.CAMPI.indice_nome.iniziale;
+    const proiezione = M.proiezioneIndice(indice, p.numero_rate + 2, modello);
+    if (!proiezione) return null;
+    const prima = Calcolo.tratti(dati).filter(t => t.da < dalla).pop();
+    const stimato = p.spread_dopo == null, spread = stimato ? prima.tasso - proiezione.ultimo.valore : p.spread_dopo;
+    const conCambio = { ...dati, parametri: { ...p, indice_nome: indice }, cambi: [...(dati.cambi || []).filter(c => c.dalla_rata < dalla), { dalla_rata: dalla, tipo: 'variabile', spread, rate_residue: null, spese: 0 }] };
+    const conti = previsione => {
+      const righe = Calcolo.calcolaPiano(conCambio, { previsione }).righe;
+      return { righe, c: Calcolo.costi(conCambio, righe, true), prima: righe[0].rataCalcolata, rata: righe[dalla - 1].rataCalcolata, massima: Math.max(...righe.map(r => r.rataCalcolata)) };
+    };
+    return { proiezione, indice, spread, stimato, atteso: conti(proiezione.scenari.atteso), alto: conti(proiezione.scenari.alto80), basso: conti(proiezione.scenari.basso80) };
+  };
   // Il nome del modello che usa il piano (per il variabile): «Curva, scelto in automatico», «Vasicek, fascia alta…».
   M.nomeModelloPiano = dati => {
     const scelto = dati.parametri.previsione_modello || 'auto', scenario = scenarioDi(dati);

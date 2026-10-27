@@ -212,6 +212,8 @@
     function quandoSiSapra(r) {
       if (!r) return 'il prestito finisce con questa rata';
       if (r.rataVera != null) return 'già addebitata';
+      if (rivedere && rivedere.passata) return 'stima: manca il tasso rivisto (cambi del contratto)';
+      if (rivedere && r.n >= rivedere.rata) return 'stima: il tasso fisso finisce e il tasso si rivede';
       if (!variabile() || r.origineEuribor === 'fisso') return r.maxirata ? 'la maxirata finale: la cifra è già nota' : 'già nota: il tasso è fisso';
       if (r.origineEuribor === 'manuale') return 'già nota: l\'indice l\'hai scritto tu';
       if (r.origineEuribor === 'db') return r.eredita
@@ -229,8 +231,11 @@
 
     // Con i cambi del contratto il tasso del mese è quello del tratto in corso, e si dice quando cambia.
     const elencoTratti = Calcolo.tratti(stato.dati), prossimoCambio = elencoTratti.find(t => t.da > corrente.n && righe[t.da - 1]);
+    // Tasso misto: la rata in cui il tasso si rivede, o si è già rivisto senza che il cambio sia scritto (Calcolo.revisioneMisto).
+    const revisione = Calcolo.revisioneMisto(stato.dati, corrente.n), rivedere = revisione && righe[revisione.rata - 1] ? revisione : null;
     const dettaglioFisso = ultima.maxirata ? `maxirata finale di ${euro(ultima.rataCalcolata)} a ${meseAnno(ultima.inizio)}`
-      : prossimoCambio ? `cambia dalla rata di ${meseAnno(righe[prossimoCambio.da - 1].inizio)}` : elencoTratti.length > 1 ? 'dopo il cambio del contratto' : 'uguale fino all\'ultima rata';
+      : rivedere ? (rivedere.passata ? `da rivedere da ${meseAnno(righe[rivedere.rata - 1].inizio)}: scrivi il tasso nuovo nei cambi del contratto` : `fisso fino a ${meseAnno(righe[rivedere.rata - 2].inizio)}, poi si rivede`)
+        : prossimoCambio ? `cambia dalla rata di ${meseAnno(righe[prossimoCambio.da - 1].inizio)}` : elencoTratti.length > 1 ? 'dopo il cambio del contratto' : 'uguale fino all\'ultima rata';
     // Ogni riquadro: { etichetta, numero, formato, dettaglio, quota (barra), classe, icona, extra, voci: [etichetta, valore, nota, pallino] }.
     const tassi = variabile() && corrente.origineEuribor !== 'fisso'
       ? (avanzata

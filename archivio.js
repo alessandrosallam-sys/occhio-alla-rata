@@ -24,10 +24,13 @@
   // (anche per una singola scelta di un elenco); un campo obbligatorio lo è solo quando ha senso.
   const variabile = p => (p.tipo_prestito || 'variabile') === 'variabile';
   const maxirata = p => p.tipo_prestito === 'maxirata';
+  // Tasso misto: fisso per i primi anni, poi si rivede. Nei conti è un tasso fisso finché non si scrive il cambio.
+  const misto = p => p.tipo_prestito === 'misto';
   const CAMPI = {
     tipo_prestito: { tipo: 'scelta', iniziale: 'variabile', etichetta: 'Tipo di prestito', opzioni: [
       { valore: 'variabile', icona: 'grafico', etichetta: 'Mutuo a tasso variabile', aiuto: 'Il tasso segue un indice di mercato (di solito l\'Euribor) più uno spread fisso: la rata cambia nel tempo.' },
       { valore: 'fisso', icona: 'casa', etichetta: 'Mutuo a tasso fisso', aiuto: 'Il tasso è scritto nel contratto e resta lo stesso fino all\'ultima rata.' },
+      { valore: 'misto', icona: 'orologio', etichetta: 'Mutuo a tasso misto', aiuto: 'Fisso per i primi anni, di solito 5 o 10, poi il tasso si rivede: diventa variabile, oppure scegli fra un fisso nuovo e il variabile. Si chiama anche «fisso rinegoziabile».' },
       { valore: 'finanziamento', icona: 'portafoglio', etichetta: 'Finanziamento o prestito personale', aiuto: 'Prestito personale, per l\'auto, per un acquisto a rate, cessione del quinto: quasi sempre a tasso fisso, con TAN e TAEG scritti nel contratto.' },
       { valore: 'maxirata', icona: 'auto', etichetta: 'Finanziamento con maxirata finale', aiuto: 'Tipico delle auto: di solito un anticipo, rate mensili basse e alla fine una rata molto più grande (maxirata, rata finale o «valore futuro garantito»).' }] },
     // La categoria scelta nella guida (vedi CATEGORIE): cambia solo icona, nome e domande, i conti li decide il tipo.
@@ -74,9 +77,15 @@
         { valore: 1, etichetta: 'No, l\'ho scelta io', aiuto: 'Non conta nel TAEG; resta nel costo totale, perché la paghi.' }] },
 
     tasso_fisso: { tipo: 'percento', min: 0, max: 0.5, obbligatorio: true, etichetta: 'Tasso annuo nominale, TAN (%)', se: p => !variabile(p),
-      aiuto: 'Il tasso scritto nel contratto: «TAN» o «tasso annuo nominale». Per un finanziamento «a tasso zero» scrivi 0.' },
-    indice_nome: { tipo: 'testo', iniziale: 'Euribor 3 mesi', etichetta: 'Indice del contratto', suggerimenti: ['Euribor 1 mese', 'Euribor 3 mesi', 'Euribor 6 mesi', 'Euribor 12 mesi', 'Tasso BCE'], se: variabile,
-      aiuto: 'Il tasso di riferimento scritto nel contratto. I suoi valori li inserirai nella pagina «Tassi».' },
+      aiuto: 'Il tasso scritto nel contratto: «TAN» o «tasso annuo nominale». Per un finanziamento «a tasso zero» scrivi 0. Nel tasso misto è quello dei primi anni.' },
+    // Tasso misto: per quanti anni vale il TAN, dalla firma (poi il tasso si rivede), e lo spread del variabile dopo.
+    // Lo spread si può lasciare vuoto («vuoto»: si salva null, non zero): le stime seguono allora l'Euribor dal TAN di oggi.
+    anni_tasso_fisso: { tipo: 'intero', min: 1, max: 49, obbligatorio: true, etichetta: 'Anni a tasso fisso', se: misto,
+      aiuto: 'Per quanti anni vale il TAN, dalla prima rata: di solito 5 o 10. Poi il tasso si rivede.' },
+    spread_dopo: { tipo: 'percento', min: -0.05, max: 0.2, vuoto: true, etichetta: 'Spread se poi passi al variabile (%)', se: misto,
+      aiuto: 'Quello che la banca somma all\'Euribor quando finiscono gli anni fissi, se scegli il variabile. Facoltativo: se non lo trovi lascia vuoto, e le stime seguono l\'Euribor partendo dal TAN di oggi.' },
+    indice_nome: { tipo: 'testo', iniziale: 'Euribor 3 mesi', etichetta: 'Indice del contratto', suggerimenti: ['Euribor 1 mese', 'Euribor 3 mesi', 'Euribor 6 mesi', 'Euribor 12 mesi', 'Tasso BCE'], se: p => variabile(p) || misto(p),
+      aiuto: 'Il tasso di riferimento scritto nel contratto (nel tasso misto, quello del variabile dopo gli anni fissi). I suoi valori li inserirai nella pagina «Tassi».' },
     spread: { tipo: 'percento', min: -0.05, max: 0.2, obbligatorio: true, etichetta: 'Spread (%)', se: variabile, aiuto: 'La maggiorazione fissa che la banca somma all\'indice.' },
     taeg_dichiarato: { tipo: 'percento', min: 0, max: 1, iniziale: 0, etichetta: 'TAEG del contratto (%)',
       aiuto: 'Il «tasso annuo effettivo globale» scritto nel contratto o nel foglio informativo (SECCI per i finanziamenti, PIES per i mutui). Facoltativo: serve a controllare quello che calcola il programma.' },
@@ -151,6 +160,7 @@
       const campo = CAMPI[chiave];
       if (!campo) continue;   // chiavi sconosciute (ad esempio di versioni vecchie) si ignorano
       const nome = campo.etichetta || chiave;
+      if (campo.vuoto && (valore == null || valore === '')) { puliti[chiave] = null; continue; }
       if (campo.tipo === 'testo') { richiedi(typeof valore === 'string' && valore.trim().length <= (campo.lunghezza || 80), `Testo non valido: ${nome}`); puliti[chiave] = valore.trim(); }
       else if (campo.tipo === 'data') {
         if (!campo.obbligatorio && (valore == null || valore === '')) { puliti[chiave] = ''; continue; }
@@ -182,6 +192,7 @@
   // Controlli che riguardano più parametri insieme.
   function controllaInsieme(p) {
     if (maxirata(p) && p.maxirata > 0 && p.importo_iniziale > 0) richiedi(p.maxirata < p.importo_iniziale, 'La maxirata deve essere più bassa dell\'importo prestato');
+    if (misto(p) && p.anni_tasso_fisso > 0 && p.numero_rate > 0) richiedi(p.anni_tasso_fisso * 12 < p.numero_rate, 'Gli anni a tasso fisso devono essere meno della durata del mutuo');
     if (p.data_erogazione && p.data_prima_rata) {
       const giorni = (Date.parse(p.data_prima_rata) - Date.parse(p.data_erogazione)) / 864e5;
       richiedi(giorni > 0 && giorni <= 366, 'Il giorno in cui hai ricevuto il prestito deve venire prima dell\'inizio del primo periodo, al massimo un anno prima');
@@ -215,6 +226,8 @@
       aiuto: 'Il tasso segue un indice, di solito l\'Euribor, più uno spread fisso: la rata cambia nel tempo.' },
     { valore: 'fisso', tipo: 'fisso', icona: 'casa', etichetta: 'Mutuo per la casa a tasso fisso', breve: 'Mutuo fisso', nome: 'Il mio mutuo', anni: [10, 15, 20, 25, 30],
       aiuto: 'Il tasso è scritto nel contratto: la rata resta la stessa fino all\'ultima.' },
+    { valore: 'misto', tipo: 'misto', icona: 'orologio', etichetta: 'Mutuo per la casa a tasso misto', breve: 'Mutuo misto', nome: 'Il mio mutuo', anni: [10, 15, 20, 25, 30],
+      aiuto: 'Tasso fisso per i primi anni, di solito 5 o 10, poi si rivede: si chiama anche «fisso rinegoziabile».' },
     { valore: 'mutuo', tipo: 'mutuo', icona: 'info', etichetta: 'Un mutuo, ma non so se il tasso è fisso o variabile', breve: 'Mutuo', nome: 'Il mio mutuo', anni: [10, 15, 20, 25, 30], soloPrestiti: true,
       aiuto: 'Lo capisco io dalle rate: se cambiano da un mese all\'altro, è variabile.' },
     { valore: 'finanziamento', tipo: 'finanziamento', icona: 'portafoglio', etichetta: 'Prestito personale', breve: 'Prestito personale', nome: 'Prestito personale', anni: [2, 3, 4, 5, 7],

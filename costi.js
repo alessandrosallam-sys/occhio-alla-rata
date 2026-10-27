@@ -34,16 +34,47 @@
         ? 'soldi ricevuti + costo totale: le spese iniziali sono già dentro le rate' : 'capitale + costo totale', 'totale'),
       ...(p.anticipo > 0 ? [riga('In tutto, con l\'anticipo', euro(p.anticipo + c.totaleDaPagare), 'quanto paghi per l\'acquisto, dal primo all\'ultimo euro', 'totale')] : []),
     ];
+    const misto = p.tipo_prestito === 'misto', fissi = c.periodoFisso, anni = fissi ? (fissi.anni === 1 ? '1 anno' : `${fissi.anni} anni`) : '';
     const tassi = [
-      ...(variabile ? [] : [riga(stato.dati.cambi && stato.dati.cambi.length ? 'TAN alla firma' : 'TAN', perc(p.tasso_fisso, 3, 1), 'il tasso usato per gli interessi')]),
-      riga(variabile ? 'TAEG stimato' : 'TAEG calcolato', c.taeg == null ? '—' : perc(c.taeg, 2), 'il costo totale in percentuale all\'anno: serve a confrontare prestiti diversi'),
+      ...(variabile ? [] : [riga(stato.dati.cambi && stato.dati.cambi.length ? 'TAN alla firma' : misto ? 'TAN dei primi anni' : 'TAN', perc(p.tasso_fisso, 3, 1), 'il tasso usato per gli interessi')]),
+      riga(variabile ? 'TAEG stimato' : 'TAEG calcolato', c.taeg == null ? '—' : perc(c.taeg, 2), misto && !variabile ? 'con il TAN di oggi fino alla fine, come lo calcola la banca'
+        : 'il costo totale in percentuale all\'anno: serve a confrontare prestiti diversi'),
+      ...(fissi && fissi.taeg != null ? [riga(`TAEG dei soli ${anni} fissi`, perc(fissi.taeg, 2), 'come se alla fine restituissi tutto il debito che resta: per il tasso misto la banca deve darti anche questo')] : []),
       ...(p.taeg_dichiarato > 0 ? [riga('TAEG del contratto', perc(p.taeg_dichiarato, 3, 2))] : []),
     ];
     const contenuto = [crea('h3', {}, Icone.crea('calcolatrice', 'icona icona-titolo'), 'Quanto costa questo prestito'),
       crea('table', { className: 'tabella-costi' }, crea('tbody', {}, ...righe, ...tassi))];
     contenuto.push(...giudizio(c, p, variabile));
     if (conMaxirata) contenuto.push(...spiegaMaxirata(c, p));
+    if (misto) contenuto.push(...spiegaMisto(p));
     carta.replaceChildren(...contenuto);
+  }
+
+  // Tasso misto: quando finisce il tasso fisso, quanto debito resta, e quanto potrebbe essere la rata dopo: con il TAN di
+  // oggi, oppure al variabile con le previsioni sull'Euribor (previsioni.js, M.scenariMisto). Solo mentre il tasso è
+  // fisso e il cambio di quella rata non è ancora scritto (Calcolo.revisioneMisto); se la revisione è già arrivata,
+  // l'invito a scrivere il tasso nuovo.
+  function spiegaMisto(p) {
+    const righe = stato.piano.righe, corrente = M.rataDelMese(righe), revisione = Calcolo.revisioneMisto(stato.dati, corrente.n);
+    if (!revisione || !righe[revisione.rata - 1]) return [];
+    const nota = (testo, classe = '') => crea('p', { className: 'nota ' + classe }, testo), dalla = revisione.rata;
+    const riga = righe[dalla - 1], ultimaFissa = righe[dalla - 2], tasso = Calcolo.tratti(stato.dati).filter(t => t.da < dalla).pop().tasso;
+    const titolo = crea('h3', {}, Icone.crea('orologio', 'icona icona-titolo'), 'Quando finisce il tasso fisso');
+    if (revisione.passata) {
+      return [titolo, nota(`Il TAN del ${perc(tasso, 3, 2)} valeva fino alla rata ${ultimaFissa.n}, di ${M.meseAnno(ultimaFissa.inizio)}: dalla rata ${dalla}, di ${M.meseAnno(riga.inizio)}, il tasso si è rivisto. `
+        + 'Finché non scrivi il tasso nuovo, il piano tiene quello di prima, quindi le rate da lì in poi possono non tornare.', 'evidenza'),
+        nota(`Scrivilo nella pagina «Dati del prestito», in «Cambi del contratto», dalla rata ${dalla}: lo trovi nella lettera della banca o nell'estratto conto di quella rata. Se il tasso è rimasto lo stesso, scrivi il cambio con lo stesso TAN: così so che è a posto.`)];
+    }
+    const s = M.scenariMisto(stato.dati, dalla, 'vasicek');
+    const frasi = [titolo,
+      nota(`Il TAN del ${perc(tasso, 3, 2)} vale fino alla rata ${ultimaFissa.n}, di ${M.meseAnno(ultimaFissa.inizio)}. Dalla rata ${dalla}, di ${M.meseAnno(riga.inizio)}, il tasso si rivede: a quel punto restano da restituire ${euro(riga.debito)}.`)];
+    const dopo = s ?(s.stimato ? 'Se il tasso nuovo sale o scende quanto l\'Euribor da oggi' : `Se passi al variabile (${s.indice} + ${perc(s.spread, 3, 2)})`)
+      + `, con le previsioni sull'Euribor la rata sarebbe intorno a ${euro(s.atteso.rata)}: fra ${euro(s.basso.rata)} e ${euro(s.alto.rata)} nell'80% dei casi.`
+      : 'Per stimare la rata di dopo mi servono i valori dell\'Euribor: non ci sono, o l\'indice scritto non è un Euribor.';
+    frasi.push(nota(`Se il tasso restasse quello di oggi, la rata resterebbe di ${euro(riga.rataCalcolata)}. ${dopo}`),
+      nota(`Prima della scadenza la banca ti comunica le condizioni nuove. Quando le conosci, scrivile nei «Cambi del contratto» (pagina «Dati del prestito») dalla rata ${dalla}: il piano si ricalcola. `
+        + 'Se non ti convengono, puoi anche portare il mutuo in un\'altra banca con una surroga: per legge non costa niente.'));
+    return frasi;
   }
 
   // Sotto le spese iniziali: le voci scritte una per una, e quali contano nel costo totale ma non nel TAEG (notaio e
@@ -76,6 +107,11 @@
     if (variabile) return [nota('Per un mutuo variabile le rate future dipendono dall\'indice: costo totale e TAEG sono una stima, fatta con la proiezione scelta nella pagina «Tassi». '
       + 'Il TAEG scritto dalla banca invece è calcolato con l\'indice del giorno della firma, quindi i due possono essere diversi.')];
     if (c.taeg == null) return [];
+    // Tasso misto: il contratto può riportare il TAEG dei soli anni fissi (direttiva 2014/17/UE, art. 17, par. 5).
+    const vicino = t => t != null && Math.abs(t - p.taeg_dichiarato) <= TOLLERANZA_TAEG + 0.00005, fissi = c.periodoFisso;
+    if (p.taeg_dichiarato > 0 && !vicino(c.taeg) && fissi && vicino(fissi.taeg)) {
+      return [nota(`✓ Il TAEG del contratto (${perc(p.taeg_dichiarato, 3, 2)}) coincide con quello che calcolo sui soli ${fissi.anni === 1 ? '1 anno' : fissi.anni + ' anni'} a tasso fisso, come chiede la legge per i mutui a tasso misto.`, 'conferma')];
+    }
     if (!(p.taeg_dichiarato > 0)) return [nota('Se nel contratto c\'è il TAEG, scrivilo nelle regole del contratto qui sotto: controllo se coincide con quello che calcolo io.')];
     const differenza = c.taeg - p.taeg_dichiarato;
     if (Math.abs(differenza) <= TOLLERANZA_TAEG + 0.00005) return [nota(`✓ Il TAEG calcolato coincide con quello del contratto (${perc(p.taeg_dichiarato, 3, 2)}).`, 'conferma')];

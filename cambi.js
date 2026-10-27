@@ -15,6 +15,12 @@
     const [a, m, g] = p.data_prima_rata.split('-').map(Number);
     return new Date(Date.UTC(a, m - 1 + n - 1, g)).toISOString().slice(0, 10);
   }
+  // Tasso misto: la rata in cui il tasso si rivede, o si è già rivisto senza un cambio scritto (Calcolo.revisioneMisto),
+  // se è nel piano. Null negli altri casi.
+  function revisioneMisto(righe) {
+    const revisione = Calcolo.revisioneMisto(stato.dati, M.rataDelMese(righe).n);
+    return revisione && righe[revisione.rata - 1] ? revisione : null;
+  }
   function descriviCambio(c, p) {
     const parti = [c.tipo === 'fisso' ? `tasso fisso ${perc(c.tasso_fisso, 3, 2)} (TAN)` : `tasso variabile, ${p.indice_nome || 'indice'} + ${perc(c.spread, 3, 2)} di spread`];
     if (c.rate_residue > 0) parti.push(`${c.rate_residue} rate da lì alla fine`);
@@ -41,6 +47,10 @@
         crea('div', { className: 'azioni' }, crea('button', { type: 'button', className: 'secondario', 'data-cambi': 'riapri' }, 'Non è stato chiuso: riaprilo')));
     }
     if (maxirata) contenuto.push(crea('p', { className: 'nota' }, 'Con la maxirata finale i cambi del contratto non sono previsti: se hai rifinanziato la maxirata, aggiungi un prestito nuovo dalla pagina «Prestiti».'));
+    const revisione = revisioneMisto(righe);
+    if (revisione) contenuto.push(crea('p', { className: 'nota evidenza' }, revisione.passata
+      ? `Il tuo mutuo è a tasso misto: dalla rata ${revisione.rata}, di ${meseAnno(inizioRata(p, revisione.rata))}, il tasso si è rivisto. Aggiungi qui il cambio da quella rata, con il tasso nuovo (se è rimasto lo stesso, con lo stesso TAN).`
+      : `Il tuo mutuo è a tasso misto: il TAN vale fino alla rata ${revisione.rata - 1}, di ${meseAnno(inizioRata(p, revisione.rata - 1))}. Quando la banca ti comunica il tasso nuovo, o scegli fra fisso e variabile, aggiungi qui un cambio dalla rata ${revisione.rata}.`));
     if (cambi.length) {
       contenuto.push(crea('ul', { className: 'elenco-cambi' }, ...cambi.map((c, i) => crea('li', {},
         crea('div', {}, crea('strong', {}, `Dalla rata ${c.dalla_rata}, di ${meseAnno(inizioRata(p, c.dalla_rata))}`),
@@ -148,10 +158,13 @@
     if (!pulsante) return;
     const azione = pulsante.dataset.cambi, posizione = +pulsante.dataset.posizione, cambi = stato.dati.cambi || [];
     if (azione === 'nuovo') {
-      // Di base la prima rata non ancora addebitata, e il tipo di tasso che c'è in quel momento.
-      const riga = stato.piano.righe.find(r => r.n > 1 && r.fine >= stato.oggi) || stato.piano.righe[1];
+      // Di base la prima rata non ancora addebitata, e il tipo di tasso che c'è in quel momento. Nel tasso misto la rata in
+      // cui il tasso si rivede, con lo spread del variabile già scritto (se si sceglie il variabile).
+      const p = stato.dati.parametri, revisione = revisioneMisto(stato.piano.righe);
+      const riga = revisione ? stato.piano.righe[revisione.rata - 1] : stato.piano.righe.find(r => r.n > 1 && r.fine >= stato.oggi) || stato.piano.righe[1];
       const fisso = riga.origineEuribor === 'fisso';
-      modulo = { posizione: -1, valori: { dalla_rata: riga.n, tipo: fisso ? 'fisso' : 'variabile', tasso_fisso: fisso ? riga.spread : null, spread: fisso ? null : riga.spread, rate_residue: null, spese: 0 } };
+      modulo = { posizione: -1, valori: { dalla_rata: riga.n, tipo: fisso ? 'fisso' : 'variabile', tasso_fisso: fisso ? riga.spread : null,
+        spread: fisso ? (revisione && p.spread_dopo != null ? p.spread_dopo : null) : riga.spread, rate_residue: null, spese: 0 } };
     } else if (azione === 'modifica') modulo = { posizione, valori: { ...cambi[posizione] } };
     else if (azione === 'annulla') modulo = null;
     else if (azione === 'togli') {

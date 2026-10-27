@@ -1359,6 +1359,8 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
 .tabella-offerte th, .tabella-offerte td { padding: 9px var(--s3); border-bottom: 1px solid var(--linea); vertical-align: top; text-align: right; }
 .tabella-offerte tbody th { text-align: left; font-weight: 500; min-width: 170px; position: sticky; left: 0; background: var(--carta-sfondo); }
 .tabella-offerte th small, .tabella-offerte td small { display: block; color: var(--tenue); font-weight: 400; font-size: calc(12.5px * var(--testo)); }
+/* Le note sotto le cifre vanno a capo (quelle del tasso misto sono lunghe): le cifre restano su una riga. */
+.tabella-offerte td small { white-space: normal; }
 .tabella-offerte thead th { font-size: calc(15px * var(--testo)); font-weight: 700; white-space: nowrap; }
 .tabella-offerte thead .etichetta-aperto { display: block; width: max-content; margin: 4px 0 0 auto; }
 .tabella-offerte td { min-width: 150px; font-variant-numeric: tabular-nums; }
