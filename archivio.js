@@ -53,7 +53,10 @@
 
     spese_rata: { tipo: 'euro', min: 0, max: 1e4, iniziale: 0, etichetta: 'Spese per ogni rata (€)', aiuto: 'Spese di incasso addebitate insieme alla rata, se ci sono.' },
     spese_iniziali: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, etichetta: 'Spese iniziali (€)',
-      aiuto: 'Pagate una volta sola, all\'inizio: istruttoria, perizia, imposta sostitutiva o di bollo. Non cambiano le rate, ma entrano nel costo totale e nel TAEG.' },
+      aiuto: 'Pagate una volta sola, all\'inizio: istruttoria, perizia, imposta sostitutiva o di bollo, notaio. Scrivile una per riga: il totale lo faccio io. Non cambiano le rate; entrano nel costo totale e nel TAEG, tranne notaio e agenzia immobiliare, che contano solo nel costo.' },
+    // Le spese iniziali una per una, come le ha scritte l'utente: [{ cosa, euro }], con «cosa» facoltativo. spese_iniziali
+    // è la loro somma (controllaParametri) ed è quella che usano i conti; un totale scritto da solo le toglie.
+    spese_iniziali_voci: { tipo: 'voci', iniziale: [], nascosto: true, etichetta: 'Spese iniziali, una per una' },
     assicurazione_iniziale: { tipo: 'euro', min: 0, max: 1e7, iniziale: 0, etichetta: 'Assicurazione pagata all\'inizio (€)',
       aiuto: 'Il premio unico di un\'assicurazione legata al prestito, anche se è stato aggiunto all\'importo prestato.' },
     assicurazione_rata: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, etichetta: 'Assicurazione a ogni rata (€)',
@@ -155,11 +158,20 @@
         if (!campo.qualsiasiGiorno) richiedi(+valore.slice(8) <= 28, `${nome}: scegli un giorno fra 1 e 28, così ogni mese ha il suo periodo`);
         puliti[chiave] = valore;
       } else if (campo.tipo === 'scelta') { richiedi(campo.opzioni.some(o => o.valore === valore), `Scelta non valida: ${nome}`); puliti[chiave] = valore; }
-      else {
+      else if (campo.tipo === 'voci') {
+        richiedi(Array.isArray(valore) && valore.length <= 30 && valore.every(v => v && typeof v === 'object' && (v.cosa == null || typeof v.cosa === 'string' && v.cosa.trim().length <= 60)
+          && numero(v.euro) && v.euro >= 0 && v.euro <= 1e7), `Valore non valido: ${nome}`);
+        puliti[chiave] = valore.map(v => ({ cosa: (v.cosa || '').trim(), euro: v.euro }));
+      } else {
         richiedi(numero(valore) && valore >= campo.min && valore <= campo.max && (campo.tipo !== 'intero' || Number.isInteger(valore)), `Valore non valido: ${nome}`);
         puliti[chiave] = valore;
       }
     }
+    // Le spese iniziali scritte una per una fanno il totale; un totale scritto da solo (salvataggi di prima) non ha voci.
+    if (puliti.spese_iniziali_voci && puliti.spese_iniziali_voci.length) {
+      puliti.spese_iniziali = Math.round(puliti.spese_iniziali_voci.reduce((s, v) => s + v.euro, 0) * 100) / 100;
+      richiedi(puliti.spese_iniziali <= CAMPI.spese_iniziali.max, `Valore non valido: ${CAMPI.spese_iniziali.etichetta}`);
+    } else if ('spese_iniziali' in puliti) puliti.spese_iniziali_voci = [];
     if (completi) {
       const tutti = { ...predefiniti(), ...puliti };
       for (const [chiave, campo] of Object.entries(CAMPI)) if (campo.obbligatorio && (!campo.se || campo.se(tutti))) richiedi(puliti[chiave] != null && puliti[chiave] !== '', `Manca: ${campo.etichetta}`);
@@ -188,7 +200,8 @@
     if (!numero(spese) || spese < 0 || spese > 1e7) return null;
     return { dalla_rata: c.dalla_rata, tipo: c.tipo, ...(fisso ? { tasso_fisso: tasso } : { spread: tasso }), rate_residue: rate, spese };
   }
-  const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, c.iniziale]));
+  // Un elenco (le spese una per una) si copia, così chi lo riceve non cambia quello di CAMPI.
+  const predefiniti = () => Object.fromEntries(Object.entries(CAMPI).filter(([, c]) => c.iniziale !== undefined).map(([chiave, c]) => [chiave, Array.isArray(c.iniziale) ? [...c.iniziale] : c.iniziale]));
 
   // ---------- Lettura e scrittura nel browser ----------
   // L'archivio contiene uno o più prestiti, ognuno con parametri, rate, valori dell'indice e festività, e ricorda

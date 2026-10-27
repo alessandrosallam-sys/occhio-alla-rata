@@ -227,6 +227,12 @@
     ['[data-anni]', el => `${el.dataset.anni} anni sono ${el.dataset.anni * 12} rate mensili.`],
     ['[data-durata-in="anni"]', 'Scrivi la durata in anni: le rate le conto io.'],
     ['[data-durata-in="rate"]', 'Scrivi il numero di rate, se il contratto lo dice così.'],
+    // Le spese iniziali una per riga (anche nei dati del prestito e nelle offerte)
+    ['[data-spesa-pronta]', el => `Aggiunge una riga «${el.dataset.spesaPronta}»: scrivi solo quanto hai pagato.` + (Calcolo.fuoriDalTaeg(el.dataset.spesaPronta) ? ' Conta nel costo totale, non nel TAEG.' : '')],
+    ['.aggiungi-spesa', 'Aggiunge una riga per un\'altra spesa: il nome è facoltativo.'],
+    ['.togli-spesa', 'Toglie questa spesa dal totale.'],
+    ['.totale-spese', 'La somma delle spese che hai scritto: è questa che conto nel costo del prestito.'],
+    ['.voce-spesa', 'Una spesa pagata all\'inizio: che cos\'è, se vuoi, e quanto. Il totale lo faccio io.'],
     ['#guida-carica', 'Riapre un backup salvato prima.'],
     ['#percorso-completo', 'Il percorso con tutte le domande sul contratto, per chi lo conosce bene.'],
     ['#ricalcola-analisi', 'Rifà i conti con i valori del contratto che hai scritto.'],

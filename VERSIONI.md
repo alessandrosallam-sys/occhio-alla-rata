@@ -9,6 +9,7 @@ Il [sito](https://alessandrosallam-sys.github.io/occhio-alla-rata/) si aggiorna 
 Già sul sito, non ancora in una versione numerata.
 
 - **Le rate bastano**: mentre scrivi le rate, appena i conti tornano tutti al centesimo il programma lo dice in chiaro («Basta così: non serve scrivere altre rate») e «Avanti» passa a «Ci penso io» invece di chiederti la rata dopo. Se vuoi scriverne altre lo stesso, c'è un pulsante apposta.
+- **Le spese iniziali una per una**: invece di un solo numero da sommare a mano, scrivi ogni spesa nella sua riga (perizia, istruttoria, notaio, consulente…), con il nome se vuoi, e il totale lo fa il programma. I pulsanti aggiungono le spese più comuni con il nome già scritto; la × toglie una riga. Vale nella guida, nelle offerte e nei dati del prestito. Il notaio e l'agenzia immobiliare contano nel costo totale ma non nel TAEG, come per legge, così il confronto con il TAEG della banca resta giusto.
 
 ## 1.1 (26 ottobre 2026)
 

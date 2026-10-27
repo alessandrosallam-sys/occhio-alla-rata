@@ -418,6 +418,13 @@
     for (let i = 0; i < 100; i++) { const medio = (basso + alto) / 2; if (differenza(medio) > 0) basso = medio; else alto = medio; }
     return (basso + alto) / 2;
   }
+  // Spese iniziali che non entrano nel TAEG, riconosciute dal nome scritto dall'utente: il notaio, che la legge lascia
+  // fuori dal costo totale del credito (art. 120-quinquies e 121 TUB), e l'agenzia immobiliare, che è un costo della casa
+  // e non del prestito. Si pagano lo stesso, quindi restano nel costo totale calcolato dal programma.
+  const FUORI_TAEG = /notai|notar|rogit|immobiliar/i;
+  const fuoriDalTaeg = cosa => FUORI_TAEG.test(cosa || '');
+  const speseFuoriTaeg = p => Math.min(p.spese_iniziali || 0,
+    centesimi((p.spese_iniziali_voci || []).filter(v => fuoriDalTaeg(v.cosa)).reduce((s, v) => s + v.euro, 0)));
   // Quanto costa un prestito, dalle righe del piano: rate (vere dove ci sono, altrimenti calcolate; con "comeFirmato"
   // solo calcolate), spese iniziali, assicurazioni e spese annue. "costoTotale" è il costo totale del credito: tutto
   // quello che si paga oltre al capitale. "ricevuto" è il capitale meno quello che si paga all'inizio.
@@ -428,6 +435,8 @@
   // credito ricevuto (paga l'assicurazione per conto del cliente).
   // Le spese dei cambi del contratto si pagano con la prima rata di ogni cambio. Se il prestito è stato chiuso da un
   // prestito nuovo (surroga), il debito che restava («estinto» sull'ultima riga) è capitale restituito con l'ultima rata.
+  // Delle spese iniziali scritte una per una, il notaio e l'agenzia immobiliare restano nel costo totale ma non nel TAEG
+  // (speseFuoriTaeg).
   function costi(dati, righe, comeFirmato = false) {
     const p = dati.parametri, quante = righe.length;
     const rata = r => comeFirmato || r.rataVera == null ? r.rataCalcolata : r.rataVera;
@@ -439,15 +448,16 @@
       return rata(r) + (nelTaeg ? p.assicurazione_rata || 0 : 0) + ((i + 1) % 12 === 0 ? p.spese_annue || 0 : 0) + (r.speseCambio || 0) + (i === quante - 1 ? estinto : 0);
     });
     const speseRate = quante * (p.spese_rata || 0), speseIniziali = p.spese_iniziali || 0, speseAnnue = Math.floor(quante / 12) * (p.spese_annue || 0);
+    const fuoriTaeg = speseFuoriTaeg(p);
     const assicurazioni = (p.assicurazione_iniziale || 0) + quante * (p.assicurazione_rata || 0);
     const prima = righe[0] || {}, giorniPre = prima.giorniPreammortamento || 0;
     const preAParte = giorniPre > 0 && p.preammortamento === 'a_parte' ? centesimi(prima.interessiPreammortamento) : 0;
     const interessi = totaleRate + estinto - p.importo_iniziale - speseRate + preAParte;
     const costoTotale = interessi + speseRate + speseIniziali + assicurazioni + speseAnnue + speseCambi;
     const ricevuto = p.importo_iniziale - speseIniziali - (p.assicurazione_iniziale || 0);
-    return { totaleRate, interessi, speseRate, speseIniziali, assicurazioni, speseAnnue, speseCambi, estinto, costoTotale, ricevuto,
+    return { totaleRate, interessi, speseRate, speseIniziali, speseFuoriTaeg: fuoriTaeg, assicurazioni, speseAnnue, speseCambi, estinto, costoTotale, ricevuto,
       totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale,
-      taeg: taeg(nelTaeg ? ricevuto : p.importo_iniziale - speseIniziali, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
+      taeg: taeg((nelTaeg ? ricevuto : p.importo_iniziale - speseIniziali) + fuoriTaeg, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
       giorniPreammortamento: giorniPre, preammortamento: giorniPre > 0 ? centesimi(prima.interessiPreammortamento) : 0, preammortamentoAParte: preAParte > 0 };
   }
 
@@ -577,7 +587,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tratti, conVariabile, tara, costi, taeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tratti, conVariabile, tara, costi, taeg, fuoriDalTaeg, speseFuoriTaeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });

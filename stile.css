@@ -2176,6 +2176,31 @@ button[aria-busy="true"]::after {
   .campi-durata .con-unita span { min-width: 0; }
 }
 
+/* Le spese iniziali una per riga: che cos'è, quanto, la × per toglierla; sotto le voci pronte e il totale.
+   Quando non c'è posto (telefono, carte delle offerte) la cifra va a capo sotto il nome, e ogni spesa sta in un
+   riquadro, così si vede quale cifra va con quale nome. */
+.voci-spese { display: flex; flex-direction: column; gap: var(--s3); max-width: 600px; container: spese / inline-size; }
+.righe-spese { display: flex; flex-direction: column; gap: var(--s2); }
+.voce-spesa { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--s2); }
+@container spese (max-width: 400px) {
+  .voce-spesa { padding: var(--s2); border: 1px solid var(--linea); border-radius: var(--r2); background: var(--superficie-2); }
+}
+.voce-spesa > input { flex: 1 1 200px; min-width: 0; }
+.voce-spesa .con-unita { flex: 1 1 140px; max-width: 230px; }
+.voce-spesa .togli-spesa { flex: none; width: var(--alto-piccolo); padding: 0; font-size: calc(20px * var(--testo)); line-height: 1; }
+.spese-pronte { display: flex; flex-wrap: wrap; gap: 6px; }
+.totale-spese { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: calc(14px * var(--testo)); line-height: 1.5; color: var(--inchiostro-2); }
+.totale-spese strong { font-size: calc(17px * var(--testo)); color: var(--inchiostro); }
+/* Nella guida le caselle sono grandi come le altre domande; nei moduli (dati, regole, offerte) restano normali */
+#campi-passo .voce-spesa > input { min-height: 52px; font-size: calc(17px * var(--testo)); padding: 0 var(--s3); }
+.campo-spese { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: calc(14px * var(--testo)); }
+.campi .campo-spese { grid-column: 1 / -1; }
+.campo-spese .etichetta-campo { font-weight: 600; color: var(--inchiostro); }
+.campo-spese .con-unita input { min-height: var(--alto-controllo); font-size: calc(15px * var(--testo)); }
+.campo-spese .con-unita span { font-size: calc(15px * var(--testo)); }
+.campo-spese .voci-spese { gap: var(--s2); }
+.campo-spese .totale-spese strong { font-size: calc(15px * var(--testo)); }
+
 /* Le rate una alla volta: la data per esteso, i pulsanti, quelle già scritte */
 .rata-sola .data-rata { display: inline-block; margin: 0 0 var(--s4); padding: 10px 14px; background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); font-size: calc(16px * var(--testo)); }
 .azioni-rata { margin-top: var(--s4); }

@@ -6,6 +6,91 @@
   const { stato, $, crea, esegui, avvisa, euro, perc, data, leggiNumero, daPercento, perCampo } = M;
   const CAMPI = Archivio.CAMPI;
 
+  // ---------- Spese iniziali, una per riga ----------
+  // Chiesto dall'utente: invece di un solo totale da sommare a mano, le spese si scrivono una alla volta, con il nome
+  // facoltativo (perizia, istruttoria, notaio…), e il totale lo fa il programma. Le voci pronte cambiano con il prestito;
+  // un clic ne aggiunge una riga con il nome già scritto. Lo stesso elenco serve alla guida, ai dati del prestito, alle
+  // regole e alle carte delle offerte (spese_iniziali_voci in archivio.js).
+  const SPESE_PRONTE = {
+    mutuo: ['Istruttoria', 'Perizia', 'Imposta sostitutiva', 'Notaio', 'Consulente o mediatore', 'Agenzia immobiliare'],
+    finanziamento: ['Istruttoria', 'Imposta di bollo', 'Consulente o mediatore'],
+  };
+  const spesePronte = p => SPESE_PRONTE[p.tipo_prestito === 'finanziamento' || p.tipo_prestito === 'maxirata' ? 'finanziamento' : 'mutuo'];
+  const rigaSpesa = (v = {}) => crea('div', { className: 'voce-spesa' },
+    crea('input', { type: 'text', name: 'spesa_cosa', value: v.cosa || '', maxLength: 60, placeholder: 'Che cos\'è (facoltativo)', autocomplete: 'off', 'aria-label': 'Che spesa è (facoltativo)' }),
+    crea('div', { className: 'con-unita' }, crea('input', { type: 'text', inputMode: 'decimal', name: 'spesa_euro', value: v.euro > 0 ? perCampo(v.euro) : '', autocomplete: 'off', 'aria-label': 'Quanto, in euro' }),
+      crea('span', {}, '€')),
+    crea('button', { type: 'button', className: 'secondario piccolo togli-spesa', title: 'Togli questa spesa', 'aria-label': 'Togli questa spesa' }, '×'));
+  // L'elenco per i parametri "p": le voci scritte; per un prestito salvato prima, una riga con il totale; altrimenti una riga vuota.
+  function elencoSpese(p) {
+    const voci = p.spese_iniziali_voci && p.spese_iniziali_voci.length ? p.spese_iniziali_voci : p.spese_iniziali > 0 ? [{ euro: p.spese_iniziali }] : [{}];
+    const elenco = crea('div', { className: 'voci-spese', role: 'group', 'aria-label': 'Spese iniziali, una per riga' },
+      crea('div', { className: 'righe-spese' }, ...voci.map(rigaSpesa)),
+      crea('div', { className: 'spese-pronte' }, ...spesePronte(p).map(nome => crea('button', { type: 'button', className: 'secondario piccolo', 'data-spesa-pronta': nome }, '+ ' + nome)),
+        crea('button', { type: 'button', className: 'secondario piccolo aggiungi-spesa' }, '+ Un\'altra spesa')),
+      crea('p', { className: 'totale-spese', 'aria-live': 'polite' }));
+    aggiornaSpese(elenco);
+    return elenco;
+  }
+  const righeScritte = elenco => [...elenco.querySelectorAll('.voce-spesa')].map(riga => ({ riga, cosa: $('[name="spesa_cosa"]', riga).value.trim(), testo: $('[name="spesa_euro"]', riga).value.trim() }));
+  // Le spese scritte nell'elenco. Una riga senza cifra non conta; con "severo" una riga con il nome e senza cifra è un
+  // errore. Una riga sola senza nome è solo il totale, come nei prestiti salvati prima: niente voci.
+  // Restituisce { voci, totale } oppure { errore }.
+  function leggiSpese(elenco, severo) {
+    const voci = [];
+    for (const { cosa, testo } of righeScritte(elenco)) {
+      if (!testo) {
+        if (severo && cosa) return { errore: `Quanto hai pagato per «${cosa}»? Scrivi la cifra, oppure togli la riga con la ×.` };
+        continue;
+      }
+      const v = leggiNumero(testo, true);
+      if (Number.isNaN(v) || v < 0) return { errore: `Numero non valido nelle spese iniziali${cosa ? `: «${cosa}»` : ''}` };
+      if (v > 0) voci.push({ cosa, euro: v });
+    }
+    const totale = Math.round(voci.reduce((s, v) => s + v.euro, 0) * 100) / 100;
+    return { voci: voci.length === 1 && !voci[0].cosa ? [] : voci, totale };
+  }
+  // Sotto le righe: il totale (con due spese o più), quali restano fuori dal TAEG, e le voci pronte non ancora usate.
+  function aggiornaSpese(elenco) {
+    const scritte = righeScritte(elenco), usate = new Set(scritte.map(r => r.cosa.toLowerCase()));
+    for (const pulsante of elenco.querySelectorAll('[data-spesa-pronta]')) pulsante.hidden = usate.has(pulsante.dataset.spesaPronta.toLowerCase());
+    const voci = scritte.map(r => ({ cosa: r.cosa, euro: leggiNumero(r.testo, true) })).filter(v => v.euro > 0);
+    const totale = voci.reduce((s, v) => s + v.euro, 0), fuori = voci.filter(v => Calcolo.fuoriDalTaeg(v.cosa)).map(v => `«${v.cosa}»`);
+    const testo = $('.totale-spese', elenco);
+    testo.replaceChildren(...(voci.length > 1 ? [crea('strong', {}, `In tutto: ${euro(totale)}`)] : []),
+      ...(fuori.length ? [crea('span', {}, `${fuori.join(' e ')} ${fuori.length === 1 ? 'non entra' : 'non entrano'} nel TAEG: la legge lascia fuori il notaio, e l'agenzia immobiliare è un costo della casa, non del prestito. Conta${fuori.length === 1 ? '' : 'no'} comunque nel costo totale.`)] : []));
+    testo.hidden = !testo.firstChild;
+  }
+  // Le spese in parole, per i riepiloghi: le voci con il nome e la cifra (una sola: il suo nome). Vuoto senza voci.
+  function dettaglioSpese(p) {
+    const voci = (p.spese_iniziali_voci || []).filter(v => v.euro > 0);
+    return voci.length === 1 ? voci[0].cosa : voci.map(v => `${v.cosa || 'altro'} ${euro(v.euro)}`).join(', ');
+  }
+  const speseIniziali = p => euro(p.spese_iniziali) + (dettaglioSpese(p) ? ` (${dettaglioSpese(p)})` : '');
+  M.dettaglioSpese = dettaglioSpese;   // per la tabella dei costi (costi.js)
+  // Scrivere aggiorna il totale; le voci pronte e «Un'altra spesa» aggiungono una riga (o riempiono quella vuota), la ×
+  // la toglie. Togliere una riga cambia il totale: l'evento «change» lo dice ai moduli (offerte, dati, guida).
+  document.addEventListener('input', evento => { const elenco = evento.target.closest('.voci-spese'); if (elenco) aggiornaSpese(elenco); });
+  document.addEventListener('click', evento => {
+    const elenco = evento.target.closest('.voci-spese');
+    if (!elenco) return;
+    const righe = $('.righe-spese', elenco), pronta = evento.target.closest('[data-spesa-pronta]'), togli = evento.target.closest('.togli-spesa');
+    if (pronta || evento.target.closest('.aggiungi-spesa')) {
+      let { riga } = righeScritte(elenco).find(r => !r.cosa && !r.testo) || {};
+      if (!riga) righe.append(riga = rigaSpesa());
+      if (pronta) $('[name="spesa_cosa"]', riga).value = pronta.dataset.spesaPronta;
+      $(pronta ? '[name="spesa_euro"]' : '[name="spesa_cosa"]', riga).focus();
+      aggiornaSpese(elenco);
+    } else if (togli) {
+      const riga = togli.closest('.voce-spesa');
+      if (righe.children.length > 1) riga.remove();
+      else for (const casella of riga.querySelectorAll('input')) casella.value = '';
+      aggiornaSpese(elenco);
+      $('.aggiungi-spesa', elenco).focus();
+      elenco.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+
   // ---------- Campi dei moduli, costruiti dalla descrizione in archivio.js ----------
   // "esteso": le scelte diventano un elenco con la spiegazione di ogni voce (guida); altrimenti un menu a tendina (pannello).
   // "p": i parametri di adesso, per mostrare solo le scelte che hanno senso (ad esempio niente quote fisse a tasso fisso).
@@ -14,6 +99,7 @@
     const campo = { ...CAMPI[chiave], chiave };
     if (campo.opzioni) campo.opzioni = opzioniPer(campo, p);
     const aiuto = campo.aiuto ? [crea('small', {}, campo.aiuto)] : [];
+    if (chiave === 'spese_iniziali') return crea('div', { className: 'campo campo-spese', 'data-campo': chiave }, crea('span', { className: 'etichetta-campo' }, campo.etichetta), elencoSpese(p), ...aiuto);
     if (campo.tipo === 'scelta' && esteso) {
       return crea('fieldset', { className: 'campo scelte', 'data-campo': chiave }, crea('legend', {}, campo.etichetta),
         ...campo.opzioni.map(o => crea('label', { className: 'scelta' },
@@ -39,6 +125,12 @@
     for (const chiave of chiavi) {
       const campo = CAMPI[chiave], contenitore = $(`[data-campo="${chiave}"]`, modulo);
       if (!contenitore || contenitore.hidden) continue;
+      if (chiave === 'spese_iniziali') {
+        const spese = leggiSpese(contenitore, false);
+        if (spese.errore) return spese;
+        Object.assign(valori, { spese_iniziali: spese.totale, spese_iniziali_voci: spese.voci });
+        continue;
+      }
       if (campo.tipo === 'scelta') {
         const scelto = contenitore.matches('fieldset') ? ($('input:checked', contenitore) || {}).value : $('select', contenitore).value;
         const opzione = campo.opzioni.find(o => String(o.valore) === scelto);
@@ -66,6 +158,8 @@
     const letti = leggiCampi(modulo, chiavi.filter(c => CAMPI[c].tipo === 'scelta')).valori || {};
     const numeri = {};
     for (const chiave of chiavi) {
+      // Le spese iniziali sono tante caselle: conta il totale (per la domanda su come sono state pagate).
+      if (chiave === 'spese_iniziali') { const elenco = $('[data-campo="spese_iniziali"]', modulo); if (elenco) numeri.spese_iniziali = leggiSpese(elenco, false).totale || 0; continue; }
       const input = $(`[data-campo="${chiave}"] input[type="text"]`, modulo);
       if (input && CAMPI[chiave].tipo !== 'testo') { const v = leggiNumero(input.value); if (typeof v === 'number' && !Number.isNaN(v)) numeri[chiave] = v; }
       // Anche le date contano (il giorno dell'accredito fa comparire la domanda sul preammortamento).
@@ -121,10 +215,10 @@
     anticipo: { domanda: 'Quanto hai pagato di anticipo? (facoltativo)',
       cosa: 'La somma pagata subito al venditore, senza prestito. Non cambia rate né TAEG: serve a mostrarti quanto paghi in tutto, anticipo compreso.',
       dove: 'Nel contratto di acquisto o nella pubblicità dell\'offerta: «anticipo», «primo versamento» o «acconto».', seNonSai: 'Lascia 0.' },
-    spese_iniziali: { domanda: 'Quanto hai pagato all\'inizio, una volta sola?',
-      cosa: 'Le spese pagate alla firma o trattenute dalla somma prestata: istruttoria, perizia della casa, imposta sostitutiva (nei mutui) o imposta di bollo (nei finanziamenti). Non cambiano le rate, ma fanno parte del costo del prestito.',
-      dove: 'Nel contratto o nel foglio informativo (PIES per i mutui, SECCI per i finanziamenti), alla voce «spese» o «costi». Se la somma accreditata sul conto era più bassa di quella prestata, la differenza sono queste spese.',
-      seNonSai: 'Lascia 0: le rate restano giuste, solo il costo totale e il TAEG saranno un po\' più bassi del vero.' },
+    spese_iniziali: { domanda: 'Quali spese hai pagato all\'inizio, una volta sola?',
+      cosa: 'Le spese pagate alla firma o trattenute dalla somma prestata: istruttoria, perizia della casa, imposta sostitutiva (nei mutui) o imposta di bollo (nei finanziamenti), il consulente o il mediatore del credito, il notaio. Scrivile una per riga, con il nome se vuoi: il totale lo faccio io. Non cambiano le rate, ma fanno parte del costo del prestito. Il notaio e l\'agenzia immobiliare li conto nel costo totale ma non nel TAEG: la legge lascia fuori il notaio, e l\'agenzia è un costo della casa, non del prestito.',
+      dove: 'Nel contratto o nel foglio informativo (PIES per i mutui, SECCI per i finanziamenti), alla voce «spese» o «costi»; il notaio e il consulente nelle loro fatture. Se la somma accreditata sul conto era più bassa di quella prestata, la differenza sono le spese trattenute dalla banca.',
+      seNonSai: 'Lascia vuoto: le rate restano giuste, solo il costo totale e il TAEG saranno un po\' più bassi del vero. Se ricordi solo il totale, scrivilo in una riga sola.' },
     assicurazione_iniziale: { domanda: 'Hai pagato un\'assicurazione tutta all\'inizio?',
       cosa: 'Alcuni prestiti hanno un\'assicurazione (sulla vita, sull\'impiego, sulla casa) pagata con un premio unico all\'inizio, a volte aggiunto alla somma prestata.',
       dove: 'Nel contratto o nel modulo dell\'assicurazione, alla voce «premio unico».', seNonSai: 'Lascia 0.' },
@@ -347,7 +441,8 @@
   function creaDomanda(chiave) {
     const campo = CAMPI[chiave], d = DOMANDE[chiave] || {}, valore = guida.bozza[chiave], nonSo = guida.nonSo.has(chiave);
     let controllo;
-    if (campo.tipo === 'scelta') {
+    if (chiave === 'spese_iniziali') controllo = elencoSpese(guida.bozza);
+    else if (campo.tipo === 'scelta') {
       controllo = crea('div', { className: 'scelte' }, ...campo.opzioni.filter(o => !o.se || o.se(guida.bozza)).map(o => voce(chiave, String(o.valore), o.etichetta, o.aiuto, !nonSo && o.valore === valore, null, o.icona)),
         ...(d.nonSo ? [voce(chiave, NON_SO, 'Non lo so', d.nonSo, nonSo)] : []));
     } else if (campo.suggerimenti) {
@@ -368,6 +463,12 @@
     for (const chiave of chiavi) {
       const campo = CAMPI[chiave], contenitore = $(`#campi-passo [data-campo="${chiave}"]`);
       if (!contenitore || contenitore.hidden) continue;
+      if (chiave === 'spese_iniziali') {
+        const spese = leggiSpese(contenitore, severo);
+        if (spese.errore) { if (severo) return spese; continue; }
+        Object.assign(valori, { spese_iniziali: spese.totale, spese_iniziali_voci: spese.voci });
+        continue;
+      }
       const scelta = $('input[type="radio"]:checked', contenitore);
       if (campo.tipo === 'scelta') {
         if (scelta && scelta.value === NON_SO) { nonSo.add(chiave); continue; }
@@ -657,7 +758,7 @@
       if (esito.vere < 3 && tutte) blocchi.push(crea('p', { className: 'nota' }, 'Con così poche rate il controllo è poco affidabile: quando ne aggiungi altre, verifica che le righe del piano restino verdi.'));
     }
     const conIndice = variabile(b), pronti = conIndice ? tassiPronti(b) : [], scaricati = conIndice ? tassiScaricati(b).length : 0, scaricabile = conIndice && !!TassiInternet.riconosci(b.indice_nome);
-    const spese = [[b.spese_iniziali, 'iniziali'], [b.assicurazione_iniziale, 'di assicurazione all\'inizio'], [b.assicurazione_rata, 'di assicurazione al mese'], [b.spese_annue, 'all\'anno']]
+    const spese = [[b.spese_iniziali, 'iniziali' + (dettaglioSpese(b) ? ` (${dettaglioSpese(b)})` : '')], [b.assicurazione_iniziale, 'di assicurazione all\'inizio'], [b.assicurazione_rata, 'di assicurazione al mese'], [b.spese_annue, 'all\'anno']]
       .filter(([v]) => v > 0).map(([v, cosa]) => `${euro(v)} ${cosa}`);
     const conMaxirata = b.tipo_prestito === 'maxirata' && b.maxirata > 0;
     const voci = [[nomeScelta('tipo_prestito', b.tipo_prestito || 'variabile'), `${b.nome || 'Il mio prestito'}: ${euro(b.importo_iniziale)} in ${b.numero_rate} rate${conMaxirata ? ` più una maxirata di ${euro(b.maxirata)}` : ''} dal ${data(b.data_prima_rata)}`],
@@ -699,7 +800,7 @@
       ...(b.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(b.maxirata)]] : []),
       ['Tasso', variabile(b) ? `${b.indice_nome} + ${perc(b.spread, 3, 2)} di spread` : `TAN ${perc(b.tasso_fisso, 3, 2)}`],
       ['Spese per rata', b.spese_rata > 0 ? euro(b.spese_rata) : 'nessuna'],
-      ...(b.spese_iniziali > 0 ? [['Spese iniziali', euro(b.spese_iniziali)]] : []),
+      ...(b.spese_iniziali > 0 ? [['Spese iniziali', speseIniziali(b)]] : []),
       ...(b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 ? [['Assicurazioni', [b.assicurazione_iniziale > 0 ? euro(b.assicurazione_iniziale) + ' all\'inizio' : '', b.assicurazione_rata > 0 ? euro(b.assicurazione_rata) + ' al mese' : ''].filter(Boolean).join(', ') + (b.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
       ...righePreammortamento(b),
       ...(b.anticipo > 0 ? [['Anticipo', euro(b.anticipo)]] : [])];
@@ -747,7 +848,7 @@
   };
   // Le risposte diventano un'offerta: solo i campi che c'entrano con il suo tipo.
   const CHIAVI_OFFERTA = ['nome', 'categoria', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'indice_nome', 'spread',
-    'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'taeg_dichiarato'];
+    'spese_iniziali', 'spese_iniziali_voci', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'taeg_dichiarato'];
   async function salvaOfferta() {
     const b = guida.bozza;
     const parametri = Object.fromEntries(CHIAVI_OFFERTA.filter(k => b[k] != null && (!CAMPI[k].se || CAMPI[k].se(b)) && (k !== 'indice_nome' || variabile(b))).map(k => [k, b[k]]));
@@ -787,7 +888,7 @@
     nome: 'Serve solo a riconoscerlo, soprattutto se segui più di un prestito.',
     stima: 'Nessuno sa dove andrà l\'indice: provo i metodi sugli anni passati e uso quello che ci ha preso di più. Puoi cambiare idea quando vuoi, nei dati del prestito.',
     dettagli: 'Non cambiano le rate: servono a calcolare quanto costa davvero il prestito (costo totale e TAEG). Puoi aggiungerli anche dopo, con «Dati del prestito».',
-    spese_iniziali: 'Istruttoria, perizia, imposte pagate alla firma. Se non le sai, lascia vuoto.',
+    spese_iniziali: 'Una spesa per riga, con il nome se vuoi: il totale lo faccio io. Con i pulsanti aggiungi le più comuni. Se non le sai, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico pagato all\'inizio. Se non c\'è, lascia vuoto.',
     spese_nel_prestito: 'Se la somma che ti hanno accreditato era più bassa dell\'importo prestato, le spese sono dentro il prestito.',
     assicurazione_rata: 'Solo se la paghi a parte, non dentro la rata. Se non c\'è, lascia vuoto.',
@@ -807,7 +908,7 @@
     spread: 'Il numero dopo il più: in «Euribor 3 mesi + 1,20%» lo spread è 1,20. Scrivilo senza il segno %.',
     tasso_fisso: 'Il TAN, cioè il tasso con cui si calcolano le rate. Non il TAEG: quello te lo chiedo alla fine. Per un «tasso zero» scrivi 0.',
     spese_rata: 'Solo la commissione di incasso, di solito fra 0 e 3 €. Non la rata: quella la calcolo io. Se non ci sono, lascia vuoto.',
-    spese_iniziali: 'Istruttoria, perizia, imposta sostitutiva o di bollo: nel foglio informativo, fra i costi. Se non ci sono, lascia vuoto.',
+    spese_iniziali: 'Istruttoria, perizia, imposta sostitutiva o di bollo: nel foglio informativo, fra i costi. Scrivile una per riga, il totale lo faccio io. Se non ci sono, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico all\'inizio, se l\'assicurazione è obbligatoria o se la prendi. Se non c\'è, lascia vuoto.',
     assicurazione_rata: 'Un premio ogni mese, pagato a parte. Se non c\'è, lascia vuoto.',
     assicurazione_facoltativa: 'Nel foglio informativo le facoltative sono a parte: non entrano nel TAEG.',
@@ -858,6 +959,7 @@
         voce(chiave, 'no', 'No, le scrivo io quando voglio', 'Nel piano le righe senza importo restano da controllare.', guida.riempi === false));
     }
     if (chiave === 'numero_rate') return controlloDurata();
+    if (chiave === 'spese_iniziali') return elencoSpese(b);
     const campo = CAMPI[chiave], valore = b[chiave];
     if (campo.tipo === 'scelta') return crea('div', { className: 'scelte' }, ...campo.opzioni.map(o => voce(chiave, String(o.valore), o.etichetta, o.aiuto, o.valore === valore)));
     // Le domande facoltative partono vuote: uno zero sembrerebbe già una risposta.
@@ -1514,7 +1616,8 @@
     stima: 'Le rate future dipendono dall\'indice di domani: lo stimo con il metodo che in passato ha sbagliato di meno.',
     dettagli: 'Spese e assicurazioni sono facoltative: servono solo a calcolare il costo totale.',
     riempi: 'Una comodità: le rate che non hai scritto posso metterle io, così vedi subito il piano completo.',
-    riepilogo: 'Ecco tutto. Se va bene, premi «Crea il prestito» e ti mostro il piano.',
+    spese_iniziali: 'Scrivi le spese una alla volta, come le trovi sulle ricevute: la somma la faccio io.',
+    riepilogo:'Ecco tutto. Se va bene, premi «Crea il prestito» e ti mostro il piano.',
   };
   // Per un'offerta: che cosa serve, e una raccomandazione sulle spese per rata.
   const FRASI_OFFERTA = {
@@ -1527,7 +1630,7 @@
     spread: 'E ora lo spread, il numero dopo il più.',
     tasso_fisso: 'Il TAN: è il tasso con cui calcolo le rate.',
     spese_rata: 'Attenzione a questa: qui vanno solo le spese di incasso, non la rata!',
-    spese_iniziali: 'Le spese per aprire il prestito: istruttoria, perizia, imposte.',
+    spese_iniziali: 'Le spese per aprire il prestito, una per riga: istruttoria, perizia, imposte. La somma la faccio io.',
     assicurazione_iniziale: 'Le assicurazioni contano nel costo vero: se sono obbligatorie, scrivile.',
     assicurazione_rata: 'Un premio ogni mese, se lo paghi a parte.',
     assicurazione_facoltativa: 'Obbligatoria o scelta da te? Cambia il TAEG, non quanto paghi.',
@@ -1941,6 +2044,9 @@
   // I moduli costruiti dalla descrizione dei campi servono anche alla scheda «Offerte».
   M.campi = { crea: creaCampo, leggi: leggiCampi, aggiornaVisibili };
 
+  // I valori letti da un modulo che sono diversi da quelli salvati (le spese una per una sono un elenco: si confronta il testo).
+  const soloCambiati = valori => Object.fromEntries(Object.entries(valori).filter(([chiave, valore]) => JSON.stringify(valore) !== JSON.stringify(stato.dati.parametri[chiave])));
+
   // ---------- Regole del contratto (pagina del prestito, versione avanzata) ----------
   const CHIAVI_REGOLE = Object.keys(CAMPI).filter(c => !CAMPI[c].nascosto);
   function disegnaRegole() {
@@ -1955,7 +2061,7 @@
     const letti = leggiCampi($('#campi-regole'), CHIAVI_REGOLE);
     if (letti.errore) return avvisa(letti.errore, true);
     // Si salvano solo i valori cambiati, così gli altri restano identici fino all'ultima cifra.
-    const cambiati = Object.fromEntries(Object.entries(letti.valori).filter(([chiave, valore]) => valore !== stato.dati.parametri[chiave]));
+    const cambiati = soloCambiati(letti.valori);
     if (!Object.keys(cambiati).length) return avvisa('Nessuna regola modificata');
     if (document.activeElement) document.activeElement.blur();
     await esegui('PUT', 'parametri', cambiati, 'Regole salvate');
@@ -1997,7 +2103,7 @@
       ...(p.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(p.maxirata)]] : []), ...(p.anticipo > 0 ? [['Anticipo', euro(p.anticipo)]] : []),
       [stato.dati.cambi && stato.dati.cambi.length ? 'Tasso alla firma' : 'Tasso', variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 2)} di spread` : `${perc(p.tasso_fisso, 3, 2)} fisso (TAN)`],
       ...descriviRegole(p),
-      ...(p.spese_iniziali > 0 ? [['Spese iniziali', euro(p.spese_iniziali)]] : []),
+      ...(p.spese_iniziali > 0 ? [['Spese iniziali', speseIniziali(p)]] : []),
       ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ') + (p.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
       ...righePreammortamento(p),
       ...(p.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(p.taeg_dichiarato, 2)]] : []),
@@ -2035,7 +2141,7 @@
     evento.preventDefault();
     const letti = leggiCampi($('#campi-dati'), CHIAVI_DATI);
     if (letti.errore) return avvisa(letti.errore, true);
-    const cambiati = Object.fromEntries(Object.entries(letti.valori).filter(([chiave, valore]) => valore !== stato.dati.parametri[chiave]));
+    const cambiati = soloCambiati(letti.valori);
     if (!Object.keys(cambiati).length) { cambiaDati = false; disegnaDati(); return avvisa('Nessun dato cambiato'); }
     // Un altro metodo di stima riparte con le sue opzioni di base e lo scenario atteso.
     if ('previsione_modello' in cambiati) Object.assign(cambiati, { previsione_opzioni: '', previsione_scenario: 'atteso' });

@@ -24,7 +24,7 @@
       riga('Interessi', euro(c.interessi), variabile ? 'su tutte le rate: quelle future sono una stima' : 'su tutte le rate'),
       ...(c.preammortamento > 0 ? [riga('di cui preammortamento', euro(c.preammortamento), `${c.giorniPreammortamento} giorni fra l'accredito e l'inizio del piano, ${c.preammortamentoAParte ? 'pagati a parte' : 'dentro la prima rata'}`)] : []),
       ...(c.speseRate > 0 ? [riga('Spese per rata', euro(c.speseRate), `${euro(p.spese_rata)} × ${stato.piano.righe.length} rate`)] : []),
-      ...(c.speseIniziali > 0 ? [riga('Spese iniziali', euro(c.speseIniziali))] : []),
+      ...(c.speseIniziali > 0 ? [riga('Spese iniziali', euro(c.speseIniziali), speseIniziali(p, c))] : []),
       ...(c.assicurazioni > 0 ? [riga('Assicurazioni', euro(c.assicurazioni), c.assicurazioneNelTaeg ? null : 'facoltativa: conta in quanto paghi, non nel TAEG')] : []),
       ...(c.speseAnnue > 0 ? [riga('Spese annuali', euro(c.speseAnnue))] : []),
       ...(c.speseCambi > 0 ? [riga('Spese dei cambi del contratto', euro(c.speseCambi), 'pagate una volta, quando il contratto è cambiato')] : []),
@@ -44,6 +44,13 @@
     contenuto.push(...giudizio(c, p, variabile));
     if (conMaxirata) contenuto.push(...spiegaMaxirata(c, p));
     carta.replaceChildren(...contenuto);
+  }
+
+  // Sotto le spese iniziali: le voci scritte una per una, e quali contano nel costo totale ma non nel TAEG (notaio e
+  // agenzia immobiliare: Calcolo.speseFuoriTaeg).
+  function speseIniziali(p, c) {
+    const fuori = c.speseFuoriTaeg > 0 ? (p.spese_iniziali_voci || []).filter(v => Calcolo.fuoriDalTaeg(v.cosa)).map(v => `«${v.cosa}»`) : [];
+    return [M.dettaglioSpese(p), fuori.length ? `${fuori.join(' e ')} ${fuori.length === 1 ? 'conta' : 'contano'} nel costo totale ma non nel TAEG` : ''].filter(Boolean).join('. ') || null;
   }
 
   // Con la maxirata: il confronto con un finanziamento normale della stessa durata, e le strade alla fine.
@@ -134,7 +141,8 @@
     const penale = aMano ? importo * scritta / 100 : Math.min(importo * percentuale, interessiPrima);
     // Costi restituiti (stima) e spese che non si pagano più.
     const residuo = rimaste / righe.length;
-    const costiRestituiti = (finanziamento ? (p.spese_iniziali || 0) * residuo * parte : 0);
+    // Il notaio e l'agenzia immobiliare non sono costi del credito: non si restituiscono.
+    const costiRestituiti = (finanziamento ? ((p.spese_iniziali || 0) - Calcolo.speseFuoriTaeg(p)) * residuo * parte : 0);
     const assicurazioneRestituita = (p.assicurazione_iniziale || 0) * residuo * parte;
     const rateTolte = rimaste - rateDopo;
     const annueTolte = futuri.slice(rateDopo).filter(r => r.n % 12 === 0).length;

@@ -9,9 +9,11 @@
   'use strict';
   const M = window.Mutuo;
   // Cifre inventate, plausibili per ogni tipo. «extra»: una rata addebitata con qualcosa in più (numero, euro in più).
+  // Le spese iniziali scritte una per una fanno da sole il totale (archivio.js).
   const PRESTITI = [
     { nome: 'Casa al mare', categoria: 'variabile', tipo_prestito: 'variabile', importo_iniziale: 180000, numero_rate: 300, data_prima_rata: '2021-07-01',
-      valore_riferimento: 250000, indice_nome: 'Euribor 3 mesi', mesi_revisione: 3, spread: 0.011, floor_attivo: 1, indice_minimo: 0, spese_rata: 1.5, spese_iniziali: 1200 },
+      valore_riferimento: 250000, indice_nome: 'Euribor 3 mesi', mesi_revisione: 3, spread: 0.011, floor_attivo: 1, indice_minimo: 0, spese_rata: 1.5,
+      spese_iniziali_voci: [{ cosa: 'Istruttoria', euro: 500 }, { cosa: 'Perizia', euro: 250 }, { cosa: 'Imposta sostitutiva', euro: 450 }] },
     { nome: 'Appartamento in città', categoria: 'fisso', tipo_prestito: 'fisso', importo_iniziale: 150000, numero_rate: 240, data_prima_rata: '2020-10-01',
       valore_riferimento: 210000, tasso_fisso: 0.0185, spese_rata: 2, spese_iniziali: 900, extra: { n: 38, euro: 5 } },
     { nome: 'Lavori in casa', categoria: 'finanziamento', tipo_prestito: 'finanziamento', importo_iniziale: 12000, numero_rate: 60, data_prima_rata: '2024-04-01',
@@ -20,7 +22,8 @@
       data_prima_rata: '2025-03-01', tasso_fisso: 0.0599, spese_rata: 3.5, spese_iniziali: 350 },
   ];
   const OFFERTE = [
-    { nome: 'Offerta A, tasso fisso', categoria: 'fisso', tipo_prestito: 'fisso', importo_iniziale: 200000, numero_rate: 300, tasso_fisso: 0.031, spese_iniziali: 1500, spese_rata: 2 },
+    { nome: 'Offerta A, tasso fisso', categoria: 'fisso', tipo_prestito: 'fisso', importo_iniziale: 200000, numero_rate: 300, tasso_fisso: 0.031, spese_rata: 2,
+      spese_iniziali_voci: [{ cosa: 'Istruttoria', euro: 700 }, { cosa: 'Perizia', euro: 300 }, { cosa: 'Imposta sostitutiva', euro: 500 }] },
     { nome: 'Offerta B, tasso variabile', categoria: 'variabile', tipo_prestito: 'variabile', importo_iniziale: 200000, numero_rate: 300, indice_nome: 'Euribor 3 mesi',
       spread: 0.0095, spese_iniziali: 1000, spese_rata: 2 },
   ];

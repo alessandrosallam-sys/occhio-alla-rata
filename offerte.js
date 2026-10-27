@@ -113,7 +113,7 @@
   function cartaOfferta(o) {
     const p = o.parametri, campi = crea('div', { className: 'campi due-colonne' }, ...CAMPI_OFFERTA.map(k => M.campi.crea(k, p[k], false, p)));
     // Le spiegazioni lunghe dei campi restano come suggerimento al passaggio del mouse: la carta resta compatta.
-    for (const aiuto of campi.querySelectorAll('label > small')) { aiuto.parentElement.title = aiuto.textContent; aiuto.remove(); }
+    for (const aiuto of campi.querySelectorAll('label > small, .campo-spese > small')) { aiuto.parentElement.title = aiuto.textContent; aiuto.remove(); }
     const modulo = crea('form', { className: 'carta carta-offerta', 'data-offerta': o.id },
       crea('h3', {}, Icone.distintivo(M.iconaTipo(p)), crea('span', { className: 'nome-offerta' }, p.nome || 'Offerta')), campi,
       crea('p', { className: 'nota evidenza errore-offerta', hidden: true }),
