@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 5, data: '2026-10-27', icona: 'calendario', titolo: 'Le spese di ogni anno nelle offerte',
+      testo: 'Rendiconto, certificazione degli interessi, polizza incendio: nelle offerte ora le scrivi come le trovi nel foglio, una volta all\'anno, senza dividerle per 12.' },
     { n: 4, data: '2026-10-27', icona: 'percento', titolo: 'Le spese che mancano al TAEG',
       testo: 'Se il TAEG scritto nell\'offerta è più alto del calcolo, il programma ti dice quante spese mancano e dove cercarle. Se non le trovi, le aggiunge lui con un clic.' },
     { n: 3, data: '2026-10-27', icona: 'orologio', titolo: 'Il mutuo a tasso misto',

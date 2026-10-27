@@ -10,7 +10,7 @@
   'use strict';
   const M = window.Mutuo, { stato, $, crea, euro, perc, avvisa } = M;
   const CAMPI_OFFERTA = ['nome', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'indice_nome', 'spread',
-    'spese_iniziali', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'arrotonda_rata', 'taeg_dichiarato'];
+    'spese_iniziali', 'spese_rata', 'spese_annue', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'arrotonda_rata', 'taeg_dichiarato'];
   // Modelli per l'indice futuro (la media delle variazioni non c'è: sul lungo periodo porta l'indice troppo lontano).
   const MODELLI = [['vasicek', 'Vasicek: torna piano piano verso la media storica'], ['curva', 'Attese del mercato (curva degli Euribor di oggi)'],
     ['garch', 'GARCH: segue la variabilità recente'], ['costante', 'Nessun cambiamento: resta com\'è oggi']];
@@ -107,7 +107,7 @@
       + 'Controlla tasso, importo e durata: la rata che calcolo deve essere uguale a quella dell\'offerta.')];
     const tipiche = p.tipo_prestito === 'finanziamento' || conMaxirata(p)
       ? 'Nei finanziamenti di solito sono l\'istruttoria, l\'imposta di bollo, le spese di incasso e le assicurazioni obbligatorie'
-      : 'Nei mutui di solito sono le spese di incasso e di gestione della pratica, la polizza incendio e scoppio (obbligatoria per legge) e l\'assicurazione che a volte serve per avere quel tasso';
+      : 'Nei mutui di solito sono le spese di incasso e di gestione della pratica, quelle di ogni anno (rendiconto, certificazione degli interessi), la polizza incendio e scoppio (obbligatoria per legge) e l\'assicurazione che a volte serve per avere quel tasso';
     const pulsante = come => crea('button', { type: 'button', className: 'secondario piccolo', 'data-stima': come, ...(offerta ? { 'data-offerta-stima': offerta } : {}) },
       come === 'rata' ? `Aggiungi ${euro(m.aOgniRata)} a ogni rata` : `Aggiungi ${euro(m.allInizio)} all'inizio`);
     return [crea('p', { className: 'nota evidenza' }, `${differenza}: la banca conta delle spese che non hai scritto. Se la rata è uguale a quella dell'offerta, importo, durata e tasso sono giusti: mancano solo quelle spese.`),

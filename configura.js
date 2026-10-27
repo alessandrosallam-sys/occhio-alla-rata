@@ -233,7 +233,10 @@
     assicurazione_rata: { domanda: 'Paghi un\'assicurazione ogni mese?',
       cosa: 'Il premio mensile di un\'assicurazione legata al prestito, se lo paghi a parte. Se la banca lo addebita dentro la rata, scrivilo invece fra le spese per rata, così la rata calcolata torna con quella addebitata.',
       dove: 'Nell\'estratto conto o nel modulo dell\'assicurazione.', seNonSai: 'Lascia 0.' },
-    spese_annue: { domanda: 'Ci sono spese una volta all\'anno?', cosa: 'Ad esempio l\'imposta di bollo sul rendiconto annuale, di solito 2 euro. Lascia 0 se non ci sono.' },
+    spese_annue: { domanda: 'Ci sono spese una volta all\'anno?',
+      cosa: 'Le spese che tornano ogni anno, per tutta la durata: il rendiconto, la certificazione degli interessi per la dichiarazione dei redditi, l\'imposta di bollo, e le assicurazioni obbligatorie con il premio annuale, come la polizza incendio e scoppio dei mutui. Scrivi il totale di un anno. Non cambiano le rate, ma fanno parte del costo del prestito e del TAEG: per questo qui vanno solo le assicurazioni obbligatorie, non quelle che scegli tu.',
+      dove: 'Nel contratto o nel foglio informativo (PIES per i mutui, SECCI per i finanziamenti), fra le «spese periodiche» o nell\'elenco dei costi compresi nel TAEG; il premio della polizza incendio nel suo preventivo.',
+      seNonSai: 'Lascia vuoto: le rate restano giuste, solo il costo totale e il TAEG saranno un po\' più bassi del vero.' },
     spese_nel_prestito: { domanda: 'Come hai pagato le spese iniziali e l\'assicurazione?',
       cosa: 'Ci sono due modi. O le paghi a parte, con soldi tuoi, e ricevi tutta la somma prestata; oppure la banca le toglie dalla somma che ti accredita, o le aggiunge al prestito, e le restituisci con le rate. Il TAEG non cambia; cambia quanto paghi in tutto, perché nel secondo caso le spese sono già dentro le rate.',
       dove: 'Confronta la somma che hai ricevuto con l\'importo del contratto: se è più bassa, o se l\'importo è più alto del prezzo di quello che hai comprato, le spese sono dentro il prestito. Nel SECCI l\'«importo totale del credito» è la somma che ricevi davvero.',
@@ -381,6 +384,7 @@
     { fase: 2, tipo: 'domanda', chiave: 'spese_iniziali', titolo: 'Ci sono spese da pagare all\'inizio?', icona: 'scudo' },
     { fase: 2, tipo: 'domanda', chiave: 'assicurazione_iniziale', titolo: 'C\'è un\'assicurazione da pagare all\'inizio?', icona: 'scudo' },
     { fase: 2, tipo: 'domanda', chiave: 'assicurazione_rata', titolo: 'C\'è un\'assicurazione da pagare ogni mese?', icona: 'scudo' },
+    { fase: 2, tipo: 'domanda', chiave: 'spese_annue', titolo: 'Ci sono spese da pagare ogni anno?', icona: 'calendario' },
     { fase: 2, tipo: 'domanda', chiave: 'spese_nel_prestito', titolo: 'Come si pagano le spese iniziali?', icona: 'scudo', se: b => b.spese_iniziali > 0 || b.assicurazione_iniziale > 0 },
     { fase: 2, tipo: 'domanda', chiave: 'assicurazione_facoltativa', titolo: 'L\'assicurazione è obbligatoria?', icona: 'scudo', se: b => b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 },
     { fase: 2, tipo: 'domanda', chiave: 'anticipo', titolo: 'Paghi un anticipo al venditore?', icona: 'euro', se: () => ['auto', 'maxirata', 'acquisto'].includes(guida.categoria) },
@@ -835,6 +839,7 @@
       ...(b.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(b.maxirata)]] : []),
       ['Tasso', variabile(b) ? `${b.indice_nome} + ${perc(b.spread, 3, 2)} di spread` : misto(b) ? tassoInParole(b) : `TAN ${perc(b.tasso_fisso, 3, 2)}`],
       ['Spese per rata', b.spese_rata > 0 ? euro(b.spese_rata) : 'nessuna'],
+      ...(b.spese_annue > 0 ? [['Spese ogni anno', euro(b.spese_annue)]] : []),
       ...(b.spese_iniziali > 0 ? [['Spese iniziali', speseIniziali(b)]] : []),
       ...(b.assicurazione_iniziale > 0 || b.assicurazione_rata > 0 ? [['Assicurazioni', [b.assicurazione_iniziale > 0 ? euro(b.assicurazione_iniziale) + ' all\'inizio' : '', b.assicurazione_rata > 0 ? euro(b.assicurazione_rata) + ' al mese' : ''].filter(Boolean).join(', ') + (b.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
       ...righePreammortamento(b),
@@ -896,7 +901,7 @@
   };
   // Le risposte diventano un'offerta: solo i campi che c'entrano con il suo tipo.
   const CHIAVI_OFFERTA = ['nome', 'categoria', 'tipo_prestito', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'indice_nome', 'spread',
-    'spese_iniziali', 'spese_iniziali_voci', 'spese_rata', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'taeg_dichiarato'];
+    'spese_iniziali', 'spese_iniziali_voci', 'spese_rata', 'spese_annue', 'assicurazione_iniziale', 'spese_nel_prestito', 'assicurazione_rata', 'assicurazione_facoltativa', 'taeg_dichiarato'];
   async function salvaOfferta() {
     const b = guida.bozza;
     const parametri = Object.fromEntries(CHIAVI_OFFERTA.filter(k => b[k] != null && (!CAMPI[k].se || CAMPI[k].se(b)) && (k !== 'indice_nome' || variabile(b))).map(k => [k, b[k]]));
@@ -945,7 +950,7 @@
     spese_nel_prestito: 'Se la somma che ti hanno accreditato era più bassa dell\'importo prestato, le spese sono dentro il prestito.',
     assicurazione_rata: 'Solo se la paghi a parte, non dentro la rata. Se non c\'è, lascia vuoto.',
     assicurazione_facoltativa: 'Se l\'hai scelta tu, non entra nel TAEG: lo dice la legge. La conto comunque in quanto paghi.',
-    spese_annue: 'Ad esempio l\'imposta di bollo sul rendiconto, di solito 2 €. Se non ci sono, lascia vuoto.',
+    spese_annue: 'Il totale di un anno: rendiconto, certificazione degli interessi, bollo, la polizza incendio se si paga una volta all\'anno. Se non ci sono, lascia vuoto.',
     taeg_dichiarato: 'Il «tasso annuo effettivo globale» scritto nel contratto: ti dico se il mio calcolo coincide. Se non lo trovi, lascia vuoto.',
     valore_riferimento: 'Serve solo a mostrarti quanta parte della casa resta da pagare. Se non lo sai, lascia vuoto.',
     anticipo: 'Quello che hai pagato subito al venditore, senza prestito. Se non c\'è, lascia vuoto.',
@@ -961,10 +966,11 @@
     tasso_fisso: 'Il TAN, cioè il tasso con cui si calcolano le rate. Non il TAEG: quello te lo chiedo alla fine. Per un «tasso zero» scrivi 0.',
     anni_tasso_fisso: 'Nel PIES, dove si parla del tasso: «tasso fisso per i primi 5 anni», oppure nel nome, come «fisso 5 rinegoziabile».',
     spread_dopo: 'Nel PIES, nella parte sul tasso dopo gli anni fissi: in «Euribor 3 mesi + 1,20%» lo spread è 1,20. Se non c\'è, lascia vuoto.',
-    spese_rata: 'Solo la commissione di incasso, di solito fra 0 e 3 €. Non la rata: quella la calcolo io. Se non ci sono, lascia vuoto.',
+    spese_rata: 'Le spese di ogni mese, come l\'incasso della rata o la gestione della pratica: di solito pochi euro, sommale. Non la rata: quella la calcolo io. Se non ci sono, lascia vuoto.',
     spese_iniziali: 'Istruttoria, perizia, imposta sostitutiva o di bollo: nel foglio informativo, fra i costi. Scrivile una per riga, il totale lo faccio io. Se non ci sono, lascia vuoto.',
     assicurazione_iniziale: 'Un premio unico all\'inizio, se l\'assicurazione è obbligatoria o se la prendi. Se non c\'è, lascia vuoto.',
-    assicurazione_rata: 'Un premio ogni mese, pagato a parte. Se non c\'è, lascia vuoto.',
+    assicurazione_rata: 'Un premio ogni mese, pagato a parte. Se si paga una volta all\'anno, come spesso la polizza incendio, te lo chiedo subito dopo. Se non c\'è, lascia vuoto.',
+    spese_annue: 'Nel foglio informativo, fra le spese periodiche: rendiconto, certificazione degli interessi, bollo; e la polizza incendio, se si paga ogni anno. Scrivi il totale di un anno. Se non ci sono, lascia vuoto.',
     assicurazione_facoltativa: 'Nel foglio informativo le facoltative sono a parte: non entrano nel TAEG.',
     anticipo: 'Quello che paghi subito al venditore: non fa parte del prestito. Se non c\'è, lascia vuoto.',
     taeg_dichiarato: 'Il «tasso annuo effettivo globale» scritto nell\'offerta, vicino al TAN: ti dico se il mio calcolo coincide. Se non c\'è, lascia vuoto.',
@@ -1695,6 +1701,7 @@
     spese_iniziali: 'Le spese per aprire il prestito, una per riga: istruttoria, perizia, imposte. La somma la faccio io.',
     assicurazione_iniziale: 'Le assicurazioni contano nel costo vero: se sono obbligatorie, scrivile.',
     assicurazione_rata: 'Un premio ogni mese, se lo paghi a parte.',
+    spese_annue: 'Ci sono spese che tornano ogni anno? Scrivi il totale di un anno: il resto lo conto io.',
     assicurazione_facoltativa: 'Obbligatoria o scelta da te? Cambia il TAEG, non quanto paghi.',
     spese_nel_prestito: 'Un dettaglio: le spese le paghi a parte o te le tolgono dal prestito?',
     anticipo: 'Se paghi qualcosa subito al venditore, scrivilo: ti mostro quanto paghi in tutto.',
@@ -2138,7 +2145,7 @@
   // principali (le regole di dettaglio stanno nella pagina «Regole del contratto», versione avanzata) e il piano si
   // ricalcola appena si salva; «Rifai la configurazione guidata» ripete le domande dall'inizio, solo se lo si chiede.
   const CHIAVI_DATI = ['nome', 'importo_iniziale', 'numero_rate', 'data_prima_rata', 'maxirata', 'anticipo', 'valore_riferimento',
-    'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'assicurazione_iniziale', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_nel_prestito', 'taeg_dichiarato',
+    'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo', 'indice_nome', 'spread', 'spese_rata', 'spese_iniziali', 'spese_annue', 'assicurazione_iniziale', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_nel_prestito', 'taeg_dichiarato',
     'data_erogazione', 'preammortamento', 'previsione_anni', 'previsione_modello'];
   let cambiaDati = false;
   const durata = n => { const anni = Math.floor(n / 12), mesi = n % 12;
@@ -2172,6 +2179,7 @@
       ...(fineFisso ? [['Tasso fisso fino a', `${M.meseAnno(fineFisso.inizio)}, la rata ${fineFisso.n}: le condizioni di dopo si scrivono nei «Cambi del contratto», qui sotto`]] : []),
       ...descriviRegole(p),
       ...(p.spese_iniziali > 0 ? [['Spese iniziali', speseIniziali(p)]] : []),
+      ...(p.spese_annue > 0 ? [['Spese ogni anno', euro(p.spese_annue)]] : []),
       ...(p.assicurazione_iniziale > 0 || p.assicurazione_rata > 0 ? [['Assicurazioni', [p.assicurazione_iniziale > 0 ? euro(p.assicurazione_iniziale) + ' all\'inizio' : '', p.assicurazione_rata > 0 ? euro(p.assicurazione_rata) + ' a ogni rata' : ''].filter(Boolean).join(', ') + (p.assicurazione_facoltativa ? ' (facoltativa: fuori dal TAEG)' : '')]] : []),
       ...righePreammortamento(p),
       ...(p.taeg_dichiarato > 0 ? [['TAEG del contratto', perc(p.taeg_dichiarato, 2)]] : []),

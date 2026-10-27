@@ -64,7 +64,7 @@
       aiuto: 'Il premio unico di un\'assicurazione legata al prestito, anche se è stato aggiunto all\'importo prestato.' },
     assicurazione_rata: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, etichetta: 'Assicurazione a ogni rata (€)',
       aiuto: 'Il premio mensile, se lo paghi a parte. Se è già dentro la rata addebitata, scrivilo nelle spese per rata.' },
-    spese_annue: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, avanzato: true, etichetta: 'Spese ogni anno (€)', aiuto: 'Ad esempio l\'imposta di bollo sul rendiconto annuale.' },
+    spese_annue: { tipo: 'euro', min: 0, max: 1e5, iniziale: 0, avanzato: true, etichetta: 'Spese ogni anno (€)', aiuto: 'Il totale di un anno: rendiconto, certificazione degli interessi, bollo, la polizza incendio se si paga una volta all\'anno.' },
     // Spese iniziali pagate di tasca propria, oppure tolte dalla somma ricevuta (o aggiunte al prestito): il TAEG è lo
     // stesso, cambia solo quanto si paga in tutto, perché nel secondo caso le spese sono già dentro le rate.
     spese_nel_prestito: { tipo: 'scelta', iniziale: 0, etichetta: 'Come hai pagato le spese iniziali', se: p => p.spese_iniziali > 0 || p.assicurazione_iniziale > 0,
