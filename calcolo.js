@@ -481,6 +481,7 @@
     return { totaleRate, interessi, speseRate, speseIniziali, speseFuoriTaeg: fuoriTaeg, assicurazioni, speseAnnue, speseCambi, estinto, costoTotale, ricevuto,
       totaleDaPagare: (p.spese_nel_prestito ? ricevuto : p.importo_iniziale) + costoTotale,
       taeg: taeg(ricevutoTaeg, pagamenti, giorniPre / 365, preAParte), assicurazioneNelTaeg: nelTaeg,
+      flussi: { ricevuto: ricevutoTaeg, pagamenti, inizio: giorniPre / 365, aParte: preAParte },
       giorniPreammortamento: giorniPre, preammortamento: giorniPre > 0 ? centesimi(prima.interessiPreammortamento) : 0, preammortamentoAParte: preAParte > 0,
       periodoFisso: periodoFisso(p, righe, rata, pagamenti, ricevutoTaeg, giorniPre, preAParte) };
   }
@@ -496,6 +497,17 @@
     const interessi = prime.reduce((s, r) => s + rata(r) - r.quotaCapitale - (p.spese_rata || 0), 0) + preAParte;
     const costo = interessi + k * (p.spese_rata || 0) + (p.spese_iniziali || 0) + (p.assicurazione_iniziale || 0) + k * (p.assicurazione_rata || 0) + Math.floor(k / 12) * (p.spese_annue || 0);
     return { rate: k, anni: p.anni_tasso_fisso, debitoDopo, interessi, costo, taeg: taeg(ricevuto, pagati, giorniPre / 365, preAParte) };
+  }
+  // Le spese che mancano perché il TAEG arrivi a «voluto» (quello scritto dalla banca, più alto del calcolato), dai
+  // flussi di Calcolo.costi: { allInizio, aOgniRata }, due modi di dire la stessa differenza. Al TAEG voluto il valore
+  // attuale dei pagamenti è più basso dei soldi ricevuti: quello che manca è una spesa pagata all'inizio; divisa per il
+  // valore attuale di un euro a ogni rata, è una spesa in più a ogni rata. Null se il TAEG voluto non è più alto.
+  function speseMancanti(c, voluto) {
+    const f = c.flussi, quando = i => f.inizio + (i + 1) / 12, sconto = t => Math.pow(1 + voluto, -t);
+    const attuale = f.pagamenti.reduce((s, x, i) => s + x * sconto(quando(i)), 0) + f.aParte * sconto(f.inizio);
+    const allInizio = f.ricevuto - attuale;
+    if (!(voluto > 0) || !(allInizio > 0)) return null;
+    return { allInizio, aOgniRata: allInizio / f.pagamenti.reduce((s, x, i) => s + sconto(quando(i)), 0) };
   }
 
   // Taratura: prova le combinazioni di regole più comuni e conta quante rate vere (e quote capitale vere)
@@ -624,7 +636,7 @@
   const rataPerData = (righe, iso) => righe.find(r => r.inizio <= iso && iso <= r.fine) || null;
 
   return {
-    calcolaPiano, tratti, conVariabile, prossimaRevisione, revisioneMisto, tara, costi, taeg, fuoriDalTaeg, speseFuoriTaeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
+    calcolaPiano, tratti, conVariabile, prossimaRevisione, revisioneMisto, tara, costi, taeg, speseMancanti, fuoriDalTaeg, speseFuoriTaeg, tassoPianoDaQuota, REGOLE, rataPerData, rataFrancese, rataConMaxirata, arrotondaRata, centesimi, giornoLavorativo, giorniLavorativiContati, isoInGiorno, giornoInIso,
     pasqua, nomeFestivita, festivitaTarget, FESTE_TARGET, statistiche, puntoAl,
   };
 });

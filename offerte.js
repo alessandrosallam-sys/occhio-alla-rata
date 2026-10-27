@@ -73,9 +73,54 @@
     const fissi = e.misto && e.oggi.c.periodoFisso ? e.oggi.c.periodoFisso.taeg : null;
     return vicino(fissi) ? { uguale: true, mio: fissi, soloFissi: true } : { uguale: false, mio };
   }
+  // Chiesto dall'autore: se il TAEG scritto nell'offerta è più alto del calcolo, la banca conta delle spese che non sono
+  // state scritte, e il programma propone quanto aggiungere. Dal solo TAEG non si sa che spesa è: si dice quanto vale
+  // come spesa in più a ogni rata o come spesa all'inizio (Calcolo.speseMancanti), al centesimo. «probabile» è quella da
+  // proporre per prima: nei mutui di solito mancano spese di ogni mese o di ogni anno (incasso, gestione della pratica,
+  // polizza incendio), nei finanziamenti spese o assicurazioni pagate all'inizio. «troppe»: servirebbe più di un quarto
+  // della rata, troppo per qualche spesa dimenticata; più probabilmente è sbagliato il tasso, l'importo o la durata.
+  // Null se il TAEG dell'offerta non c'è, coincide o è più basso.
+  function speseMancanti(e, p) {
+    if (!e || e.manca || !(p.taeg_dichiarato > 0) || taegUguale(e, p).uguale) return null;
+    const conti = e.misto || !e.fisso ? e.oggi : e.atteso, m = Calcolo.speseMancanti(conti.c, p.taeg_dichiarato);
+    if (!m || Calcolo.centesimi(m.aOgniRata) < 0.01) return null;
+    const finanziamento = p.tipo_prestito === 'finanziamento' || conMaxirata(p);
+    return { aOgniRata: Calcolo.centesimi(m.aOgniRata), allInizio: Calcolo.centesimi(m.allInizio), probabile: finanziamento ? 'inizio' : 'rata',
+      troppe: m.aOgniRata > 0.25 * (conti.prima - (p.spese_rata || 0)) };
+  }
+  // I campi cambiati dalla stima: «rata» la somma alle spese per rata; «inizio» la aggiunge alle spese iniziali come voce
+  // a sé, con un nome che dice che è una stima. Un totale scritto senza voci diventa una voce senza nome.
+  const STIMA = 'Spese che mancano (stima)';
+  function conStima(p, m, come) {
+    if (come === 'rata') return { spese_rata: Calcolo.centesimi((p.spese_rata || 0) + m.aOgniRata) };
+    const voci = (p.spese_iniziali_voci || []).length ? p.spese_iniziali_voci.map(v => ({ ...v })) : p.spese_iniziali > 0 ? [{ cosa: '', euro: p.spese_iniziali }] : [];
+    const stima = voci.find(v => v.cosa === STIMA);
+    if (stima) stima.euro = Calcolo.centesimi(stima.euro + m.allInizio); else voci.push({ cosa: STIMA, euro: m.allInizio });
+    return { spese_iniziali: Calcolo.centesimi(voci.reduce((s, v) => s + v.euro, 0)), spese_iniziali_voci: voci };
+  }
+  // La proposta, per il riepilogo della guida e per il confronto: che cosa manca, dove cercarlo, «dove» scrivere le spese
+  // vere, e i pulsanti per aggiungere la stima (data-stima; nel confronto anche data-offerta-stima), la più probabile per prima.
+  function propostaSpese(p, e, m, dove, offerta) {
+    const mio = taegUguale(e, p).mio, chi = offerta ? `«${p.nome || 'Offerta'}»: il` : 'Il';
+    const differenza = `${chi} TAEG scritto nell'offerta è ${perc(p.taeg_dichiarato, 2)}, il mio calcolo dà ${perc(mio, 2)}`;
+    if (m.troppe) return [crea('p', { className: 'nota evidenza' }, `${differenza}: per arrivarci mancherebbero circa ${euro(m.aOgniRata)} a ogni rata, troppo per qualche spesa dimenticata. `
+      + 'Controlla tasso, importo e durata: la rata che calcolo deve essere uguale a quella dell\'offerta.')];
+    const tipiche = p.tipo_prestito === 'finanziamento' || conMaxirata(p)
+      ? 'Nei finanziamenti di solito sono l\'istruttoria, l\'imposta di bollo, le spese di incasso e le assicurazioni obbligatorie'
+      : 'Nei mutui di solito sono le spese di incasso e di gestione della pratica, la polizza incendio e scoppio (obbligatoria per legge) e l\'assicurazione che a volte serve per avere quel tasso';
+    const pulsante = come => crea('button', { type: 'button', className: 'secondario piccolo', 'data-stima': come, ...(offerta ? { 'data-offerta-stima': offerta } : {}) },
+      come === 'rata' ? `Aggiungi ${euro(m.aOgniRata)} a ogni rata` : `Aggiungi ${euro(m.allInizio)} all'inizio`);
+    return [crea('p', { className: 'nota evidenza' }, `${differenza}: la banca conta delle spese che non hai scritto. Se la rata è uguale a quella dell'offerta, importo, durata e tasso sono giusti: mancano solo quelle spese.`),
+      crea('p', { className: 'nota' }, `Per arrivare al ${perc(p.taeg_dichiarato, 2)} mancano circa ${euro(m.aOgniRata)} a ogni rata, oppure ${euro(m.allInizio)} pagati all'inizio. `
+        + `${tipiche}: cercale nel foglio informativo, fra i costi compresi nel TAEG, e ${dove}. `
+        + (variabile(p) ? 'Nel tasso variabile la differenza può venire anche dall\'indice: la banca usa il valore del giorno in cui ha preparato l\'offerta. ' : '')
+        + 'Se non le trovi, aggiungi la stima: il confronto con le altre offerte sarà più giusto.'),
+      crea('div', { className: 'azioni azioni-stima' }, ...(m.probabile === 'rata' ? ['rata', 'inizio'] : ['inizio', 'rata']).map(pulsante))];
+  }
   M.calcolaOfferta = parametri => calcola({ parametri }, modelloScelto());
   M.speseSospette = speseSospette;
   M.taegUguale = taegUguale;
+  Object.assign(M, { speseMancanti, conStima, propostaSpese });
 
   // ---------- Tabella di confronto ----------
   // Le spese iniziali di un'offerta: il totale, poi una voce per riga (una sola: il suo nome), così le offerte si
@@ -128,9 +173,9 @@
           : [perc(e.oggi.c.taeg, 2), piccolo(`con l'indice di oggi, come lo calcola la banca; con le previsioni ${perc(e.atteso.c.taeg, 2)}`)]),
       ...(offerte.some(o => o.parametri.taeg_dichiarato > 0) ? [riga('TAEG dell\'offerta', 'quello scritto dalla banca', (e, p) => {
         if (!(p.taeg_dichiarato > 0)) return ['—'];
-        const confronto = taegUguale(e, p);
+        const confronto = taegUguale(e, p), m = speseMancanti(e, p);
         return [perc(p.taeg_dichiarato, 3, 2), piccolo(confronto.uguale ? '✓ coincide con il calcolo' + (confronto.soloFissi ? ` sui soli ${anni(p)} fissi` : '')
-          : `diverso dal calcolo (${perc(confronto.mio, 2)}): controlla spese e assicurazioni`)];
+          : `diverso dal calcolo (${perc(confronto.mio, 2)}): ` + (!m ? 'controlla spese e assicurazioni' : m.troppe ? 'controlla tasso, importo e durata' : 'mancano delle spese, guarda sotto la tabella'))];
       })] : []),
     ];
     const testa = crea('tr', {}, crea('td', {}), ...esiti.map(x => crea('th', { scope: 'col', className: x === migliore ? 'migliore' : '' },
@@ -156,6 +201,13 @@
       'Attenzione agli esempi delle banche sui mutui a tasso misto: il costo totale e il TAEG «illustrativo» spesso contano solo gli anni fissi, come se alla fine restituissi tutto il debito che resta. '
       + 'Per questo sembrano molto più bassi di quelli di un mutuo fisso. In questa tabella il costo totale conta tutta la durata; quello dei soli anni fissi è nella riga «Alla fine degli anni fissi».'));
     for (const x of calcolate) for (const s of speseSospette(x.o.parametri, x.e)) note.push(crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${s.testo} Correggilo nella sua carta, qui sotto.`));
+    // Le spese che mancano per arrivare al TAEG dell'offerta, con la stima da aggiungere; dopo il clic, che cosa si è aggiunto.
+    for (const x of calcolate) {
+      const p = x.o.parametri, m = speseMancanti(x.e, p);
+      if (m) note.push(...propostaSpese(p, x.e, m, 'scrivile nella sua carta, qui sotto', x.o.id));
+      else if (stimaAggiunta && stimaAggiunta.id === x.o.id && taegUguale(x.e, p).uguale) note.push(crea('p', { className: 'nota conferma' },
+        `✓ «${p.nome || 'Offerta'}»: ho aggiunto ${stimaAggiunta.testo}, e ora il TAEG torna con quello dell'offerta. È una stima: se trovi le spese vere nel foglio informativo, correggile nella sua carta, qui sotto.`));
+    }
     const mancanti = esiti.filter(x => x.e.manca);
     if (mancanti.length) note.push(...mancanti.map(x => crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${x.e.manca}`)));
     const scelta = crea('label', { className: 'campo-in-linea' }, 'Previsione dell\'indice per il variabile e il misto ',
@@ -205,8 +257,23 @@
     disegnaTabella($('#confronto-offerte'));
   }
 
+  // La stima delle spese che mancano, aggiunta con un clic sotto la tabella: si salva, e la carta mostra il valore nuovo.
+  let stimaAggiunta = null;
+  async function aggiungiStima(id, come) {
+    const o = Archivio.offerte().find(x => x.id === id), m = o && speseMancanti(calcola(o, modelloScelto()), o.parametri);
+    if (!m) return;
+    try {
+      await Archivio.richiesta('PUT', 'offerte/' + id, conStima(o.parametri, m, come));
+    } catch (errore) {
+      return avvisa(errore.message, true);
+    }
+    stimaAggiunta = { id, testo: come === 'rata' ? `${euro(m.aOgniRata)} alle spese per rata` : `${euro(m.allInizio)} alle spese iniziali` };
+    disegna();
+  }
+
   // Un campo cambiato si salva subito; la tabella si ricalcola, le carte restano come sono (il cursore non si perde).
   $('#contenuto-offerte').addEventListener('change', async evento => {
+    stimaAggiunta = null;
     if (evento.target.id === 'modello-offerte') {
       for (const o of Archivio.offerte().filter(x => conPrevisioni(x.parametri))) await Archivio.richiesta('PUT', 'offerte/' + o.id, { previsione_modello: evento.target.value });
       return disegnaTabella($('#confronto-offerte'));
@@ -230,6 +297,8 @@
     disegnaTabella($('#confronto-offerte'));
   });
   $('#contenuto-offerte').addEventListener('click', async evento => {
+    const stima = evento.target.closest('button[data-offerta-stima]');
+    if (stima) return aggiungiStima(stima.dataset.offertaStima, stima.dataset.stima);
     const segui = evento.target.closest('button[data-segui]'), elimina = evento.target.closest('button[data-elimina-offerta]');
     const o = Archivio.offerte().find(x => x.id === (segui || elimina || {}).dataset?.[segui ? 'segui' : 'eliminaOfferta']);
     if (!o) return;

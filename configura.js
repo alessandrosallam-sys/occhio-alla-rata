@@ -807,15 +807,26 @@
 
   // ---------- Il riepilogo di un'offerta ----------
   // I dati scritti e i conti: rata (per il variabile anche quanto può salire), interessi, costo totale, TAEG; se c'è il
-  // TAEG scritto nell'offerta, se coincide. Gli avvisi sulle spese per rata grandi quanto la rata.
+  // TAEG scritto nell'offerta, se coincide; se è più alto, le spese che mancano (M.speseMancanti), con i pulsanti per
+  // aggiungere la stima. Gli avvisi sulle spese per rata grandi quanto la rata.
   function contiOfferta() {
     const b = guida.bozza, e = M.calcolaOfferta(b);
     if (!e || e.manca) return { e };
     const taeg = e.misto || !e.fisso ? e.oggi.c.taeg : e.atteso.c.taeg, confronto = b.taeg_dichiarato > 0 ? M.taegUguale(e, b) : null;
-    return { e, taeg, coincide: confronto ? confronto.uguale : null, soloFissi: !!(confronto && confronto.soloFissi) };
+    return { e, taeg, coincide: confronto ? confronto.uguale : null, soloFissi: !!(confronto && confronto.soloFissi), mancano: M.speseMancanti(e, b) };
+  }
+  // «Aggiungi … a ogni rata» o «… all'inizio» nel riepilogo: la stima entra nella bozza e il riepilogo si ridisegna.
+  function aggiungiStima(come) {
+    const { mancano } = contiOfferta();
+    if (!mancano) return;
+    Object.assign(guida.bozza, M.conStima(guida.bozza, mancano, come));
+    guida.stimaSpese = come === 'rata' ? `${euro(mancano.aOgniRata)} alle spese per rata` : `${euro(mancano.allInizio)} alle spese iniziali`;
+    disegnaRiepilogoOfferta($('#campi-passo'));
+    Assistente.dici(assistenteGuida, ...fraseRiepilogoOfferta());
+    $('#guida-avanti').focus();
   }
   function disegnaRiepilogoOfferta(contenitore) {
-    const b = guida.bozza, c = Archivio.categoria(b), { e, taeg, coincide, soloFissi } = contiOfferta();
+    const b = guida.bozza, c = Archivio.categoria(b), { e, taeg, coincide, soloFissi, mancano } = contiOfferta();
     const lista = voci => crea('dl', { className: 'riepilogo-guida' }, ...voci.flatMap(([etichetta, valore]) => [crea('dt', {}, etichetta), crea('dd', {}, valore)]));
     const mesi = b.numero_rate + (b.tipo_prestito === 'maxirata' ? 1 : 0), anni = Math.floor(mesi / 12), resto = mesi % 12;
     const durataTesto = (b.tipo_prestito === 'maxirata' ? `${b.numero_rate} rate più la maxirata` : `${b.numero_rate} rate mensili`)
@@ -832,9 +843,11 @@
     if (!e || e.manca) blocchi.push(crea('p', { className: 'nota evidenza' }, e ? e.manca : 'Non riesco a calcolare questa offerta.'));
     else {
       const ultima = e.atteso.righe[e.atteso.righe.length - 1], fissi = e.misto ? e.oggi.c.periodoFisso : null;
+      // Le spese per rata sono dentro la rata: si dice anche quella senza, che è la cifra scritta di solito nell'offerta.
+      const prima = euro(e.atteso.prima) + (b.spese_rata > 0 ? ` (${euro(e.atteso.prima - b.spese_rata)} più ${euro(b.spese_rata)} di spese)` : '');
       blocchi.push(crea('h3', {}, 'I conti'), lista([
-        ['Rata', e.misto ? `${euro(e.atteso.prima)} al mese per ${anniFissi(b)}` + (e.fisso ? '; dopo dipende dal tasso nuovo' : `; dopo, con le previsioni sull'Euribor, intorno a ${euro(e.atteso.rata)}, fino a ${euro(e.alto.massima)} se l'indice sale`)
-          : e.fisso ? `${euro(e.atteso.prima)} al mese` : `${euro(e.atteso.prima)} all'inizio; fino a ${euro(e.alto.massima)} se l'indice sale`],
+        ['Rata', e.misto ? `${prima} al mese per ${anniFissi(b)}` + (e.fisso ? '; dopo dipende dal tasso nuovo' : `; dopo, con le previsioni sull'Euribor, intorno a ${euro(e.atteso.rata)}, fino a ${euro(e.alto.massima)} se l'indice sale`)
+          : e.fisso ? `${prima} al mese` : `${prima} all'inizio; fino a ${euro(e.alto.massima)} se l'indice sale`],
         ...(b.tipo_prestito === 'maxirata' ? [['Maxirata finale', euro(ultima.rataCalcolata)]] : []),
         ...(fissi ? [[`Dopo ${anniFissi(b)}`, `restano da restituire ${euro(fissi.debitoDopo)}; in quegli anni paghi ${euro(fissi.costo)} di interessi e spese`]] : []),
         ['Interessi', euro(e.atteso.c.interessi) + (e.fisso ? '' : ' (stima)')],
@@ -844,10 +857,13 @@
           : e.fisso ? '' : ' (con l\'indice di oggi, come la banca)')]]));
       for (const s of M.speseSospette(b, e)) blocchi.push(crea('p', { className: 'nota evidenza' }, 'Attenzione: ' + s.testo));
       if (fissi) blocchi.push(crea('p', { className: 'nota' }, `Il tasso misto è sicuro solo per ${anniFissi(b)}: dopo, la rata dipende dai tassi di allora. Negli esempi delle banche il costo totale conta spesso solo quegli anni, come se poi restituissi tutto il debito: per questo sembra molto più basso di quello di un mutuo fisso.`));
-      if (coincide === true && soloFissi) blocchi.push(crea('p', { className: 'nota conferma' }, `✓ Il TAEG scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}) coincide con quello che calcolo sui soli ${anniFissi(b)} fissi, come chiede la legge per i mutui a tasso misto: i dati sono giusti.`));
+      if (coincide === true && guida.stimaSpese) blocchi.push(crea('p', { className: 'nota conferma' }, `✓ Ho aggiunto ${guida.stimaSpese}: ora il TAEG che calcolo (${perc(soloFissi ? e.oggi.c.periodoFisso.taeg : taeg, 2)}) torna con quello dell'offerta. `
+        + 'È una stima: se trovi le spese vere nel foglio informativo, torna indietro a scriverle, oppure correggile dopo nella carta dell\'offerta.'));
+      else if (coincide === true && soloFissi) blocchi.push(crea('p', { className: 'nota conferma' }, `✓ Il TAEG scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}) coincide con quello che calcolo sui soli ${anniFissi(b)} fissi, come chiede la legge per i mutui a tasso misto: i dati sono giusti.`));
       else if (coincide === true) blocchi.push(crea('p', { className: 'nota conferma' }, perc(taeg, 2) === perc(b.taeg_dichiarato, 2) ? `✓ Il TAEG che calcolo coincide con quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): i dati sono giusti.`
         : `✓ Il TAEG che calcolo (${perc(taeg, 2)}) è praticamente uguale a quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): la differenza è solo di arrotondamento, i dati sono giusti.`));
-      if (coincide === false) blocchi.push(crea('p', { className: 'nota evidenza' }, `Il TAEG scritto nell'offerta è ${perc(b.taeg_dichiarato, 2)}, il mio calcolo dà ${perc(taeg, 2)}. `
+      if (coincide === false && mancano) blocchi.push(...M.propostaSpese(b, e, mancano, 'torna indietro a scriverle'));
+      else if (coincide === false) blocchi.push(crea('p', { className: 'nota evidenza' }, `Il TAEG scritto nell'offerta è ${perc(b.taeg_dichiarato, 2)}, il mio calcolo dà ${perc(taeg, 2)}. `
         + (taeg < b.taeg_dichiarato ? 'Di solito vuol dire che manca qualche costo: assicurazioni obbligatorie, perizia, spese di incasso. Controlla la parte dei costi del foglio informativo e torna indietro ad aggiungerli.'
           : 'Il mio è più alto: controlla di non aver scritto una spesa due volte, o la rata al posto delle spese.')));
     }
@@ -855,9 +871,12 @@
     contenitore.replaceChildren(...blocchi);
   }
   function fraseRiepilogoOfferta() {
-    const { e, coincide } = contiOfferta();
+    const { e, coincide, mancano } = contiOfferta();
     if (!e || e.manca) return ['Manca qualcosa per fare i conti: guarda la nota qui sotto.', 'dubbio'];
     if (M.speseSospette(guida.bozza, e).length) return ['Controlla le spese per rata: sembrano la rata stessa.', 'dubbio'];
+    if (mancano && mancano.troppe) return ['Il TAEG dell\'offerta è troppo lontano dal mio: controlla tasso, importo e durata.', 'dubbio'];
+    if (mancano) return ['Mancano delle spese: ti dico quanto valgono, e se non le trovi le aggiungo io.', 'parla'];
+    if (coincide === true && guida.stimaSpese) return ['Con la stima il TAEG torna. Se trovi le spese vere, correggile.', 'felice'];
     if (coincide === false) return ['Il mio TAEG non coincide con quello dell\'offerta: guarda la nota qui sotto.', 'dubbio'];
     if (coincide === true) return ['Il TAEG coincide con quello dell\'offerta: i dati sono giusti!', 'felice'];
     return ['Ecco l\'offerta calcolata. Se va bene, aggiungila al confronto.', 'felice'];
@@ -1831,6 +1850,7 @@
     $('#testo-passo').hidden = !passo.testo;
     $('#errore-passo').hidden = true;
     guida.consiglio = null;
+    if (passo.tipo !== 'riepilogo-offerta') guida.stimaSpese = null;   // la stima delle spese aggiunta si dice solo subito dopo il clic
     const contenitore = $('#campi-passo');
     if (passo.tipo === 'benvenuto') disegnaBenvenuto(contenitore);
     else if (passo.tipo === 'riepilogo') disegnaRiepilogo(contenitore);
@@ -1963,6 +1983,8 @@
       $('#form-guida').requestSubmit();
     }
     if (evento.target.id === 'altre-lo-stesso') { guida.altreLoStesso = true; aggiornaCalcolo(); $('#campo-rata').focus(); }
+    const stima = evento.target.closest('[data-stima]');
+    if (stima && passoAttuale().tipo === 'riepilogo-offerta') aggiungiStima(stima.dataset.stima);
     if (evento.target.id === 'rate-finite' && leggiRataSola(true)) { invalidaDopoAnalisi(); guida.passo = passoDopo(guida.passo); disegnaPasso(); }
     const vai = evento.target.closest('[data-vai-rata]');
     if (vai && leggiRataSola(false)) { guida.rataCorrente = rateInOrdine().findIndex(p => p.n === +vai.dataset.vaiRata); avviaAnalisi(); disegnaPasso(); }

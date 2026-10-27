@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 4, data: '2026-10-27', icona: 'percento', titolo: 'Le spese che mancano al TAEG',
+      testo: 'Se il TAEG scritto nell\'offerta è più alto del calcolo, il programma ti dice quante spese mancano e dove cercarle. Se non le trovi, le aggiunge lui con un clic.' },
     { n: 3, data: '2026-10-27', icona: 'orologio', titolo: 'Il mutuo a tasso misto',
       testo: 'Fisso per i primi anni, poi il tasso si rivede: ora è un tipo di prestito. Nelle offerte vedi quanto potrebbe diventare la rata dopo gli anni fissi; nei tuoi prestiti, quando finisce il tasso fisso e quanto debito resta.' },
     { n: 2, data: '2026-10-27', icona: 'euro', titolo: 'Le spese iniziali una per una',

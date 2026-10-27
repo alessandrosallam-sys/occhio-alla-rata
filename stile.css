@@ -648,6 +648,8 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { outlin
 .nota.piede { margin: var(--s2) 0 0; font-size: calc(13px * var(--testo)); color: var(--tenue); text-align: center; }
 .nota.piede a { color: var(--accento-testo); }
 .nota.sotto { margin-top: var(--s3); }
+/* I pulsanti per aggiungere la stima delle spese che mancano al TAEG dell'offerta (offerte.js, propostaSpese) */
+.azioni-stima { margin: 0 0 var(--s3); }
 .info { margin: 0 0 var(--s4); padding: var(--s3) var(--s4); background: var(--superficie-2); border: 1px solid var(--linea); border-radius: var(--r2); font-size: calc(14px * var(--testo)); }
 .info:empty { display: none; }
 .info dl { display: grid; grid-template-columns: auto 1fr; gap: 3px var(--s4); margin: var(--s2) 0 0; }
