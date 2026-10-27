@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 6, data: '2026-10-27', icona: 'offerte', titolo: 'Le offerte come i prestiti',
+      testo: 'Sotto il confronto ogni offerta ha la sua carta con un riassunto. Per correggerla premi «Cambia i dati»: si apre solo quella.' },
     { n: 5, data: '2026-10-27', icona: 'calendario', titolo: 'Le spese di ogni anno nelle offerte',
       testo: 'Rendiconto, certificazione degli interessi, polizza incendio: nelle offerte ora le scrivi come le trovi nel foglio, una volta all\'anno, senza dividerle per 12.' },
     { n: 4, data: '2026-10-27', icona: 'percento', titolo: 'Le spese che mancano al TAEG',

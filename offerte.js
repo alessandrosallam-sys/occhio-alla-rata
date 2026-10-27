@@ -23,6 +23,9 @@
   // Durata in mesi, maxirata compresa: serve a capire se due offerte si possono confrontare.
   const mesi = p => p.numero_rate + (conMaxirata(p) ? 1 : 0);
   const nomeTipo = p => Archivio.categoria(p).breve;
+  const anni = p => p.anni_tasso_fisso === 1 ? '1 anno' : `${p.anni_tasso_fisso} anni`;
+  const tasso = p => variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 1)}`
+    : misto(p) ? `TAN ${perc(p.tasso_fisso, 3, 1)} per ${anni(p)}, poi ${p.spread_dopo != null ? `fisso nuovo o ${p.indice_nome || 'Euribor'} + ${perc(p.spread_dopo, 3, 1)}` : 'si rivede'}` : `TAN ${perc(p.tasso_fisso, 3, 1)}`;
   const modelloScelto = () => { const o = Archivio.offerte().find(x => conPrevisioni(x.parametri)); const m = o && o.parametri.previsione_modello; return MODELLI.some(([c]) => c === m) ? m : 'vasicek'; };
 
   // ---------- Calcolo di un'offerta ----------
@@ -132,19 +135,16 @@
     return [euro(p.spese_iniziali), ...(voci.length === 1 ? [voci[0].cosa] : voci.map(v => `${v.cosa || 'altro'} ${euro(v.euro)}`)),
       ...(fuori.length ? [`${fuori.join(' e ')} fuori dal TAEG`] : [])].filter(Boolean);
   }
-  function disegnaTabella(contenitore) {
-    const offerte = Archivio.offerte(), modello = modelloScelto();
-    const esiti = offerte.map(o => ({ o, e: calcola(o, modello) }));
-    const calcolate = esiti.filter(x => !x.e.manca);
-    const migliore = calcolate.length > 1 ? calcolate.reduce((a, b) => b.e.atteso.c.costoTotale < a.e.atteso.c.costoTotale ? b : a) : null;
+  // L'offerta che costa meno, se se ne possono confrontare almeno due.
+  const piuEconomica = esiti => { const c = esiti.filter(x => !x.e.manca); return c.length > 1 ? c.reduce((a, b) => b.e.atteso.c.costoTotale < a.e.atteso.c.costoTotale ? b : a) : null; };
+  // «esiti»: le offerte con i loro conti ({ o, e }), «migliore»: quella che costa meno (piuEconomica).
+  function disegnaTabella(contenitore, esiti, migliore) {
+    const offerte = esiti.map(x => x.o), modello = modelloScelto(), calcolate = esiti.filter(x => !x.e.manca);
     const piccolo = testo => crea('small', {}, testo);
     const cella = (x, contenuto) => crea('td', { className: x === migliore ? 'migliore' : '' }, ...contenuto);
     const riga = (titolo, spiegazione, valore) => crea('tr', {}, crea('th', { scope: 'row' }, titolo, ...(spiegazione ? [piccolo(spiegazione)] : [])),
       ...esiti.map(x => x.e.manca ? crea('td', { className: 'manca' }, '—') : cella(x, valore(x.e, x.o.parametri))));
     const forbice = (e, campo) => piccolo(`fra ${euro(e.basso.c[campo])} e ${euro(e.alto.c[campo])}`);
-    const anni = p => p.anni_tasso_fisso === 1 ? '1 anno' : `${p.anni_tasso_fisso} anni`;
-    const tasso = p => variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 1)}`
-      : misto(p) ? `TAN ${perc(p.tasso_fisso, 3, 1)} per ${anni(p)}, poi ${p.spread_dopo != null ? `fisso nuovo o ${p.indice_nome || 'Euribor'} + ${perc(p.spread_dopo, 3, 1)}` : 'si rivede'}` : `TAN ${perc(p.tasso_fisso, 3, 1)}`;
     const righe = [
       riga('Tipo', null, (e, p) => [nomeTipo(p), piccolo(tasso(p))]),
       ...(offerte.some(o => o.parametri.anticipo > 0 && !variabile(o.parametri)) ? [riga('Anticipo', 'pagato subito, senza prestito', (e, p) => [p.anticipo > 0 ? euro(p.anticipo) : '—'])] : []),
@@ -194,19 +194,19 @@
       const p = x.o.parametri, e = x.e;
       note.push(crea('p', { className: 'nota' }, `«${p.nome || 'Offerta'}» è a tasso misto: il TAN del ${perc(p.tasso_fisso, 3, 2)} vale solo per i primi ${anni(p)}, poi il tasso si rivede e oggi nessuno sa quanto sarà. `
         + (e.fisso ? `Per ${p.indice_nome || 'questo indice'} non ho lo storico per fare previsioni: i conti tengono il TAN di oggi fino alla fine.`
-          : `Dopo, le stime seguono l'Euribor ${e.scenari.stimato ? 'partendo dal TAN di oggi (lo spread del variabile non è scritto: se lo trovi, scrivilo nella carta qui sotto)' : `più lo spread del variabile, ${perc(p.spread_dopo, 3, 2)}`}. `
+          : `Dopo, le stime seguono l'Euribor ${e.scenari.stimato ? 'partendo dal TAN di oggi (lo spread del variabile non è scritto: se lo trovi, scrivilo con «Cambia i dati» nella sua carta, qui sotto)' : `più lo spread del variabile, ${perc(p.spread_dopo, 3, 2)}`}. `
             + `Se invece il tasso restasse quello di oggi fino alla fine, il costo totale sarebbe ${euro(e.oggi.c.costoTotale)} e la rata ${euro(e.oggi.prima)}.`)));
     }
     if (calcolate.some(x => x.e.misto && x.e.oggi.c.periodoFisso)) note.push(crea('p', { className: 'nota evidenza' },
       'Attenzione agli esempi delle banche sui mutui a tasso misto: il costo totale e il TAEG «illustrativo» spesso contano solo gli anni fissi, come se alla fine restituissi tutto il debito che resta. '
       + 'Per questo sembrano molto più bassi di quelli di un mutuo fisso. In questa tabella il costo totale conta tutta la durata; quello dei soli anni fissi è nella riga «Alla fine degli anni fissi».'));
-    for (const x of calcolate) for (const s of speseSospette(x.o.parametri, x.e)) note.push(crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${s.testo} Correggilo nella sua carta, qui sotto.`));
+    for (const x of calcolate) for (const s of speseSospette(x.o.parametri, x.e)) note.push(crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${s.testo} Correggilo con «Cambia i dati» nella sua carta, qui sotto.`));
     // Le spese che mancano per arrivare al TAEG dell'offerta, con la stima da aggiungere; dopo il clic, che cosa si è aggiunto.
     for (const x of calcolate) {
       const p = x.o.parametri, m = speseMancanti(x.e, p);
-      if (m) note.push(...propostaSpese(p, x.e, m, 'scrivile nella sua carta, qui sotto', x.o.id));
+      if (m) note.push(...propostaSpese(p, x.e, m, 'scrivile con «Cambia i dati» nella sua carta, qui sotto', x.o.id));
       else if (stimaAggiunta && stimaAggiunta.id === x.o.id && taegUguale(x.e, p).uguale) note.push(crea('p', { className: 'nota conferma' },
-        `✓ «${p.nome || 'Offerta'}»: ho aggiunto ${stimaAggiunta.testo}, e ora il TAEG torna con quello dell'offerta. È una stima: se trovi le spese vere nel foglio informativo, correggile nella sua carta, qui sotto.`));
+        `✓ «${p.nome || 'Offerta'}»: ho aggiunto ${stimaAggiunta.testo}, e ora il TAEG torna con quello dell'offerta. È una stima: se trovi le spese vere nel foglio informativo, correggile con «Cambia i dati» nella sua carta, qui sotto.`));
     }
     const mancanti = esiti.filter(x => x.e.manca);
     if (mancanti.length) note.push(...mancanti.map(x => crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${x.e.manca}`)));
@@ -217,20 +217,55 @@
       ...note, ...(offerte.some(o => conPrevisioni(o.parametri)) ? [scelta] : []));
   }
 
-  // ---------- Una carta per offerta, con i suoi dati ----------
-  function cartaOfferta(o) {
+  // ---------- Le offerte una per una ----------
+  // Chiesto dall'autore: come i prestiti, per ogni offerta un riassunto (che cos'è, rata, importo, costo totale, spese);
+  // «Cambia i dati» apre il modulo di quella sola offerta, a tutta larghezza, e «Salva» o «Annulla» lo chiudono.
+  // Prima le carte erano tutte moduli aperti, uno accanto all'altro.
+  let inModifica = null;   // l'offerta con il modulo aperto
+  const taegCalcolato = e => e.misto || !e.fisso ? e.oggi.c.taeg : e.atteso.c.taeg;
+  function speseInParole(p) {
+    const spese = [[p.spese_iniziali, 'all\'inizio'], [p.spese_rata, 'a ogni rata'], [p.spese_annue, 'ogni anno']].filter(([v]) => v > 0).map(([v, quando]) => `${euro(v)} ${quando}`);
+    const assicurazioni = [[p.assicurazione_iniziale, 'all\'inizio'], [p.assicurazione_rata, 'a ogni rata']].filter(([v]) => v > 0).map(([v, quando]) => `${euro(v)} ${quando}`);
+    return `Spese: ${spese.length ? spese.join(', ') : 'nessuna scritta'}.`
+      + (assicurazioni.length ? ` Assicurazioni: ${assicurazioni.join(', ')}${p.assicurazione_facoltativa ? ' (facoltative)' : ''}.` : '');
+  }
+  function cartaOfferta({ o, e }, economica) {
+    const p = o.parametri, confronto = !e.manca && p.taeg_dichiarato > 0 ? taegUguale(e, p) : null;
+    const voce = (etichetta, valore, dettaglio) => crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, etichetta),
+      crea('span', { className: 'valore' }, valore), ...(dettaglio ? [crea('span', { className: 'dettaglio' }, dettaglio)] : []));
+    return crea('article', { className: 'carta carta-prestito carta-offerta', 'data-offerta': o.id },
+      crea('header', {}, Icone.distintivo(M.iconaTipo(p)),
+        crea('div', { className: 'testa-prestito' }, crea('h3', {}, p.nome || 'Offerta'), crea('p', { className: 'nota' }, `${nomeTipo(p)} · ${tasso(p)}`)),
+        ...(economica ? [crea('span', { className: 'etichetta-aperto' }, Icone.crea('stella', 'icona icona-mini'), 'costa meno')] : [])),
+      e.manca ? crea('p', { className: 'nota evidenza' }, e.manca) : crea('div', { className: 'numeri-prestito' },
+        voce('Rata', euro(e.atteso.prima), e.misto ? `per ${anni(p)}` : conMaxirata(p) ? 'più la maxirata finale' : e.fisso ? 'sempre uguale' : `fino a ${euro(e.alto.massima)}`),
+        voce('Importo', euro(p.importo_iniziale), durata(p)),
+        voce('Costo totale', euro(e.atteso.c.costoTotale), `TAEG ${perc(taegCalcolato(e), 2)}`)),
+      crea('p', { className: 'nota riga-offerta' }, speseInParole(p)),
+      ...(confronto ? [crea('p', { className: 'nota riga-offerta' }, `TAEG dell'offerta ${perc(p.taeg_dichiarato, 2)}: `
+        + (confronto.uguale ? '✓ coincide con il calcolo.' : 'diverso dal calcolo, guarda le note sotto la tabella.'))] : []),
+      crea('div', { className: 'azioni' },
+        crea('button', { type: 'button', 'data-modifica-offerta': o.id }, Icone.crea('matita', 'icona icona-aggiunta'), 'Cambia i dati'),
+        crea('button', { type: 'button', className: 'secondario piccolo', 'data-segui': o.id }, 'Segui questo prestito'),
+        crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina-offerta': o.id }, 'Elimina')));
+  }
+  // Il modulo dell'offerta aperta, con i campi della guida (M.campi, da configura.js).
+  function moduloOfferta(o) {
     const p = o.parametri, campi = crea('div', { className: 'campi due-colonne' }, ...CAMPI_OFFERTA.map(k => M.campi.crea(k, p[k], false, p)));
-    // Le spiegazioni lunghe dei campi restano come suggerimento al passaggio del mouse: la carta resta compatta.
+    // Le spiegazioni lunghe dei campi restano come suggerimento al passaggio del mouse: il modulo resta compatto.
     for (const aiuto of campi.querySelectorAll('label > small, .campo-spese > small')) { aiuto.parentElement.title = aiuto.textContent; aiuto.remove(); }
-    const modulo = crea('form', { className: 'carta carta-offerta', 'data-offerta': o.id },
-      crea('h3', {}, Icone.distintivo(M.iconaTipo(p)), crea('span', { className: 'nome-offerta' }, p.nome || 'Offerta')), campi,
+    const modulo = crea('form', { className: 'carta carta-offerta in-modifica', 'data-offerta': o.id, novalidate: true },
+      crea('h3', {}, Icone.distintivo(M.iconaTipo(p)), crea('span', { className: 'nome-offerta' }, p.nome || 'Offerta')),
+      crea('p', { className: 'nota' }, 'Correggi quello che non è giusto e premi «Salva»: il confronto si ricalcola.'), campi,
       crea('p', { className: 'nota evidenza errore-offerta', hidden: true }),
       crea('div', { className: 'azioni' },
-        crea('button', { type: 'button', className: 'secondario', 'data-segui': o.id }, 'Segui questo prestito'),
-        crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina-offerta': o.id }, 'Elimina')));
+        crea('button', { type: 'submit' }, 'Salva'),
+        crea('button', { type: 'button', className: 'secondario', 'data-annulla-offerta': o.id }, 'Annulla')));
     M.campi.aggiornaVisibili(modulo, CAMPI_OFFERTA, p);
     return modulo;
   }
+  // Dopo aver chiuso il modulo il fuoco torna su «Cambia i dati» della sua carta.
+  const fuocoSullaCarta = id => { const b = $(`#carte-offerte [data-modifica-offerta="${id}"]`); if (b) b.focus({ preventScroll: true }); };
 
   function disegna() {
     if ($('#scheda-offerte').hidden) return;
@@ -247,14 +282,14 @@
           crea('li', {}, 'Quando hai firmato, premi «Segui questo prestito» sull\'offerta scelta: i dati passano alla configurazione guidata.'))));
       return;
     }
-    // Le carte si ricostruiscono solo se non si sta scrivendo in una di loro, o se le offerte sono cambiate.
-    const chiave = offerte.map(o => o.id).join('|'), carte = $('#carte-offerte');
-    if (!carte || carte.dataset.chiave !== chiave || !carte.contains(document.activeElement)) {
-      const nuove = crea('div', { id: 'carte-offerte', className: 'elenco-prestiti' }, ...offerte.map(cartaOfferta));
-      nuove.dataset.chiave = chiave;
-      contenuto.replaceChildren(crea('div', { className: 'carta', id: 'confronto-offerte' }), nuove);
-    }
-    disegnaTabella($('#confronto-offerte'));
+    if (!offerte.some(o => o.id === inModifica)) inModifica = null;
+    const modello = modelloScelto(), esiti = offerte.map(o => ({ o, e: calcola(o, modello) })), migliore = piuEconomica(esiti);
+    // Il modulo aperto resta quello di prima, con le risposte non ancora salvate; mentre lo si compila si ridisegna solo il confronto.
+    const aperto = inModifica ? $(`#carte-offerte form[data-offerta="${inModifica}"]`) : null;
+    if (aperto && aperto.contains(document.activeElement)) return disegnaTabella($('#confronto-offerte'), esiti, migliore);
+    contenuto.replaceChildren(crea('div', { className: 'carta', id: 'confronto-offerte' }),
+      crea('div', { id: 'carte-offerte', className: 'elenco-prestiti' }, ...esiti.map(x => x.o.id === inModifica ? aperto || moduloOfferta(x.o) : cartaOfferta(x, x === migliore))));
+    disegnaTabella($('#confronto-offerte'), esiti, migliore);
   }
 
   // La stima delle spese che mancano, aggiunta con un clic sotto la tabella: si salva, e la carta mostra il valore nuovo.
@@ -268,23 +303,29 @@
       return avvisa(errore.message, true);
     }
     stimaAggiunta = { id, testo: come === 'rata' ? `${euro(m.aOgniRata)} alle spese per rata` : `${euro(m.allInizio)} alle spese iniziali` };
+    if (inModifica === id) inModifica = null;   // il modulo aperto avrebbe i valori di prima
     disegna();
   }
 
-  // Un campo cambiato si salva subito; la tabella si ricalcola, le carte restano come sono (il cursore non si perde).
+  // Nel modulo aperto un campo cambiato mostra o nasconde quelli che dipendono da lui; si salva con «Salva».
   $('#contenuto-offerte').addEventListener('change', async evento => {
-    stimaAggiunta = null;
     if (evento.target.id === 'modello-offerte') {
+      stimaAggiunta = null;
       for (const o of Archivio.offerte().filter(x => conPrevisioni(x.parametri))) await Archivio.richiesta('PUT', 'offerte/' + o.id, { previsione_modello: evento.target.value });
-      return disegnaTabella($('#confronto-offerte'));
+      return disegna();
     }
-    const modulo = evento.target.closest('form[data-offerta]');
-    if (!modulo) return;
-    const errore = $('.errore-offerta', modulo), o = Archivio.offerte().find(x => x.id === modulo.dataset.offerta);
+    const modulo = evento.target.closest('form[data-offerta]'), o = modulo && Archivio.offerte().find(x => x.id === modulo.dataset.offerta);
+    if (!o) return;
+    $('.errore-offerta', modulo).hidden = true;
     M.campi.aggiornaVisibili(modulo, CAMPI_OFFERTA, o.parametri);
+  });
+  $('#contenuto-offerte').addEventListener('submit', async evento => {
+    const modulo = evento.target.closest('form[data-offerta]'), o = modulo && Archivio.offerte().find(x => x.id === modulo.dataset.offerta);
+    if (!o) return;
+    evento.preventDefault();
+    const errore = $('.errore-offerta', modulo);
     const letti = M.campi.leggi(modulo, CAMPI_OFFERTA.filter(k => !Archivio.CAMPI[k].obbligatorio || $(`[data-campo="${k}"] input`, modulo).value.trim()));
-    errore.hidden = !letti.errore;
-    if (letti.errore) { errore.textContent = letti.errore; return; }
+    if (letti.errore) { errore.textContent = letti.errore; errore.hidden = false; return; }
     try {
       await Archivio.richiesta('PUT', 'offerte/' + o.id, { ...letti.valori, ...(conPrevisioni(letti.valori) ? { previsione_modello: modelloScelto() } : {}) });
     } catch (e) {
@@ -292,13 +333,29 @@
       errore.hidden = false;
       return;
     }
-    $('.nome-offerta', modulo).textContent = letti.valori.nome || 'Offerta';
-    $('h3 .distintivo-icona', modulo).replaceWith(Icone.distintivo(M.iconaTipo({ ...o.parametri, ...letti.valori })));
-    disegnaTabella($('#confronto-offerte'));
+    if (document.activeElement) document.activeElement.blur();
+    inModifica = null;
+    stimaAggiunta = null;
+    disegna();
+    fuocoSullaCarta(o.id);
+    avvisa(`Offerta «${letti.valori.nome || 'Offerta'}» salvata: il confronto è ricalcolato.`);
   });
   $('#contenuto-offerte').addEventListener('click', async evento => {
     const stima = evento.target.closest('button[data-offerta-stima]');
     if (stima) return aggiungiStima(stima.dataset.offertaStima, stima.dataset.stima);
+    const modifica = evento.target.closest('button[data-modifica-offerta]'), annulla = evento.target.closest('button[data-annulla-offerta]');
+    if (modifica) {
+      inModifica = modifica.dataset.modificaOfferta;
+      disegna();
+      const modulo = $(`#carte-offerte form[data-offerta="${inModifica}"]`);
+      modulo.scrollIntoView({ block: 'start' });
+      return $('input, select', modulo).focus({ preventScroll: true });
+    }
+    if (annulla) {
+      inModifica = null;
+      disegna();
+      return fuocoSullaCarta(annulla.dataset.annullaOfferta);
+    }
     const segui = evento.target.closest('button[data-segui]'), elimina = evento.target.closest('button[data-elimina-offerta]');
     const o = Archivio.offerte().find(x => x.id === (segui || elimina || {}).dataset?.[segui ? 'segui' : 'eliminaOfferta']);
     if (!o) return;

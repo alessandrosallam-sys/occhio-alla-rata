@@ -172,12 +172,17 @@
     ['[data-prova-esempi]', 'Apre dei prestiti inventati, uno per tipo, con le rate già pagate: per vedere come funziona. I tuoi dati non si toccano.'],
     ['[data-esci-esempi]', 'Butta via gli esempi e torna ai tuoi dati, come li avevi lasciati.'],
     ['.totali-prestiti', 'I totali di tutti i tuoi prestiti: rate del mese, debito residuo e interessi ancora da pagare.'],
+    // Le carte delle offerte hanno lo stile di quelle dei prestiti: le loro voci vengono prima.
+    ['[data-modifica-offerta]', 'Apre i dati di questa offerta per correggerli. Le altre restano chiuse.'],
+    ['[data-annulla-offerta]', 'Chiude i dati senza salvare le modifiche.'],
+    ['.carta-offerta .dato', el => perEtichetta(COSTI, etichetta(el))],
+    ['.carta-offerta.in-modifica', 'I dati dell\'offerta: li trovi nel foglio informativo della banca (PIES per i mutui, SECCI per i finanziamenti). Premi «Salva» quando hai finito.'],
+    ['.carta-offerta', el => `«${(el.querySelector('h3') || el).textContent.trim()}»: che offerta è, la rata, quanto ti prestano e quanto costa in tutto, con le spese. «Cambia i dati» per correggerla.`],
     ['.carta-prestito', el => `«${etichetta(el)}»: rata del mese, debito residuo e quanto manca. «Apri» per lavorarci.`],
     ['#aggiungi-offerta', 'Aggiungi un\'altra offerta da confrontare.'],
     ['#segui-prestito-offerte', 'Hai già un prestito? Comincia a seguirlo con la configurazione guidata.'],
     ['[data-segui]', 'Hai scelto? Comincia a seguire questo prestito, con i dati dell\'offerta già scritti.'],
     ['.tabella-offerte tbody tr', el => perEtichetta(COSTI, etichetta(el))],
-    ['.carta-offerta', 'I dati di un\'offerta: li trovi nel foglio informativo della banca (PIES per i mutui, SECCI per i finanziamenti).'],
     // Tassi
     ['#periodi-tassi', 'Scegli il periodo del grafico: quello del tuo mutuo, gli ultimi anni o tutto dal 1999.'],
     ['#grafico', 'Il grafico dell\'indice: la linea è il valore giorno per giorno; a destra la previsione, con le fasce di incertezza. ' + (M.senzaMouse() ? 'Tocca un punto per leggerne il valore, o trascina il dito di lato.' : 'Passa sulla linea per leggere i valori.')],

@@ -863,7 +863,7 @@
       for (const s of M.speseSospette(b, e)) blocchi.push(crea('p', { className: 'nota evidenza' }, 'Attenzione: ' + s.testo));
       if (fissi) blocchi.push(crea('p', { className: 'nota' }, `Il tasso misto è sicuro solo per ${anniFissi(b)}: dopo, la rata dipende dai tassi di allora. Negli esempi delle banche il costo totale conta spesso solo quegli anni, come se poi restituissi tutto il debito: per questo sembra molto più basso di quello di un mutuo fisso.`));
       if (coincide === true && guida.stimaSpese) blocchi.push(crea('p', { className: 'nota conferma' }, `✓ Ho aggiunto ${guida.stimaSpese}: ora il TAEG che calcolo (${perc(soloFissi ? e.oggi.c.periodoFisso.taeg : taeg, 2)}) torna con quello dell'offerta. `
-        + 'È una stima: se trovi le spese vere nel foglio informativo, torna indietro a scriverle, oppure correggile dopo nella carta dell\'offerta.'));
+        + 'È una stima: se trovi le spese vere nel foglio informativo, torna indietro a scriverle, oppure correggile dopo con «Cambia i dati» nella carta dell\'offerta.'));
       else if (coincide === true && soloFissi) blocchi.push(crea('p', { className: 'nota conferma' }, `✓ Il TAEG scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}) coincide con quello che calcolo sui soli ${anniFissi(b)} fissi, come chiede la legge per i mutui a tasso misto: i dati sono giusti.`));
       else if (coincide === true) blocchi.push(crea('p', { className: 'nota conferma' }, perc(taeg, 2) === perc(b.taeg_dichiarato, 2) ? `✓ Il TAEG che calcolo coincide con quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): i dati sono giusti.`
         : `✓ Il TAEG che calcolo (${perc(taeg, 2)}) è praticamente uguale a quello scritto nell'offerta (${perc(b.taeg_dichiarato, 2)}): la differenza è solo di arrotondamento, i dati sono giusti.`));
@@ -872,7 +872,7 @@
         + (taeg < b.taeg_dichiarato ? 'Di solito vuol dire che manca qualche costo: assicurazioni obbligatorie, perizia, spese di incasso. Controlla la parte dei costi del foglio informativo e torna indietro ad aggiungerli.'
           : 'Il mio è più alto: controlla di non aver scritto una spesa due volte, o la rata al posto delle spese.')));
     }
-    blocchi.push(crea('p', { className: 'nota' }, 'Premi «Aggiungi l\'offerta»: la trovi nel confronto, accanto alle altre. Potrai correggerla anche dopo, nella sua carta.'));
+    blocchi.push(crea('p', { className: 'nota' }, 'Premi «Aggiungi l\'offerta»: la trovi nel confronto, accanto alle altre. Potrai correggerla anche dopo, con «Cambia i dati» nella sua carta.'));
     contenitore.replaceChildren(...blocchi);
   }
   function fraseRiepilogoOfferta() {

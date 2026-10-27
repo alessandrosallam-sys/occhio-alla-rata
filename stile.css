@@ -1376,6 +1376,10 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
 .carta-offerta h3 { margin: 0; }
 .carta-offerta .campi { margin: 0; }
 .carta-offerta .azioni .pericoloso { margin-left: auto; }
+/* Le offerte come i prestiti: un riassunto per carta; il modulo di quella che si sta cambiando prende tutta la riga. */
+.carta-offerta .riga-offerta { margin: 0; font-size: calc(13.5px * var(--testo)); }
+.carta-offerta.in-modifica { grid-column: 1 / -1; scroll-margin-top: calc(var(--alto-testata) + var(--s2)); }
+.carta-offerta.in-modifica > .nota { margin: 0; }
 
 /* La maxirata nel piano: l'ultima riga di un finanziamento con maxirata finale */
 .etichetta-maxirata { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--accento-tenue); color: var(--accento); font-size: calc(11.5px * var(--testo)); font-weight: 650; vertical-align: 1px; }
