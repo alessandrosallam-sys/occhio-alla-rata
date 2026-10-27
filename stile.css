@@ -2294,6 +2294,14 @@ button[aria-busy="true"]::after {
 /* «Che cos'è?» (assistente.js): solo dove non c'è un mouse che passa sopra alle cose, cioè telefoni e tablet */
 .parole .spiegami { display: none; margin-top: var(--s2); }
 @media (hover: none) { .parole .spiegami:not([hidden]) { display: inline-flex; } }
+/* La modalità ispezione («Che cos'è?» premuto): la cosa spiegata ha un bordo; mentre l'assistente segue la pagina,
+   quando tace il fumetto resta piccolo con «Fine», così l'ispezione si spegne da qualunque punto della pagina */
+html[data-spiegami] .ispezionato { outline: 3px solid var(--accento); outline-offset: 2px; }
+.parole .ispezione-breve { display: none; }
+.assistente.segue.zitto.ispeziona .parole { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s3); padding-right: 14px; }
+.assistente.segue.zitto.ispeziona .scritto, .assistente.segue.zitto.ispeziona .chiudi-assistente { display: none; }
+.assistente.segue.zitto.ispeziona .ispezione-breve { display: inline; }
+.assistente.segue.zitto.ispeziona .spiegami { margin-top: 0; }
 .nel-programma.richiuso .parole { display: none; }
 .nel-programma.richiuso .avatar { width: 38px; height: 38px; cursor: pointer; }
 .nel-programma.richiuso .avatar:focus-visible { outline: 2px solid var(--fuoco); outline-offset: 2px; border-radius: 12px; }

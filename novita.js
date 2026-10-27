@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 9, data: '2026-10-27', icona: 'lampadina', titolo: '«Che cos\'è?» resta acceso',
+      testo: 'Sul telefono, dopo «Che cos\'è?» il robottino ti spiega ogni cosa che tocchi, una dopo l\'altra, finché non premi «Fine».' },
     { n: 8, data: '2026-10-27', icona: 'attenzione', titolo: 'Segnala un problema',
       testo: 'Accanto a «Condividi» c\'è il triangolo: se qualcosa non va, o una rata non torna, da lì ce lo racconti.' },
     { n: 7, data: '2026-10-27', icona: 'documento', titolo: 'Il codice su GitHub',

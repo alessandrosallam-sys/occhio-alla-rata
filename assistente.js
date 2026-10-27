@@ -7,8 +7,9 @@
 // Se la pagina scorre oltre, l'assistente la segue nell'angolo in basso: resta la testa, e il fumetto compare quando
 // ha qualcosa da dire. Passando con il mouse (o arrivando con la tastiera) su una cosa importante, la spiega
 // (i testi sono in spiegazioni.js); poco dopo torna al suo messaggio. Sul telefono non si passa sopra a niente, e un
-// tocco non lo fa parlare: nel fumetto c'è «Che cos'è?», poi si tocca la cosa da spiegare. Le due cose si spengono
-// nelle impostazioni (temi.js: «Spiega le cose…», «Ti segue…»).
+// tocco non lo fa parlare: «Che cos'è?» nel fumetto accende la modalità ispezione, in cui ogni tocco spiega la cosa
+// toccata, finché non si preme «Fine». Le due cose si spengono nelle impostazioni (temi.js: «Spiega le cose…»,
+// «Ti segue…»).
 (function () {
   'use strict';
   const M = window.Mutuo, { $, crea, euro, meseAnno } = M;
@@ -261,6 +262,7 @@
     clearTimeout(el._torna);
     el._torna = null;
     el._spiega = true;
+    el._copre = sopra;
     el.classList.add('spiega');
     sovrapponi(el, sopra);
     if (scrivi(el, testo, 'parla', { veloce: true }) || el.classList.contains('zitto')) mostraParole(el);
@@ -334,8 +336,9 @@
       spazioSotto();
     } else {
       el.classList.remove('segue', 'zitto');
-      // Se sta spiegando, al suo posto la spiegazione resta sopra la pagina; altrimenti il segnaposto torna libero.
-      if (el._spiega) el.classList.add('sovrapposto'); else posto.style.height = '';
+      // Se sta spiegando col mouse, al suo posto la spiegazione resta sopra la pagina; altrimenti il segnaposto torna
+      // libero (le spiegazioni chieste col dito spostano la pagina invece di coprirla).
+      if (el._spiega && el._copre) el.classList.add('sovrapposto'); else posto.style.height = '';
     }
   }
   // Seguendo, il fumetto resta aperto il tempo di leggerlo (più a lungo se il testo è lungo, e finché c'è sopra il mouse).
@@ -344,10 +347,12 @@
     clearTimeout(el._zitto);
     if (el.classList.contains('segue')) el._zitto = setTimeout(() => taci(el), Math.max(7000, (el.dataset.testo || '').length * 65));
   }
+  // In modalità ispezione la spiegazione resta: il fumetto si fa piccolo (con «Fine») e la testa lo riapre.
   function taci(el, subito = false) {
     clearTimeout(el._zitto);
-    if (!subito && (el.matches(':hover') || el._spiega)) { el._zitto = setTimeout(() => taci(el), 2000); return; }
-    if (el._spiega) torna(el, 0);
+    const resta = el._spiega && el !== inIspezione;
+    if (!subito && (el.matches(':hover') || resta)) { el._zitto = setTimeout(() => taci(el), 2000); return; }
+    if (resta) torna(el, 0);
     el.classList.add('zitto');
   }
   // Sui telefoni in basso c'è la barra delle schede (nella guida, quella dei pulsanti): l'assistente le resta sopra.
@@ -397,49 +402,56 @@
   document.addEventListener('pointerdown', () => { daTastiera = false; }, true);
   document.addEventListener('focusin', evento => { if (daTastiera) guarda(evento.target); });
 
-  // ---------- Sul telefono: «Che cos'è?» ----------
-  // Il pulsante nel fumetto (si vede solo dove non c'è il mouse, stile.css) mette l'assistente in attesa: il tocco
-  // seguente non fa la sua solita cosa (aprire, modificare…) ma chiede la spiegazione di quello che si è toccato.
-  // Toccando l'assistente stesso, o di nuovo il pulsante, si annulla.
-  let inAttesa = null;   // l'assistente che aspetta il tocco
-  const TESTO_ATTESA = 'Tocca una cosa della pagina (un riquadro, una riga, un titolo, un pulsante): ti dico che cos\'è.';
+  // ---------- Sul telefono: «Che cos'è?», la modalità ispezione ----------
+  // Il pulsante nel fumetto (si vede solo dove non c'è il mouse, stile.css) accende la modalità ispezione: da lì ogni
+  // tocco non fa la sua solita cosa (aprire, modificare…) ma chiede la spiegazione di quello che si è toccato, che si
+  // segna con un bordo. Resta accesa finché non si preme «Fine» (lo stesso pulsante), si richiude l'assistente o
+  // sparisce la pagina. La spiegazione resta fino al tocco seguente; mentre l'assistente segue la pagina, dopo il
+  // tempo di leggerla il fumetto si fa piccolo, con «Fine», e la testa lo riapre.
+  let inIspezione = null;   // l'assistente in modalità ispezione
+  let segnato = null;       // la cosa spiegata per ultima, con il bordo
+  const TESTO_ISPEZIONE = 'Tocca le cose della pagina (un riquadro, una riga, un titolo, un pulsante), una alla volta: ti dico che cosa sono. Quando hai finito premi «Fine», e i tocchi tornano a funzionare come sempre.';
   function pulsanteSpiegami(el) {
     const pulsante = crea('button', { type: 'button', className: 'secondario piccolo spiegami', 'aria-pressed': 'false' }, 'Che cos\'è?');
-    pulsante.addEventListener('click', () => {
-      if (inAttesa === el) { smettiDiAspettare(); torna(el, 0); return; }
-      smettiDiAspettare();
-      inAttesa = el;
-      document.documentElement.dataset.spiegami = 'si';
-      pulsante.textContent = 'Annulla';
-      pulsante.setAttribute('aria-pressed', 'true');
-      spiega(el, TESTO_ATTESA, false);
-    });
-    $('.parole', el).append(pulsante);
+    pulsante.addEventListener('click', () => { if (inIspezione === el) smettiDiIspezionare(); else ispeziona(el); });
+    $('.parole', el).append(crea('span', { className: 'ispezione-breve' }, 'Tocca una cosa da spiegare'), pulsante);
   }
-  function smettiDiAspettare() {
-    if (!inAttesa) return;
-    const pulsante = $('.spiegami', inAttesa);
+  function ispeziona(el) {
+    smettiDiIspezionare();
+    inIspezione = el;
+    document.documentElement.dataset.spiegami = 'si';
+    el.classList.add('ispeziona');
+    const pulsante = $('.spiegami', el);
+    pulsante.textContent = 'Fine';
+    pulsante.setAttribute('aria-pressed', 'true');
+    spiega(el, TESTO_ISPEZIONE, false);
+  }
+  function smettiDiIspezionare() {
+    if (!inIspezione) return;
+    const el = inIspezione, pulsante = $('.spiegami', el);
     pulsante.textContent = 'Che cos\'è?';
     pulsante.setAttribute('aria-pressed', 'false');
-    inAttesa = null;
+    el.classList.remove('ispeziona');
+    segna(null);
+    inIspezione = null;
     delete document.documentElement.dataset.spiegami;
+    torna(el, 0);
+  }
+  function segna(cosa) {
+    if (segnato) segnato.classList.remove('ispezionato');
+    segnato = cosa;
+    if (cosa) cosa.classList.add('ispezionato');
   }
   // Il tocco si ferma prima che arrivi a quello che si è toccato: niente fuoco (e tastiera) sui campi, niente clic.
-  document.addEventListener('mousedown', evento => { if (inAttesa && !evento.target.closest('.assistente')) evento.preventDefault(); }, true);
+  // L'assistente stesso funziona come sempre: la testa apre e chiude il fumetto, «Fine» spegne l'ispezione.
+  document.addEventListener('mousedown', evento => { if (inIspezione && !evento.target.closest('.assistente')) evento.preventDefault(); }, true);
   document.addEventListener('click', evento => {
-    if (!inAttesa) return;
-    if (evento.target.closest('.assistente')) {
-      if (!evento.target.closest('.spiegami')) { const el = inAttesa; smettiDiAspettare(); torna(el, 0); }
-      return;
-    }
+    if (!inIspezione || evento.target.closest('.assistente')) return;
     evento.preventDefault();
     evento.stopPropagation();
-    const el = inAttesa, trovato = window.Spiegazioni && Spiegazioni.trova(evento.target);
-    smettiDiAspettare();
-    const testo = trovato ? trovato.testo : 'Su questo non ho niente da dirti. Premi di nuovo «Che cos\'è?» e tocca un\'altra cosa.';
-    spiega(el, testo, false);
-    // Il tempo di leggerla, poi torna al suo messaggio.
-    torna(el, Math.max(8000, testo.length * 75));
+    const trovato = window.Spiegazioni && Spiegazioni.trova(evento.target);
+    segna(trovato ? trovato.el : null);
+    spiega(inIspezione, trovato ? trovato.testo : 'Su questo non ho niente da dirti: tocca un\'altra cosa, oppure premi «Fine» per tornare a usare la pagina.', false);
   }, true);
 
   window.Assistente = { nuovo, dici, spiega, segui, AVATAR, disegnoAvatar, scegliAvatar, avatarScelto: () => avatarScelto };
@@ -455,6 +467,7 @@
   segui(nelProgramma);
   const chiuso = () => M.ricordo.leggi('assistente') === 'chiuso';
   function richiudi(si) {
+    if (si) smettiDiIspezionare();
     M.ricordo.scrivi('assistente', si ? 'chiuso' : 'aperto');
     nelProgramma.classList.toggle('richiuso', si);
     $('.avatar', nelProgramma).title = si ? 'Apri l\'assistente' : '';
@@ -498,12 +511,16 @@
     nelProgramma.hidden = !nome || $('#principale').hidden;
     nelProgramma.classList.toggle('richiuso', chiuso());
     $('.spiegami', nelProgramma).hidden = !vuole('spiega');   // spente le spiegazioni, niente «Che cos'è?»
+    if (nelProgramma.hidden || chiuso() || !vuole('spiega')) smettiDiIspezionare();   // ad esempio, si apre la guida
     aggiornaSegue(nelProgramma);
     if (!nome || chiuso()) return;
     const [testo, umore] = consiglioPer(nome);
     dici(nelProgramma, testo, umore);
   }
-  document.addEventListener('cambio-assistente', () => { $('.spiegami', nelProgramma).hidden = !vuole('spiega'); });
+  document.addEventListener('cambio-assistente', () => {
+    $('.spiegami', nelProgramma).hidden = !vuole('spiega');
+    if (!vuole('spiega')) smettiDiIspezionare();
+  });
   M.alCambioScheda.push(() => consiglia());
   M.viste.push(() => consiglia());
 })();
