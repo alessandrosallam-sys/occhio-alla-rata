@@ -214,6 +214,7 @@
     ['#condividi', 'Apre la condivisione del computer o del telefono: scegli un\'altra app, Telegram, un\'email… Il messaggio è già scritto, con il link al sito.'],
     ['#manda-whatsapp', 'Apre WhatsApp con un messaggio già scritto e il link al sito: scegli a chi mandarlo. Parte solo il link, non i tuoi prestiti.'],
     ['#copia-link', 'Copia l\'indirizzo del sito, da incollare dove vuoi.'],
+    ['#segnala-testata', 'Qualcosa non funziona, una rata non torna o hai un\'idea? Si apre GitHub, il sito dove sta il programma: scegli il modulo e scrivi. Serve un account GitHub, gratis. Non scrivere nomi, banca o numeri di conto.'],
     ['.tabella-costi tr', el => perEtichetta(COSTI, etichetta(el))],
     ['#estinzione', 'Simula il rimborso anticipato: scegli quando e quanto, e vedi quanto risparmi.'],
     ['#costo-prestito', 'Quanto costa davvero il prestito: interessi, spese, assicurazioni e TAEG.'],

@@ -176,6 +176,8 @@ Questo è uno strumento di controllo fatto da privati, senza alcuna garanzia. No
 - **Il tuo contratto torna, o non torna?** Apri una [segnalazione «Il mio contratto»](../../issues/new/choose): bastano il tipo di prestito e le regole che il programma ha trovato. Non servono nomi, banca o numeri di conto.
 - **Qualcosa non funziona?** Una [segnalazione di problema](../../issues/new/choose), con il browser e il dispositivo che usi.
 - **Un'idea?** Anche quella è benvenuta.
+
+Dalla pagina ci arrivi con **«Segnala un problema»**, il pulsante con il triangolo accanto a «Condividi» (sul telefono in alto, sul computer in fondo alla barra laterale). Per scrivere serve un account GitHub, gratis.
 - **Vuoi modificare il codice?** Leggi [CONTRIBUTING.md](CONTRIBUTING.md): poche regole, tutte per tenere il programma semplice e i dati al sicuro.
 
 ## Per chi vuole modificare il codice
@@ -201,7 +203,7 @@ prestiti.js           pagina Prestiti: tutti i prestiti seguiti, con i totali e 
 costi.js              pagina Costi e rimborso: costo totale e TAEG, estinzione anticipata
 offerte.js            pagina Offerte: confronto di offerte prima di firmare
 cambi.js              cambi del contratto dopo la firma (tasso, spread, durata) e nuovo prestito dal debito residuo (surroga), nella pagina «Dati del prestito»
-condividi.js          il pulsante «Condividi» accanto a «Impostazioni»: condivisione del telefono, oppure il riquadro con WhatsApp e la copia del link
+condividi.js          i pulsanti «Condividi» (condivisione del telefono, oppure il riquadro con WhatsApp e la copia del link) e «Segnala un problema», accanto a «Impostazioni»
 novita.js             le novità all'apertura: il loro elenco e la finestra «Che cosa c'è di nuovo»
 esempi.js             «Prova con degli esempi»: prestiti e offerte inventati in un archivio a parte, che sparisce uscendo
 icone.js              le icone della pagina, disegnate a mano

@@ -7,10 +7,13 @@
 //    browser la offre, «Altre app» (la condivisione del sistema).
 // Si condivide sempre l'indirizzo del sito, anche dalla pagina aperta dal disco; i prestiti non partono. Sono
 // collegamenti da aprire, non richieste della pagina: la regola sulle connessioni (index.html) non c'entra.
+// Accanto c'è «Segnala un problema» (27 ottobre 2026), con il triangolo di avviso: apre in un'altra scheda la scelta
+// dei moduli delle segnalazioni su GitHub (problema, il mio contratto, idea).
 (function () {
   'use strict';
   const { $, avvisa } = window.Mutuo;
   const SITO = 'https://alessandrosallam-sys.github.io/occhio-alla-rata/';
+  const SEGNALAZIONI = 'https://github.com/alessandrosallam-sys/occhio-alla-rata/issues/new/choose';
   const MESSAGGIO = 'Ti segnalo Occhio alla Rata: controlla se la banca ti addebita la rata giusta del mutuo o del finanziamento, al centesimo. '
     + 'Ti dice anche quanto costa davvero il prestito e quanto risparmieresti rimborsandolo prima. '
     + 'È gratis, non serve registrarsi e i dati restano sul tuo telefono. Per vedere come funziona c\'è «Prova con degli esempi».';
@@ -85,5 +88,7 @@
   $('#manda-whatsapp').addEventListener('click', () => { conWhatsApp(); chiudi(); });
   $('#copia-link').addEventListener('click', async () => { if (await copiaLink()) chiudi(); });
 
-  window.Condividi = { apri, chiudi, SITO };
+  $('#segnala-testata').addEventListener('click', () => window.open(SEGNALAZIONI, '_blank', 'noopener'));
+
+  window.Condividi = { apri, chiudi, SITO, SEGNALAZIONI };
 })();

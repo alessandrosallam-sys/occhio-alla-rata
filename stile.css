@@ -839,6 +839,7 @@ tr.in-evidenza td { background-color: var(--accento-tenue); }
 @media (max-width: 760px) { .sottomenu { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 32px; } }   /* sfuma a destra: si capisce che scorre */
 @media (min-width: 1100px) { .sottomenu { display: none !important; } }
 .pulsante-icona .icona { width: 18px; height: 18px; }
+#segnala-testata .icona { color: var(--avviso-testo); }   /* il triangolo di avviso, nel colore degli avvisi del tema */
 
 /* ---------- 5. Riepilogo del mese ----------
    Due file. «Il mese»: la rata del mese in evidenza, con lo sfondo «eroe» del tema, e accanto prossima rata, debito
@@ -1680,6 +1681,8 @@ button.scelta-principale[aria-pressed="true"] { color: #8a6100; border-color: #e
   .testata { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--testata-solida); }
   .testata-interno { padding: 0 var(--s4); gap: var(--s2); }
   h1 { font-size: calc(17px * var(--testo)); }
+  /* Accanto ai tre pulsanti il nome non sempre ci sta (320 px, testi grandi): va su due righe invece di tagliarsi */
+  .marchio h1 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; }
   .schede {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0;   /* tante colonne quante schede visibili */

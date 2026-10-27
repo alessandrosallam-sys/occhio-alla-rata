@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 8, data: '2026-10-27', icona: 'attenzione', titolo: 'Segnala un problema',
+      testo: 'Accanto a «Condividi» c\'è il triangolo: se qualcosa non va, o una rata non torna, da lì ce lo racconti.' },
     { n: 7, data: '2026-10-27', icona: 'documento', titolo: 'Il codice su GitHub',
       testo: 'In fondo al Pannello di controllo c\'è il link a GitHub, il sito dove sta il programma: chiunque può leggere come fa i conti, riga per riga.' },
     { n: 6, data: '2026-10-27', icona: 'offerte', titolo: 'Le offerte come i prestiti',
