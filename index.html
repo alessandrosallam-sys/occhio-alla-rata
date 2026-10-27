@@ -579,6 +579,18 @@
     </div>
   </div>
 
+  <!-- Le novità dall'ultima apertura (novita.js): si apre da sola, una volta, quando il programma ha qualcosa di nuovo.
+       È un <dialog>: sopra tutto, e il resto della pagina aspetta finché non si chiude. -->
+  <dialog class="finestra-novita" id="novita" aria-labelledby="titolo-novita">
+    <div class="novita-interno">
+      <h2 id="titolo-novita" data-icona="stella">Che cosa c'è di nuovo</h2>
+      <p class="nota">Dall'ultima volta che l'hai aperto, Occhio alla Rata ha imparato qualcosa:</p>
+      <ul class="elenco-novita" id="elenco-novita"></ul>
+      <div class="azioni"><button type="button" id="chiudi-novita" autofocus>Ho capito</button></div>
+      <p class="nota piccola"><span id="altre-novita"></span>Tutte le novità, anche quelle di prima, sono nell'<a href="https://github.com/alessandrosallam-sys/occhio-alla-rata/blob/main/VERSIONI.md" target="_blank" rel="noopener">elenco delle versioni</a>.</p>
+    </div>
+  </dialog>
+
   <div id="avviso" class="notifica" role="status" aria-live="polite" hidden></div>
 
   <script src="icone.js"></script>
@@ -604,6 +616,7 @@
   <script src="cambi.js"></script>
   <script src="esempi.js"></script>
   <script src="condividi.js"></script>
+  <script src="novita.js"></script>
   <script src="pwa.js"></script>
 </body>
 </html>

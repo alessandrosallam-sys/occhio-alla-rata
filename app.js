@@ -176,6 +176,7 @@
     stato, $, crea, api, esegui, avvisa, modificaCella, mostraScheda, MESI, GIORNI, rianima, contaFino, movimento,
     data, meseAnno, giornoSettimana, dataValida, euro, perc, leggiNumero, daPercento, perCampo, aggiorna, indice, variabile,
     viste: [], allApertura: {}, dopoAvvio: [], cambioPrestito: [], alCambioScheda: [], ricordo, semplice, senzaMouse,
+    dopoCaricamento: [],   // una volta sola, quando se ne va la schermata di caricamento (ad esempio le novità: novita.js)
   };
 
   // ---------- Riepilogo in testata ----------
@@ -953,6 +954,9 @@
   }
   // Una variante della pagina può sostituire l'avvio con M.allAvvio (ad esempio per chiedere prima quali dati caricare).
   window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(() => setTimeout(() => {
-    Promise.resolve().then(() => (M.allAvvio || M.avvia)()).finally(togliCaricamento);
+    Promise.resolve().then(() => (M.allAvvio || M.avvia)()).finally(() => {
+      togliCaricamento();
+      for (const f of M.dopoCaricamento) f();
+    });
   })));
 })();
