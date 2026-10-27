@@ -57,6 +57,15 @@
   M.speseSospette = speseSospette;
 
   // ---------- Tabella di confronto ----------
+  // Le spese iniziali di un'offerta: il totale, poi una voce per riga (una sola: il suo nome), così le offerte si
+  // confrontano voce per voce; in fondo quali restano fuori dal TAEG (notaio, agenzia immobiliare).
+  function speseIniziali(e, p) {
+    if (!(p.spese_iniziali > 0)) return ['—'];
+    const voci = (p.spese_iniziali_voci || []).filter(v => v.euro > 0);
+    const fuori = e.atteso.c.speseFuoriTaeg > 0 ? voci.filter(v => Calcolo.fuoriDalTaeg(v.cosa)).map(v => `«${v.cosa}»`) : [];
+    return [euro(p.spese_iniziali), ...(voci.length === 1 ? [voci[0].cosa] : voci.map(v => `${v.cosa || 'altro'} ${euro(v.euro)}`)),
+      ...(fuori.length ? [`${fuori.join(' e ')} fuori dal TAEG`] : [])].filter(Boolean);
+  }
   function disegnaTabella(contenitore) {
     const offerte = Archivio.offerte(), modello = modelloScelto();
     const esiti = offerte.map(o => ({ o, e: calcola(o, modello) }));
@@ -76,7 +85,8 @@
       // A tasso fisso la rata è sempre quella (solo l'ultima, che chiude il debito, può cambiare di pochi euro).
       riga('Rata più alta prevista', 'per il variabile: se l\'indice sale (fascia alta dell\'80% dei casi)', e => e.fisso ? [euro(e.atteso.prima), piccolo('sempre uguale')] : [euro(e.alto.massima)]),
       riga('Interessi', 'su tutto il prestito', e => e.fisso ? [euro(e.atteso.c.interessi)] : [euro(e.atteso.c.interessi), forbice(e, 'interessi')]),
-      riga('Spese e assicurazioni', null, e => [euro(e.atteso.c.costoTotale - e.atteso.c.interessi)]),
+      ...(offerte.some(o => o.parametri.spese_iniziali > 0) ? [riga('Spese iniziali', 'pagate una volta, all\'inizio', (e, p) => speseIniziali(e, p).map((t, i) => i ? piccolo(t) : t))] : []),
+      riga('Spese e assicurazioni', 'tutte, anche quelle iniziali', e => [euro(e.atteso.c.costoTotale - e.atteso.c.interessi)]),
       riga('Costo totale', 'tutto quello che paghi oltre al capitale', e => e.fisso ? [crea('strong', {}, euro(e.atteso.c.costoTotale))] : [crea('strong', {}, euro(e.atteso.c.costoTotale)), forbice(e, 'costoTotale')]),
       riga('Totale da pagare', 'tutto quello che esce di tasca, spese comprese', e => [euro(e.atteso.c.totaleDaPagare)]),
       ...(offerte.some(o => o.parametri.anticipo > 0 && !variabile(o.parametri)) ? [riga('In tutto, con l\'anticipo', 'quanto paghi per l\'acquisto', (e, p) => [euro((variabile(p) ? 0 : p.anticipo || 0) + e.atteso.c.totaleDaPagare)])] : []),
