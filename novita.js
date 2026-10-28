@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 12, data: '2026-10-28', icona: 'colonne', titolo: 'Riquadri affiancati alti uguali',
+      testo: 'Nelle pagine Tassi e Regole del contratto i riquadri uno accanto all\'altro hanno la stessa altezza; «Tassi inseriti» sta sotto, a tutta larghezza.' },
     { n: 11, data: '2026-10-28', icona: 'regole', titolo: 'Le regole del contratto a gruppi',
       testo: 'Nella pagina «Regole del contratto» i campi sono divisi in gruppi con un titolo e una riga che dice a che cosa servono, come i passi della guida.' },
     { n: 10, data: '2026-10-28', icona: 'stella', titolo: 'Un nuovo stile, in prova',

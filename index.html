@@ -313,8 +313,8 @@
             </details>
           </div>
 
-          <div class="pila solo-avanzata">
-            <div class="carta">
+          <!-- Accanto, alto uguale: le carte affiancate hanno sempre la stessa altezza (.due-carte, align-items: stretch) -->
+          <div class="carta solo-avanzata">
               <h2 data-icona="colonne">Riepilogo per anno</h2>
               <p class="nota">Calcolato sulle rilevazioni del periodo scelto. La media è pesata sui giorni.</p>
               <div class="contenitore-tabella semplice tabella-media">
@@ -325,9 +325,11 @@
                   <tbody></tbody>
                 </table>
               </div>
-            </div>
+          </div>
+        </div>
 
-            <div class="carta">
+        <!-- Sotto, a tutta larghezza: è lungo quanto i valori, non può stare accanto a una carta corta -->
+        <div class="carta solo-avanzata">
               <h2 data-icona="percento">Tassi inseriti</h2>
               <p class="nota">I valori che il calcolo usa. Clic su un valore per modificarlo. L'elenco segue il periodo scelto in alto.</p>
               <div class="contenitore-tabella semplice tabella-alta">
@@ -345,8 +347,6 @@
                   <tbody></tbody>
                 </table>
               </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

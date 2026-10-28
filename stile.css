@@ -918,7 +918,10 @@ main { display: block; padding-bottom: 64px; }   /* in fondo, spazio per la test
 .scheda[hidden] { display: none; }
 .colonna { display: flex; flex-direction: column; gap: var(--s4); width: 100%; margin: 0 auto; }
 .pila { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
-.due-carte { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: var(--s4); align-items: start; }
+/* Carte affiancate: sempre alte uguali (chiesto dall'autore il 28 ottobre 2026: "non affiancare blocchi di altezze diverse").
+   Nella versione semplice la seconda carta non c'è: una colonna sola. */
+.due-carte { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: var(--s4); align-items: stretch; }
+[data-versione="semplice"] .due-carte { grid-template-columns: minmax(0, 1fr); }
 #tabella-anni th, #tabella-anni td { padding-inline: 10px; }
 
 /* --- Piano --- */
@@ -1207,7 +1210,8 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .gruppo-pannello { display: flex; flex-direction: column; gap: var(--s4); }
 .gruppo-pannello > .nota { margin: calc(-1 * var(--s3)) 0 0; }
 .titolo-gruppo { margin: 0; font-size: calc(13px * var(--testo)); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tenue); }
-.griglia-pannello { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); align-items: start; }
+.griglia-pannello { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); align-items: stretch; }   /* affiancate, alte uguali */
+#gruppo-ritocchi .griglia-pannello { grid-template-columns: minmax(0, 1fr); }   /* «Valori a mano» è lungo e «Rata ideale» corto: una sotto l'altra */
 .pannello .carta h3 { font-size: calc(17px * var(--testo)); margin-bottom: var(--s2); }
 /* Regole del contratto: i campi a gruppi, come i passi della guida (configura.js, GRUPPI_REGOLE). Titolo e spiegazione
    a sinistra, i campi a destra su due colonne; sotto i 900 px tutto in colonna. Ogni gruppo è separato da una riga. */
@@ -2470,9 +2474,12 @@ html[data-spiegami] .ispezionato { outline: 3px solid var(--accento); outline-of
 [data-tema="prova"] .carta:hover { box-shadow: none; }
 [data-tema="prova"] button.secondario, [data-tema="prova"] .carica-file { box-shadow: none; }
 [data-tema="prova"] .riepilogo { gap: var(--s3); }
-[data-tema="prova"] .riepilogo-mese, [data-tema="prova"] .riepilogo-statistiche {
-  gap: 1px; padding: 1px; align-items: stretch; background: var(--linea-forte); border-radius: var(--r2); overflow: hidden;
+[data-tema="prova"] .riepilogo-mese, [data-tema="prova"] .riepilogo-statistiche, [data-tema="prova"] .statistiche {
+  gap: 1px; padding: 0; align-items: stretch; background: var(--superficie); border: 1px solid var(--linea-forte); border-radius: var(--r2); overflow: hidden;
 }
+[data-tema="prova"] .riepilogo .dato, [data-tema="prova"] .statistiche .dato { outline: 1px solid var(--linea-forte); }   /* le righe fra le celle */
+[data-tema="prova"] .statistiche .dato { border: 0; border-radius: 0; background: var(--superficie); }
+[data-tema="prova"] .statistiche > .nota { padding: var(--s2) var(--s3); }
 [data-tema="prova"] .riepilogo-statistiche { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 /* Versione semplice: quattro statistiche, quattro colonne. Avanzata: tre colonne, e l'ultimo riquadro allarga la riga se resta solo */
 [data-tema="prova"][data-versione="semplice"] .riepilogo-statistiche { grid-template-columns: repeat(4, minmax(0, 1fr)); }

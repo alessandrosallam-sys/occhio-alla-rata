@@ -1401,3 +1401,16 @@ Chiesto dall'utente: "Regole del contratto è poco leggibile come pagina, tanti 
 ### Prove
 
 `foto.js` e `prova-regole.js` (Edge senza finestra, esempi, «Casa al mare»): sette gruppi visibili con i campi attesi (7, 7, 2, 3, 5, 1, 2), nessun «Altro»; schermate a 1440 px e a 390 px senza scorrimento di lato; spread cambiato nel modulo e salvato (letto dall'archivio), rata del mese ricalcolata; passando a «fisso» nella tendina spariscono «Quando si rilegge l'indice» e «Le rate future». Nessun errore in pagina. La prima versione aveva il tetto della previsione nel gruppo «Altro» e i campi allineati in fondo: sistemati.
+
+## 53. Carte affiancate alte uguali (28 ottobre 2026)
+
+Chiesto dall'utente: "non affiancare blocchi di altezze diverse vicino, è brutto".
+
+- **Regola** (`stile.css`): le griglie che affiancano carte hanno `align-items: stretch` (`.due-carte` nei Tassi, `.griglia-pannello` nelle regole del contratto), quindi le carte di una riga sono alte uguali. Dove le altezze sarebbero troppo diverse per allungare la carta corta, le carte vanno una sotto l'altra: `#gruppo-ritocchi .griglia-pannello` («Valori a mano per una rata» è lungo, «Rata ideale» ha un campo solo) è a una colonna.
+- **Tassi** (`index.html`): la `.pila` a destra di «Aggiorna i valori dell'indice» non c'è più. «Riepilogo per anno» (sei righe, solo avanzata) sta accanto ad «Aggiorna i valori», alti uguali; «Tassi inseriti» (un elenco lungo) è una carta a parte, sotto, a tutta larghezza. Nella versione semplice resta solo «Aggiorna i valori», e `.due-carte` passa a una colonna (`[data-versione="semplice"]`), così non resta mezza pagina vuota.
+- **Tema di prova**: il pannello del riepilogo è bianco con le righe fatte dagli `outline` delle celle, invece del fondo grigio con le celle a 1 px: il grigio si vedeva dove le celle stanno ancora entrando con l'animazione. Lo stesso pannello vale per le statistiche sotto il grafico dei tassi (`.statistiche`).
+- Il riepilogo in cima nel tema di base ha ancora i riquadri staccati di altezze diverse: è la tappa 1 del piano della sezione 51, già risolta nel tema di prova.
+
+### Prove
+
+Schermate con `foto.js` (ora con `prefers-reduced-motion: reduce`, altrimenti i riquadri che entrano con l'animazione escono sbiaditi): Regole del contratto (taratura e «Rate già pagate» alti uguali, «Rata ideale» sotto «Valori a mano»), Tassi (le due carte alte uguali, «Tassi inseriti» sotto), Costi; nessun errore, nessuno scorrimento di lato. Le prove di sezione 52 passano ancora (stessi moduli).
