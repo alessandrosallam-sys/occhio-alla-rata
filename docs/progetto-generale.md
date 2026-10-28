@@ -1414,3 +1414,24 @@ Chiesto dall'utente: "non affiancare blocchi di altezze diverse vicino, è brutt
 ### Prove
 
 Schermate con `foto.js` (ora con `prefers-reduced-motion: reduce`, altrimenti i riquadri che entrano con l'animazione escono sbiaditi): Regole del contratto (taratura e «Rate già pagate» alti uguali, «Rata ideale» sotto «Valori a mano»), Tassi (le due carte alte uguali, «Tassi inseriti» sotto), Costi; nessun errore, nessuno scorrimento di lato. Le prove di sezione 52 passano ancora (stessi moduli).
+
+## 54. Le offerte a famiglie, e si sceglie quali confrontare (28 ottobre 2026)
+
+Chiesto dall'utente: "nella sezione offerte, ha senso confrontare solo offerte di prestiti dello stesso tipo, poi voglio decidere io quali confrontare, amplia questa sessione e rendila più strutturata".
+
+### Le famiglie
+
+- **Due famiglie** (`FAMIGLIE` in `offerte.js`): «Mutui per la casa» (tipi `variabile`, `fisso`, `misto`, `mutuo`) e «Prestiti e finanziamenti» (`finanziamento` e `maxirata`: prestito personale, auto anche con la maxirata, acquisto a rate, cessione del quinto). `famiglia(p)` la ricava dal tipo. Si è scelto il genere, non il tipo esatto, perché chi compra casa confronta proprio un fisso con un variabile e un misto (sono gli esempi), mentre un mutuo e un prestito personale non hanno senso uno accanto all'altro (importi e durate diversissimi). Un'auto «classica» e una con maxirata stanno insieme: sono alternative per lo stesso acquisto, e la tabella ha già le righe della maxirata.
+- **La pagina** (`disegna`): una `section.gruppo-offerte[data-famiglia]` per famiglia con almeno un'offerta: titolo con icona e conteggio («Mutui per la casa · 3 offerte»), una riga che dice che cosa ci sta e perché si confrontano fra loro, la carta del confronto (`.confronto-offerte[data-confronto]`) e poi le carte di tutte le offerte della famiglia (`.elenco-prestiti.carte-offerte`). «Costa meno» si decide fra le offerte scelte della famiglia. Le famiglie vuote non compaiono; senza offerte resta «Come funziona», con un passo in più sulle famiglie e sulla scelta.
+- Gli id `#confronto-offerte`, `#carte-offerte` e `#modello-offerte` non ci sono più (ce n'è uno per famiglia): sono diventati le classi `.confronto-offerte`, `.carte-offerte` e `.modello-offerte`; i selettori di `offerte.js` cercano dentro `#contenuto-offerte`. La tendina del modello sta in ogni famiglia con offerte variabili o miste, ma la scelta vale per tutte le offerte, come prima.
+
+### Quali confrontare
+
+- **Il campo `confronta`** dell'offerta (`CAMPI` in `archivio.js`: scelta 1/0, iniziale 1, `nascosto`, così non compare nei moduli né nel riepilogo della guida): si salva con l'offerta, quindi resta ricaricando e nel backup; le offerte dei salvataggi vecchi non ce l'hanno e contano come dentro (`nelConfronto`: diverso da 0). «Segui questo prestito» lo toglie dai parametri che passa alla guida.
+- **Dove si sceglie**: in cima alla carta del confronto, la riga `.scelta-confronto` («Nel confronto: 2 su 3»), con un pulsante per offerta (`data-confronta`, `aria-pressed`, lo stile dei pulsanti delle colonne del piano, `.colonne-extra`) e «Tutte» (`data-confronta-tutte`, bordo tratteggiato) se qualcuna è fuori; nella carta di ogni offerta lo stesso pulsante, «✓ Nel confronto» o «Metti nel confronto». Un clic salva (`PUT offerte/<id>` con `confronta`) e ridisegna.
+- **Che cosa cambia**: `disegnaTabella(contenitore, tutte, esiti, migliore)` riceve tutte le offerte della famiglia (per la riga della scelta) e quelle scelte (per le colonne, le note e «costa meno»). Con una sola offerta scelta la tabella mostra lei sola e una nota dice di metterne almeno due; con nessuna, solo la riga della scelta e una nota. Le carte ci sono sempre: quelle fuori dal confronto hanno il bordo tratteggiato e i numeri attenuati (`.fuori-confronto`).
+- **Testi**: la frase in testa alla pagina (`index.html`), il README (presentazione e guida), `VERSIONI.md`, la novità n. 13 e quattro voci del robottino (`spiegazioni.js`: la riga della scelta, i due pulsanti, il titolo della famiglia).
+
+### Prove
+
+`prova-offerte.js` (Edge senza finestra, nella cartella temporanea; 17 controlli, tutti riusciti): esempi (tre mutui) più un prestito personale aggiunto da `Archivio.richiesta`; due famiglie nell'ordine giusto; mutui con tre colonne, tre pulsanti accesi e tre carte; prestiti con una colonna, una carta e la nota «una sola»; «costa meno» fra i mutui; tolta «Offerta A» dalla riga della scelta: due colonne, pulsante spento, «Tutte», una carta tratteggiata, «costa meno» ricalcolato senza di lei, `confronta: 0` nell'archivio, e lo stesso dopo aver ricaricato; tolta un'altra dalla carta: una colonna e la nota; tolta l'ultima: nessuna colonna e la nota; «Tutte» rimette tutto; il modulo si apre e salva ancora (60 rate); la tendina del modello cambia il modello di variabile e misto; telefono senza scorrimento di lato; nessun errore. Schermate a 1440 e 390 px.

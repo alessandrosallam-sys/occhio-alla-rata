@@ -6,6 +6,9 @@
 // oggi fino alla fine è quello del TAEG della banca, e c'è anche il TAEG dei soli anni fissi.
 // Un'offerta nuova si aggiunge con la guida (configura.js, M.apriGuidaOfferta), una domanda per pagina; dopo si corregge
 // nella sua carta.
+// Le offerte stanno a famiglie (FAMIGLIE: mutui per la casa; prestiti e finanziamenti), perché un mutuo e un prestito
+// personale non si confrontano. In ogni famiglia l'utente sceglie quali offerte mettere nel confronto (campo «confronta»
+// dell'offerta, 1 o 0): la tabella e «costa meno» contano solo quelle; le carte ci sono tutte.
 (function () {
   'use strict';
   const M = window.Mutuo, { stato, $, crea, euro, perc, avvisa } = M;
@@ -26,6 +29,14 @@
   const anni = p => p.anni_tasso_fisso === 1 ? '1 anno' : `${p.anni_tasso_fisso} anni`;
   const tasso = p => variabile(p) ? `${p.indice_nome} + ${perc(p.spread, 3, 1)}`
     : misto(p) ? `TAN ${perc(p.tasso_fisso, 3, 1)} per ${anni(p)}, poi ${p.spread_dopo != null ? `fisso nuovo o ${p.indice_nome || 'Euribor'} + ${perc(p.spread_dopo, 3, 1)}` : 'si rivede'}` : `TAN ${perc(p.tasso_fisso, 3, 1)}`;
+  // Le famiglie: si confrontano solo offerte della stessa. I mutui (fisso, variabile, misto) fra loro; i prestiti e i
+  // finanziamenti (personale, auto anche con maxirata, acquisto a rate, cessione del quinto) fra loro.
+  const FAMIGLIE = [
+    { codice: 'mutuo', nome: 'Mutui per la casa', icona: 'casa', testo: 'A tasso fisso, variabile o misto. Per la stessa casa, con lo stesso importo e la stessa durata, si confrontano fra loro.' },
+    { codice: 'finanziamento', nome: 'Prestiti e finanziamenti', icona: 'portafoglio', testo: 'Prestito personale, auto (anche con la maxirata), acquisto a rate, cessione del quinto. Importi e durate molto più piccoli di un mutuo: si confrontano fra loro, non con un mutuo.' },
+  ];
+  const famiglia = p => ['variabile', 'fisso', 'misto', 'mutuo'].includes(p.tipo_prestito) ? 'mutuo' : 'finanziamento';
+  const nelConfronto = p => p.confronta !== 0;
   const modelloScelto = () => { const o = Archivio.offerte().find(x => conPrevisioni(x.parametri)); const m = o && o.parametri.previsione_modello; return MODELLI.some(([c]) => c === m) ? m : 'vasicek'; };
 
   // ---------- Calcolo di un'offerta ----------
@@ -137,9 +148,16 @@
   }
   // L'offerta che costa meno, se se ne possono confrontare almeno due.
   const piuEconomica = esiti => { const c = esiti.filter(x => !x.e.manca); return c.length > 1 ? c.reduce((a, b) => b.e.atteso.c.costoTotale < a.e.atteso.c.costoTotale ? b : a) : null; };
-  // «esiti»: le offerte con i loro conti ({ o, e }), «migliore»: quella che costa meno (piuEconomica).
-  function disegnaTabella(contenitore, esiti, migliore) {
+  // «tutte»: le offerte della famiglia con i loro conti ({ o, e }), «esiti»: quelle nel confronto, «migliore»: quella
+  // che costa meno fra queste (piuEconomica). In cima, la scelta di quali confrontare: un pulsante per offerta.
+  function disegnaTabella(contenitore, tutte, esiti, migliore) {
     const offerte = esiti.map(x => x.o), modello = modelloScelto(), calcolate = esiti.filter(x => !x.e.manca);
+    const scelta = crea('div', { className: 'colonne-extra scelta-confronto', role: 'group', 'aria-label': 'Quali offerte confrontare' },
+      crea('span', {}, `Nel confronto: ${esiti.length} su ${tutte.length}`),
+      ...tutte.map(x => crea('button', { type: 'button', 'data-confronta': x.o.id, 'aria-pressed': String(nelConfronto(x.o.parametri)),
+        title: nelConfronto(x.o.parametri) ? 'Nel confronto: premi per toglierla' : 'Fuori dal confronto: premi per metterla' }, x.o.parametri.nome || 'Offerta')),
+      ...(esiti.length < tutte.length ? [crea('button', { type: 'button', className: 'tutte-confronto', 'data-confronta-tutte': tutte[0] ? famiglia(tutte[0].o.parametri) : '' }, 'Tutte')] : []));
+    if (!esiti.length) return contenitore.replaceChildren(scelta, crea('p', { className: 'nota' }, 'Nessuna offerta nel confronto: premi il nome di un\'offerta qui sopra per metterla.'));
     const piccolo = testo => crea('small', {}, testo);
     const cella = (x, contenuto) => crea('td', { className: x === migliore ? 'migliore' : '' }, ...contenuto);
     const riga = (titolo, spiegazione, valore) => crea('tr', {}, crea('th', { scope: 'row' }, titolo, ...(spiegazione ? [piccolo(spiegazione)] : [])),
@@ -181,6 +199,7 @@
     const testa = crea('tr', {}, crea('td', {}), ...esiti.map(x => crea('th', { scope: 'col', className: x === migliore ? 'migliore' : '' },
       x.o.parametri.nome || 'Offerta', ...(x === migliore ? [crea('span', { className: 'etichetta-aperto' }, Icone.crea('stella', 'icona icona-mini'), 'costa meno')] : []))));
     const note = [];
+    if (esiti.length === 1) note.push(crea('p', { className: 'nota' }, 'Una sola offerta nel confronto: mettine almeno due (premi i nomi qui sopra) per vedere quale costa meno.'));
     const diverse = calcolate.length > 1 && new Set(calcolate.map(x => `${x.o.parametri.importo_iniziale}|${mesi(x.o.parametri)}`)).size > 1;
     if (diverse) note.push(crea('p', { className: 'nota evidenza' }, 'Le offerte hanno importi o durate diversi: il costo totale non si può confrontare direttamente. Confronta il TAEG, oppure metti lo stesso importo e la stessa durata.'));
     else if (migliore) note.push(crea('p', { className: 'nota' }, `A parità di importo e durata costa meno «${migliore.o.parametri.nome || 'Offerta'}»${migliore.e.fisso ? '' : ' (con le previsioni sull\'indice: è una stima)'}. Guarda anche la rata più alta prevista: è quella che devi poterti permettere.`));
@@ -210,11 +229,11 @@
     }
     const mancanti = esiti.filter(x => x.e.manca);
     if (mancanti.length) note.push(...mancanti.map(x => crea('p', { className: 'nota evidenza' }, `«${x.o.parametri.nome || 'Offerta'}»: ${x.e.manca}`)));
-    const scelta = crea('label', { className: 'campo-in-linea' }, 'Previsione dell\'indice per il variabile e il misto ',
-      crea('select', { id: 'modello-offerte' }, ...MODELLI.map(([codice, nome]) => crea('option', { value: codice, selected: codice === modello }, nome))));
-    contenitore.replaceChildren(
+    const modelloTendina = crea('label', { className: 'campo-in-linea' }, 'Previsione dell\'indice per il variabile e il misto ',
+      crea('select', { className: 'modello-offerte' }, ...MODELLI.map(([codice, nome]) => crea('option', { value: codice, selected: codice === modello }, nome))));
+    contenitore.replaceChildren(scelta,
       crea('div', { className: 'scorri-offerte' }, crea('table', { className: 'tabella-offerte' }, crea('thead', {}, testa), crea('tbody', {}, ...righe))),
-      ...note, ...(offerte.some(o => conPrevisioni(o.parametri)) ? [scelta] : []));
+      ...note, ...(offerte.some(o => conPrevisioni(o.parametri)) ? [modelloTendina] : []));
   }
 
   // ---------- Le offerte una per una ----------
@@ -233,7 +252,8 @@
     const p = o.parametri, confronto = !e.manca && p.taeg_dichiarato > 0 ? taegUguale(e, p) : null;
     const voce = (etichetta, valore, dettaglio) => crea('div', { className: 'dato' }, crea('span', { className: 'etichetta' }, etichetta),
       crea('span', { className: 'valore' }, valore), ...(dettaglio ? [crea('span', { className: 'dettaglio' }, dettaglio)] : []));
-    return crea('article', { className: 'carta carta-prestito carta-offerta', 'data-offerta': o.id },
+    const dentro = nelConfronto(p);
+    return crea('article', { className: 'carta carta-prestito carta-offerta' + (dentro ? '' : ' fuori-confronto'), 'data-offerta': o.id },
       crea('header', {}, Icone.distintivo(M.iconaTipo(p)),
         crea('div', { className: 'testa-prestito' }, crea('h3', {}, p.nome || 'Offerta'), crea('p', { className: 'nota' }, `${nomeTipo(p)} · ${tasso(p)}`)),
         ...(economica ? [crea('span', { className: 'etichetta-aperto' }, Icone.crea('stella', 'icona icona-mini'), 'costa meno')] : [])),
@@ -246,6 +266,8 @@
         + (confronto.uguale ? '✓ coincide con il calcolo.' : 'diverso dal calcolo, guarda le note sotto la tabella.'))] : []),
       crea('div', { className: 'azioni' },
         crea('button', { type: 'button', 'data-modifica-offerta': o.id }, Icone.crea('matita', 'icona icona-aggiunta'), 'Cambia i dati'),
+        crea('button', { type: 'button', className: 'secondario piccolo', 'data-confronta': o.id, 'aria-pressed': String(dentro),
+          title: dentro ? 'Questa offerta è nel confronto: premi per toglierla' : 'Questa offerta è fuori dal confronto: premi per metterla' }, dentro ? '✓ Nel confronto' : 'Metti nel confronto'),
         crea('button', { type: 'button', className: 'secondario piccolo', 'data-segui': o.id }, 'Segui questo prestito'),
         crea('button', { type: 'button', className: 'pericoloso piccolo', 'data-elimina-offerta': o.id }, 'Elimina')));
   }
@@ -265,7 +287,7 @@
     return modulo;
   }
   // Dopo aver chiuso il modulo il fuoco torna su «Cambia i dati» della sua carta.
-  const fuocoSullaCarta = id => { const b = $(`#carte-offerte [data-modifica-offerta="${id}"]`); if (b) b.focus({ preventScroll: true }); };
+  const fuocoSullaCarta = id => { const b = $(`#contenuto-offerte [data-modifica-offerta="${id}"]`); if (b) b.focus({ preventScroll: true }); };
 
   function disegna() {
     if ($('#scheda-offerte').hidden) return;
@@ -279,17 +301,28 @@
           crea('li', {}, 'Prima di firmare, la banca o la finanziaria ti deve consegnare un foglio informativo: il PIES per i mutui, il SECCI per i finanziamenti. Lì trovi importo, durata, tasso, spese e TAEG.'),
           crea('li', {}, 'Premi «Aggiungi un\'offerta»: ti chiedo quei numeri uno alla volta, e ti dico dove trovarli. Ripeti per ogni offerta che hai ricevuto.'),
           crea('li', {}, 'Il programma calcola, per ognuna, rata, interessi, costo totale e TAEG, e ti dice quale costa meno. Per il tasso variabile mostra anche quanto potrebbe salire la rata.'),
+          crea('li', {}, 'Le offerte stanno a famiglie: i mutui per la casa da una parte, i prestiti e i finanziamenti dall\'altra, perché un mutuo e un prestito personale non si confrontano. In ogni famiglia scegli tu quali offerte mettere nel confronto.'),
           crea('li', {}, 'Quando hai firmato, premi «Segui questo prestito» sull\'offerta scelta: i dati passano alla configurazione guidata.'))));
       return;
     }
     if (!offerte.some(o => o.id === inModifica)) inModifica = null;
-    const modello = modelloScelto(), esiti = offerte.map(o => ({ o, e: calcola(o, modello) })), migliore = piuEconomica(esiti);
-    // Il modulo aperto resta quello di prima, con le risposte non ancora salvate; mentre lo si compila si ridisegna solo il confronto.
-    const aperto = inModifica ? $(`#carte-offerte form[data-offerta="${inModifica}"]`) : null;
-    if (aperto && aperto.contains(document.activeElement)) return disegnaTabella($('#confronto-offerte'), esiti, migliore);
-    contenuto.replaceChildren(crea('div', { className: 'carta', id: 'confronto-offerte' }),
-      crea('div', { id: 'carte-offerte', className: 'elenco-prestiti' }, ...esiti.map(x => x.o.id === inModifica ? aperto || moduloOfferta(x.o) : cartaOfferta(x, x === migliore))));
-    disegnaTabella($('#confronto-offerte'), esiti, migliore);
+    const modello = modelloScelto(), esiti = offerte.map(o => ({ o, e: calcola(o, modello) }));
+    // Una sezione per famiglia (solo quelle con almeno un'offerta): titolo e spiegazione, il confronto delle offerte
+    // scelte, poi tutte le carte. «Costa meno» si decide fra le scelte della famiglia.
+    const gruppi = FAMIGLIE.map(f => ({ f, tutte: esiti.filter(x => famiglia(x.o.parametri) === f.codice) })).filter(g => g.tutte.length)
+      .map(g => { g.scelte = g.tutte.filter(x => nelConfronto(x.o.parametri)); g.migliore = piuEconomica(g.scelte); return g; });
+    const tabelle = () => { for (const g of gruppi) disegnaTabella($(`#contenuto-offerte [data-confronto="${g.f.codice}"]`), g.tutte, g.scelte, g.migliore); };
+    // Il modulo aperto resta quello di prima, con le risposte non ancora salvate; mentre lo si compila si ridisegnano solo i confronti.
+    const aperto = inModifica ? $(`#contenuto-offerte form[data-offerta="${inModifica}"]`) : null;
+    if (aperto && aperto.contains(document.activeElement)) return tabelle();
+    const quante = n => n === 1 ? '1 offerta' : `${n} offerte`;
+    contenuto.replaceChildren(...gruppi.map(g => crea('section', { className: 'gruppo-offerte', 'data-famiglia': g.f.codice, 'aria-label': g.f.nome },
+      crea('div', { className: 'testa-gruppo-offerte' },
+        crea('h3', {}, Icone.crea(g.f.icona, 'icona icona-titolo'), g.f.nome, crea('span', { className: 'conta-offerte' }, quante(g.tutte.length))),
+        crea('p', { className: 'nota' }, g.f.testo)),
+      crea('div', { className: 'carta confronto-offerte', 'data-confronto': g.f.codice }),
+      crea('div', { className: 'elenco-prestiti carte-offerte' }, ...g.tutte.map(x => x.o.id === inModifica ? aperto || moduloOfferta(x.o) : cartaOfferta(x, x === g.migliore))))));
+    tabelle();
   }
 
   // La stima delle spese che mancano, aggiunta con un clic sotto la tabella: si salva, e la carta mostra il valore nuovo.
@@ -309,7 +342,7 @@
 
   // Nel modulo aperto un campo cambiato mostra o nasconde quelli che dipendono da lui; si salva con «Salva».
   $('#contenuto-offerte').addEventListener('change', async evento => {
-    if (evento.target.id === 'modello-offerte') {
+    if (evento.target.classList.contains('modello-offerte')) {
       stimaAggiunta = null;
       for (const o of Archivio.offerte().filter(x => conPrevisioni(x.parametri))) await Archivio.richiesta('PUT', 'offerte/' + o.id, { previsione_modello: evento.target.value });
       return disegna();
@@ -340,14 +373,28 @@
     fuocoSullaCarta(o.id);
     avvisa(`Offerta «${letti.valori.nome || 'Offerta'}» salvata: il confronto è ricalcolato.`);
   });
+  // Mettere o togliere un'offerta dal confronto: si salva nell'offerta (campo «confronta»), così resta anche nel backup.
+  async function confronta(id, dentro) {
+    await Archivio.richiesta('PUT', 'offerte/' + id, { confronta: dentro ? 1 : 0 });
+  }
   $('#contenuto-offerte').addEventListener('click', async evento => {
     const stima = evento.target.closest('button[data-offerta-stima]');
     if (stima) return aggiungiStima(stima.dataset.offertaStima, stima.dataset.stima);
+    const scelta = evento.target.closest('button[data-confronta]'), tutte = evento.target.closest('button[data-confronta-tutte]');
+    if (scelta) {
+      const o = Archivio.offerte().find(x => x.id === scelta.dataset.confronta);
+      if (o) { await confronta(o.id, !nelConfronto(o.parametri)); disegna(); }
+      return;
+    }
+    if (tutte) {
+      for (const o of Archivio.offerte().filter(x => famiglia(x.parametri) === tutte.dataset.confrontaTutte && !nelConfronto(x.parametri))) await confronta(o.id, true);
+      return disegna();
+    }
     const modifica = evento.target.closest('button[data-modifica-offerta]'), annulla = evento.target.closest('button[data-annulla-offerta]');
     if (modifica) {
       inModifica = modifica.dataset.modificaOfferta;
       disegna();
-      const modulo = $(`#carte-offerte form[data-offerta="${inModifica}"]`);
+      const modulo = $(`#contenuto-offerte form[data-offerta="${inModifica}"]`);
       modulo.scrollIntoView({ block: 'start' });
       return $('input, select', modulo).focus({ preventScroll: true });
     }
@@ -361,7 +408,7 @@
     if (!o) return;
     if (segui) {
       // La guida parte con i dati dell'offerta: mancano solo la data della prima rata e le regole di dettaglio.
-      const { previsione_modello, ...parametri } = o.parametri;
+      const { previsione_modello, confronta: _nelConfronto, ...parametri } = o.parametri;   // «confronta» vale solo per le offerte
       return M.apriGuida(false, true, { ...parametri, previsione_modello: 'media' });
     }
     if (!confirm(`Eliminare l'offerta «${o.parametri.nome || 'Offerta'}»?`)) return;

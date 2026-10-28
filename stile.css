@@ -1385,10 +1385,23 @@ button.collegamento:hover { background: none; color: var(--accento-forte); }
 .tabella-offerte td { min-width: 150px; font-variant-numeric: tabular-nums; }
 .tabella-offerte .migliore { background: var(--accento-tenue); }
 .tabella-offerte td.manca { color: var(--tenue); }
-#confronto-offerte { display: flex; flex-direction: column; gap: var(--s3); }
-#confronto-offerte .nota { margin: 0; }
-#confronto-offerte .campo-in-linea { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); font-size: calc(14px * var(--testo)); font-weight: 600; }
-#modello-offerte { width: auto; max-width: 100%; }
+/* Le offerte a famiglie (offerte.js, FAMIGLIE): titolo con il conteggio e una riga di spiegazione, la carta del confronto
+   (in cima la scelta di quali offerte confrontare, con i pulsanti delle colonne del piano), poi le carte. */
+.gruppo-offerte { display: flex; flex-direction: column; gap: var(--s4); }
+.gruppo-offerte + .gruppo-offerte { margin-top: var(--s3); padding-top: var(--s5); border-top: 1px solid var(--linea); }
+.testa-gruppo-offerte h3 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-size: calc(18px * var(--testo)); }
+.testa-gruppo-offerte h3 .icona-titolo { width: 1.1em; height: 1.1em; flex: none; color: var(--accento); }
+.testa-gruppo-offerte .conta-offerte { font-size: calc(13.5px * var(--testo)); font-weight: 500; color: var(--tenue); }
+.testa-gruppo-offerte .nota { margin: 0; max-width: 820px; }
+.scelta-confronto { padding-bottom: var(--s3); border-bottom: 1px solid var(--linea); }
+.scelta-confronto .tutte-confronto { border-style: dashed; }
+.carta-offerta.fuori-confronto { border-style: dashed; }
+.carta-offerta.fuori-confronto .numeri-prestito, .carta-offerta.fuori-confronto .riga-offerta { opacity: 0.6; }
+.carta-offerta .azioni button[data-confronta][aria-pressed="true"] { background: var(--accento-tenue); border-color: var(--accento); color: var(--accento-testo); }
+.confronto-offerte { display: flex; flex-direction: column; gap: var(--s3); }
+.confronto-offerte .nota { margin: 0; }
+.confronto-offerte .campo-in-linea { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); font-size: calc(14px * var(--testo)); font-weight: 600; }
+.modello-offerte { width: auto; max-width: 100%; }
 .carta-offerta { display: flex; flex-direction: column; gap: var(--s3); }
 .carta-offerta h3 { margin: 0; }
 .carta-offerta .campi { margin: 0; }

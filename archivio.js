@@ -35,6 +35,8 @@
       { valore: 'maxirata', icona: 'auto', etichetta: 'Finanziamento con maxirata finale', aiuto: 'Tipico delle auto: di solito un anticipo, rate mensili basse e alla fine una rata molto più grande (maxirata, rata finale o «valore futuro garantito»).' }] },
     // La categoria scelta nella guida (vedi CATEGORIE): cambia solo icona, nome e domande, i conti li decide il tipo.
     categoria: { tipo: 'testo', iniziale: '', nascosto: true, lunghezza: 20 },
+    // Solo per le offerte: se sta nel confronto (l'utente sceglie quali confrontare, pagina Offerte). 1 sì, 0 no.
+    confronta: { tipo: 'scelta', iniziale: 1, nascosto: true, etichetta: 'Nel confronto', opzioni: [{ valore: 1, etichetta: 'Sì' }, { valore: 0, etichetta: 'No' }] },
     nome: { tipo: 'testo', iniziale: 'Il mio prestito', etichetta: 'Nome del prestito', aiuto: 'Serve solo a riconoscerlo, ad esempio «Casa di via Roma» o «Auto».' },
     importo_iniziale: { tipo: 'euro', min: 1, max: 1e9, obbligatorio: true, etichetta: 'Importo del prestito (€)', aiuto: 'Il capitale prestato dalla banca o dalla finanziaria.' },
     data_prima_rata: { tipo: 'data', obbligatorio: true, etichetta: 'Inizio del primo periodo',

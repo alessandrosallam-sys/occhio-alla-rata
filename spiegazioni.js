@@ -173,6 +173,10 @@
     ['[data-esci-esempi]', 'Butta via gli esempi e torna ai tuoi dati, come li avevi lasciati.'],
     ['.totali-prestiti', 'I totali di tutti i tuoi prestiti: rate del mese, debito residuo e interessi ancora da pagare.'],
     // Le carte delle offerte hanno lo stile di quelle dei prestiti: le loro voci vengono prima.
+    ['[data-confronta-tutte]', 'Rimette nel confronto tutte le offerte di questa famiglia.'],
+    ['[data-confronta]', el => el.getAttribute('aria-pressed') === 'true' ? 'Questa offerta è nel confronto: premi per toglierla. Le carte restano tutte.' : 'Questa offerta è fuori dal confronto: premi per metterla.'],
+    ['.scelta-confronto', 'Scegli tu quali offerte confrontare: premi i nomi. La tabella e «costa meno» contano solo quelle accese.'],
+    ['.testa-gruppo-offerte', 'Le offerte stanno a famiglie: i mutui per la casa fra loro, i prestiti e i finanziamenti fra loro. Un mutuo e un prestito personale non si confrontano.'],
     ['[data-modifica-offerta]', 'Apre i dati di questa offerta per correggerli. Le altre restano chiuse.'],
     ['[data-annulla-offerta]', 'Chiude i dati senza salvare le modifiche.'],
     ['.carta-offerta .dato', el => perEtichetta(COSTI, etichetta(el))],

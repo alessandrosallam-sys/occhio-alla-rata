@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 13, data: '2026-10-28', icona: 'offerte', titolo: 'Le offerte a famiglie, e scegli tu quali confrontare',
+      testo: 'Nella pagina Offerte i mutui stanno da una parte e i prestiti dall\'altra, perché non si confrontano. In ogni famiglia premi i nomi per decidere quali offerte mettere nel confronto.' },
     { n: 12, data: '2026-10-28', icona: 'colonne', titolo: 'Riquadri affiancati alti uguali',
       testo: 'Nelle pagine Tassi e Regole del contratto i riquadri uno accanto all\'altro hanno la stessa altezza; «Tassi inseriti» sta sotto, a tutta larghezza.' },
     { n: 11, data: '2026-10-28', icona: 'regole', titolo: 'Le regole del contratto a gruppi',
