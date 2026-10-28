@@ -1352,3 +1352,38 @@ Chiesto dall'utente: "in versione mobile, quando clicco cos'è del robottino si 
 - **Computer**: niente «Che cos'è?»; passando con il mouse la spiegazione compare sopra la pagina e se ne va spostandolo, come prima.
 
 Guardate le schermate del primo tocco (bordo sulla carta dei totali), della riga spiegata e del fumetto piccolo. **Non provato**: un telefono vero. Un salto di scorrimento che porta il segnaposto dell'assistente da sopra lo schermo a sotto senza passarci (nella prova, da 1.800 pixel a 0 nel piano, dove a 390 px il riepilogo è alto 865 pixel) lascia l'assistente nell'angolo: l'`IntersectionObserver` non vede nessun passaggio. Era così anche prima; scorrendo col dito la pagina passa per le posizioni di mezzo, quindi non dovrebbe capitare.
+
+## 51. Piano di restyling e il tema di prova «Nuovo stile» (28 ottobre 2026)
+
+Chiesto dall'utente, con una schermata del piano nella versione avanzata: "soprattutto in modalità avanzata graficamente non è gradevole la pagina […] Possiamo fare un piano di restyling grafico per migliorare in generale, mettilo come tema test così non stravolgo l'esperienza degli utenti".
+
+### Che cosa non andava
+
+Nella versione avanzata i riquadri delle statistiche hanno altezze diverse (chi ha tre voci di dettaglio, chi nessuna) e il reticolo `auto-fit` lascia buchi bianchi; con sei statistiche su cinque colonne l'ultimo riquadro («Andamento mese per mese») finisce da solo in una riga nuova. Ogni riquadro ha bordo, ombra e angoli propri, quindi la pagina è un mosaico di scatole; le etichette in maiuscoletto spaziato con l'icona colorata fanno rumore; la rata del mese con la sfumatura e l'alone è l'unico elemento "pesante" e stona con il resto. Sotto, il fumetto del robottino, la pillola dei conti, i pulsanti delle colonne e la legenda sono quattro file di cose diverse una sull'altra.
+
+### Il piano, a tappe
+
+Ogni tappa sta prima sotto il tema di prova; quando l'autore la approva passa nelle sezioni di base di `stile.css` e vale per tutti i temi (i colori restano quelli di ogni tema, cambia solo la forma).
+
+1. **Il riepilogo** (fatto, in questa sezione): un pannello per fila, celle alte uguali, statistiche su tre colonne, etichette in minuscolo, rata del mese a tinta piena, niente ombre.
+2. **La barra del piano**: pillola dei conti, «Vai al mese corrente», «Approfondisci» e legenda in una sola fascia sopra la tabella (due righe al massimo), con il fumetto del robottino più discreto. Fatto solo in parte: il fumetto bianco, la pillola senza bordo, i pulsanti delle colonne senza bordo.
+3. **La tabella del piano**: testata senza fondo grigio (fatto), i gruppi di colonne separati da una linea sola, righe degli stati più tenui (ora tutto il piano pagato è verde), cifre secondarie attenuate.
+4. **Carte e moduli** delle altre pagine (Costi, Tassi, Dati, Offerte, Pannello): bordo sottile senza ombra (fatto per le carte), titoli più piccoli con una riga di spiegazione, campi con la stessa altezza e lo stesso raggio dei pulsanti, moduli su due colonne allineate.
+5. **Barra laterale e testata**: voce aperta con un solo segno (sfondo o barra, non tutti e due), righe di spiegazione solo al passaggio del mouse per guadagnare spazio.
+6. **Telefono**: riepilogo in un pannello anche lì (fatto), barra delle schede e fumetto più bassi.
+7. **Da prova a stile di tutti**: le regole di `[data-tema="prova"]` passano nelle sezioni 3, 5 e 6, il tema sparisce dall'elenco (chi l'aveva scelto torna su Automatico: `temi.js` scarta i codici che non conosce), i temi scuri si ricontrollano uno per uno.
+
+### Il tema di prova (`prova`)
+
+- **Dove sta**: `TEMI` in `temi.js` ha la voce `prova` («Nuovo stile (prova)», prima di «Il tuo tema») e `CALCOLATI.prova` dà i colori di base (grigio neutro `#f3f4f7` per la pagina, bianco per i riquadri, blu `#2d5be3` come colore principale e come secondo: così `--eroe` e `--logo` sono tinte piene, senza sfumatura). La forma sta nella **sezione 11 di `stile.css`**, tutta sotto `[data-tema="prova"]`: chi non sceglie il tema non vede niente di diverso. Anteprima nelle impostazioni, «Parti da un tema» e il resto funzionano come per gli altri temi calcolati (sezione 28).
+- **Il riepilogo come pannello**: `.riepilogo-mese` e `.riepilogo-statistiche` hanno `gap: 1px`, `padding: 1px`, lo sfondo del colore delle linee (`--linea-forte`) e gli angoli arrotondati con `overflow: hidden`; le celle (`.dato`) sono bianche, senza bordo, raggio né ombra. Il risultato è una griglia con righe sottili fra le celle, anche quando vanno a capo, e con le celle alte uguali (`align-items: stretch`). Le statistiche stanno su **tre colonne** nella versione avanzata (sei riquadri: due righe piene; con cinque, l'ultimo si allarga su due colonne; con quattro, su tutta la riga: regole `:nth-child(3n + 1):last-child` e `:nth-child(3n + 2):last-child`, solo con `:not([data-versione="semplice"])`), su **quattro** nella semplice (ha quattro statistiche senza dettagli: una riga sola); sotto i 1100 px due colonne, e l'ultima cella dispari si allarga; sui telefoni due colonne come prima, con il pannello al posto dei riquadri staccati.
+- **Le etichette** in minuscolo, 13 px, peso 600, colore `--inchiostro-2`; l'icona accanto in grigio (`--tenue`) e di 14 px. Le cifre 24 px (22 nelle statistiche, 36 nella rata del mese), con le spaziature più strette. I dettagli in `--tenue`; le voci di dettaglio con la riga tratteggiata.
+- **La rata del mese**: tinta piena `--accento`, testo `--su-accento`, senza l'alone (`::after` nascosto).
+- **Il resto**: sfondo della pagina piatto (`body { background: var(--pagina) }`, senza la sfumatura in alto); carte con raggio `--r2`, bordo `--linea-forte` e senza ombra; pulsanti secondari senza ombra; fumetto del robottino bianco con bordo grigio (resta azzurro quando spiega); pillola dei conti senza bordo su fondo `--superficie-2`; pulsanti delle colonne senza bordo; testata della tabella bianca.
+- **Novità**: voce n. 10 in `NOVITA`, riga in `VERSIONI.md`, README (elenco dei temi).
+
+### Prove
+
+`foto.js` (Edge senza finestra, nella cartella temporanea): entra negli esempi, apre «Casa al mare» e fotografa il piano. Guardate le schermate: Chiaro (invariato) e Nuovo stile a 1440 px nella versione avanzata e nella semplice, a 1000 px e sul telefono (390 px); nessun errore in pagina, nessuno scorrimento di lato (`scrollWidth` 1425 su 1440). La prima versione aveva, nella semplice, la quarta statistica allargata su tutta la riga sotto tre celle e un buco grigio: sistemato con le quattro colonne e le regole di allargamento solo nell'avanzata.
+
+**Non provato**: i temi scuri non hanno una versione del nuovo stile (il tema di prova è chiaro); Firefox e Safari; le altre pagine con il tema di prova sono state guardate solo di sfuggita (vale la tappa 4 del piano).

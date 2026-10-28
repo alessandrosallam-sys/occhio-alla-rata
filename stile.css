@@ -2443,3 +2443,69 @@ html[data-spiegami] .ispezionato { outline: 3px solid var(--accento); outline-of
   .finestra-novita .azioni button { flex: 1; }
 }
 
+
+/* ---------- 11. Tema di prova «Nuovo stile» (28 ottobre 2026) ----------
+   Un restyling messo sotto un tema, così chi non lo sceglie non vede niente di diverso. I colori di base stanno in
+   temi.js (CALCOLATI.prova); qui c'è la forma, che le variabili da sole non dicono: il riepilogo è un pannello solo per
+   fila, con le celle separate da righe sottili (il fondo del pannello è la linea e le celle, bianche, stanno a 1 px
+   l'una dall'altra, così le righe ci sono anche quando le celle vanno a capo, e tutte sono alte uguali); le statistiche
+   stanno su tre colonne, due righe piene invece di una fila e un riquadro orfano; le etichette sono in minuscolo invece
+   che in maiuscoletto spaziato; la rata del mese è una tinta piena senza sfumatura né alone; niente ombre sulle carte;
+   il fumetto del robottino, la pillola dei conti e i pulsanti delle colonne sono più sobri. Il piano e il resto del
+   restyling: docs/progetto-generale.md, sezione 51. Se piace, le regole passano nelle sezioni di base. */
+[data-tema="prova"] body { background: var(--pagina); }
+[data-tema="prova"] .carta { border-radius: var(--r2); border-color: var(--linea-forte); box-shadow: none; }
+[data-tema="prova"] .carta:hover { box-shadow: none; }
+[data-tema="prova"] button.secondario, [data-tema="prova"] .carica-file { box-shadow: none; }
+[data-tema="prova"] .riepilogo { gap: var(--s3); }
+[data-tema="prova"] .riepilogo-mese, [data-tema="prova"] .riepilogo-statistiche {
+  gap: 1px; padding: 1px; align-items: stretch; background: var(--linea-forte); border-radius: var(--r2); overflow: hidden;
+}
+[data-tema="prova"] .riepilogo-statistiche { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Versione semplice: quattro statistiche, quattro colonne. Avanzata: tre colonne, e l'ultimo riquadro allarga la riga se resta solo */
+[data-tema="prova"][data-versione="semplice"] .riepilogo-statistiche { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+[data-tema="prova"]:not([data-versione="semplice"]) .riepilogo-statistiche .dato:nth-child(3n + 1):last-child { grid-column: 1 / -1; }
+[data-tema="prova"]:not([data-versione="semplice"]) .riepilogo-statistiche .dato:nth-child(3n + 2):last-child { grid-column: span 2; }
+[data-tema="prova"] .riepilogo .dato, [data-tema="prova"] .riepilogo .riepilogo-statistiche .dato {
+  padding: 14px 18px 16px; background: var(--superficie); border: 0; border-radius: 0; box-shadow: none;
+}
+[data-tema="prova"] .riepilogo .dato .etichetta {
+  font-size: calc(13px * var(--testo)); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--inchiostro-2);
+}
+[data-tema="prova"] .icona-dato { width: 14px; height: 14px; color: var(--tenue); }
+[data-tema="prova"] .riepilogo .dato .valore { margin-top: 4px; font-size: min(calc(24px * var(--testo)), max(24px, var(--largo-cifra, 999px))); letter-spacing: -0.02em; }
+[data-tema="prova"] .riepilogo .riepilogo-statistiche .dato .valore { font-size: min(calc(22px * var(--testo)), max(22px, var(--largo-cifra, 999px))); }
+[data-tema="prova"] .riepilogo .dato .dettaglio, [data-tema="prova"] .riepilogo .dato.prossima .dettaglio { color: var(--tenue); font-size: calc(13px * var(--testo)); }
+[data-tema="prova"] .riepilogo .dato.principale { padding: 14px 20px; background: var(--accento); color: var(--su-accento); }
+[data-tema="prova"] .riepilogo .dato.principale::after { display: none; }
+[data-tema="prova"] .riepilogo .dato.principale .etichetta, [data-tema="prova"] .riepilogo .dato.principale .dettaglio { color: var(--su-eroe-2); }
+[data-tema="prova"] .riepilogo .dato.principale .icona-dato { color: var(--su-eroe-2); }
+[data-tema="prova"] .riepilogo .dato.principale .valore { margin: 2px 0; font-size: min(calc(36px * var(--testo)), max(36px, var(--largo-cifra, 999px))); letter-spacing: -0.03em; }
+[data-tema="prova"] .riepilogo .composizione { margin-top: var(--s3); height: 6px; }
+[data-tema="prova"] .avanzamento { height: 4px; }
+[data-tema="prova"] .voci-dato { margin-top: var(--s3); }
+[data-tema="prova"] .voci-dato div { padding: 5px 0; border-top: 1px dashed var(--linea-forte); font-size: calc(13px * var(--testo)); }
+[data-tema="prova"] .voci-dato dt { color: var(--tenue); font-weight: 500; }
+[data-tema="prova"] .voci-dato dd small { color: var(--tenue); }
+/* Il robottino, la pillola dei conti, i pulsanti delle colonne e la testata della tabella: più sobri */
+[data-tema="prova"] .parole { background: var(--superficie); border-color: var(--linea-forte); border-radius: 4px var(--r2) var(--r2) var(--r2); }
+[data-tema="prova"] .assistente.spiega .parole, [data-tema="prova"] .assistente.sovrapposto .parole { background: var(--accento-tenue); border-color: var(--accento); }
+[data-tema="prova"] .esito-conti { border-color: transparent; background: var(--superficie-2); }
+[data-tema="prova"] .esito-conti.ok { background: var(--ok-sfondo); }
+[data-tema="prova"] .esito-conti.ko { background: var(--ko-sfondo); }
+[data-tema="prova"] .colonne-extra button { background: var(--superficie-2); border-color: transparent; }
+[data-tema="prova"] .colonne-extra button:hover { background: var(--velo); border-color: var(--linea-forte); }
+[data-tema="prova"] .colonne-extra button[aria-pressed="true"] { background: var(--accento-tenue); border-color: transparent; }
+[data-tema="prova"] th { background: var(--superficie); }
+[data-tema="prova"] .segmenti { box-shadow: none; }
+@media (max-width: 1099px) {
+  [data-tema="prova"] .riepilogo-statistiche, [data-tema="prova"][data-versione="semplice"] .riepilogo-statistiche { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  [data-tema="prova"] .riepilogo-statistiche .dato:last-child { grid-column: auto; }
+  [data-tema="prova"] .riepilogo-statistiche .dato:nth-child(odd):last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  [data-tema="prova"] .riepilogo { gap: var(--s2); }
+  [data-tema="prova"] .riepilogo-mese, [data-tema="prova"] .riepilogo-statistiche { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; }
+  [data-tema="prova"] .riepilogo .dato, [data-tema="prova"] .riepilogo .riepilogo-statistiche .dato { padding: 10px 12px 12px; }
+  [data-tema="prova"] .riepilogo .dato.principale { padding: 12px 14px; }
+}

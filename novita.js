@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 10, data: '2026-10-28', icona: 'stella', titolo: 'Un nuovo stile, in prova',
+      testo: 'Nelle impostazioni c\'è il tema «Nuovo stile (prova)»: riquadri più ordinati, niente sfumature. Provalo e dicci se ti piace.' },
     { n: 9, data: '2026-10-27', icona: 'lampadina', titolo: '«Che cos\'è?» resta acceso',
       testo: 'Sul telefono, dopo «Che cos\'è?» il robottino ti spiega ogni cosa che tocchi, una dopo l\'altra, finché non premi «Fine».' },
     { n: 8, data: '2026-10-27', icona: 'attenzione', titolo: 'Segnala un problema',
