@@ -1209,6 +1209,18 @@ tr:hover .festa button, .festa button:focus-visible { visibility: visible; }
 .titolo-gruppo { margin: 0; font-size: calc(13px * var(--testo)); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tenue); }
 .griglia-pannello { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); align-items: start; }
 .pannello .carta h3 { font-size: calc(17px * var(--testo)); margin-bottom: var(--s2); }
+/* Regole del contratto: i campi a gruppi, come i passi della guida (configura.js, GRUPPI_REGOLE). Titolo e spiegazione
+   a sinistra, i campi a destra su due colonne; sotto i 900 px tutto in colonna. Ogni gruppo è separato da una riga. */
+.gruppi-regole { display: flex; flex-direction: column; margin: var(--s2) 0 var(--s4); }
+.gruppo-regole { display: grid; grid-template-columns: minmax(180px, 230px) minmax(0, 1fr); gap: var(--s3) var(--s6); padding: var(--s5) 0; border-top: 1px solid var(--linea); }
+.gruppo-regole[hidden] { display: none; }
+.gruppo-regole h4 { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-family: var(--carattere-titoli); font-size: calc(15.5px * var(--testo)); font-weight: var(--peso-titoli); letter-spacing: var(--spaziatura-titoli); }
+.gruppo-regole h4 .icona-titolo { width: 1.1em; height: 1.1em; flex: none; color: var(--accento); }
+.gruppo-regole .testa-gruppo-regole .nota { margin: 0; font-size: calc(13.5px * var(--testo)); }
+.gruppo-regole .campi { margin: 0; align-items: start; }   /* in alto, non in fondo: con le spiegazioni lunghe i campi sarebbero sfalsati */
+@media (max-width: 900px) {
+  .gruppo-regole { grid-template-columns: minmax(0, 1fr); gap: var(--s3); padding: var(--s4) 0; }
+}
 #campi-regole { align-items: start; gap: var(--s4) var(--s5); }
 .tabella-taratura td { white-space: normal; vertical-align: top; padding-block: 10px; }
 .tabella-taratura td:nth-child(2) { white-space: nowrap; }

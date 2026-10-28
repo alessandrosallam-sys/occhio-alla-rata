@@ -2121,13 +2121,45 @@
 
   // ---------- Regole del contratto (pagina del prestito, versione avanzata) ----------
   const CHIAVI_REGOLE = Object.keys(CAMPI).filter(c => !CAMPI[c].nascosto);
+  // I campi stanno a gruppi, come i passi della guida: un titolo e una riga che dice a che cosa servono, poi i campi.
+  // Tutti insieme, una trentina, confondevano (chiesto dall'autore il 28 ottobre 2026). Un campo che non sta in nessun
+  // gruppo finisce in «Altro»; un gruppo con tutti i campi nascosti (ad esempio «Quando si rilegge l'indice» a tasso
+  // fisso) sparisce.
+  const GRUPPI_REGOLE = [
+    { titolo: 'Il prestito', icona: 'documento', testo: 'I dati di base: li trovi nella prima pagina del contratto o in cima al piano di ammortamento.',
+      chiavi: ['tipo_prestito', 'nome', 'importo_iniziale', 'numero_rate', 'maxirata', 'anticipo', 'data_prima_rata', 'data_erogazione', 'preammortamento', 'valore_riferimento'] },
+    { titolo: 'Spese e assicurazioni', icona: 'scudo', testo: 'Quello che paghi oltre agli interessi. Le spese per rata fanno tornare le rate al centesimo; le altre contano nel costo totale e nel TAEG.',
+      chiavi: ['spese_rata', 'spese_iniziali', 'spese_nel_prestito', 'assicurazione_iniziale', 'assicurazione_rata', 'assicurazione_facoltativa', 'spese_annue', 'taeg_dichiarato'] },
+    { titolo: 'Il tasso', icona: 'percento', testo: 'Indice e spread nel variabile, il TAN nel fisso; nel misto anche gli anni fissi e lo spread di dopo.',
+      chiavi: ['indice_nome', 'spread', 'tasso_fisso', 'anni_tasso_fisso', 'spread_dopo'] },
+    { titolo: 'Quando si rilegge l\'indice', icona: 'orologio', testo: 'Ogni quanto la banca aggiorna il tasso e in che giorno legge l\'indice. Se nel contratto non li trovi, la taratura li ricava dalle rate pagate.',
+      chiavi: ['mesi_revisione', 'regola_rilevazione', 'giorni_anticipo_euribor', 'giorno_rilevazione'] },
+    { titolo: 'Gli interessi', icona: 'calcolatrice', testo: 'Dettagli tecnici che spostano la rata di qualche centesimo: come si contano i giorni, gli arrotondamenti, il minimo e il massimo del tasso.',
+      chiavi: ['conteggio_giorni', 'arrotonda_rata', 'arrotonda_indice', 'arrotonda_indice_modo', 'floor_attivo', 'indice_minimo', 'tasso_massimo'] },
+    { titolo: 'Il capitale', icona: 'colonne', testo: 'In che modo restituisci il capitale, e con quale tasso è stato calcolato il piano iniziale.',
+      chiavi: ['tipo_piano', 'tasso_annuo_piano', 'rata_piano'] },
+    { titolo: 'Le rate future', icona: 'grafico', testo: 'Come stimare l\'indice dei prossimi anni, per le rate che verranno. Le rate già pagate non cambiano.',
+      chiavi: ['stima', 'previsione_modello', 'previsione_anni', 'euribor_massimo'] },
+  ];
+  {
+    const assegnate = new Set(GRUPPI_REGOLE.flatMap(g => g.chiavi));
+    const altre = CHIAVI_REGOLE.filter(c => !assegnate.has(c));
+    if (altre.length) GRUPPI_REGOLE.push({ titolo: 'Altro', icona: 'regole', testo: 'Le altre regole del contratto.', chiavi: altre });
+    for (const g of GRUPPI_REGOLE) g.chiavi = g.chiavi.filter(c => CHIAVI_REGOLE.includes(c));
+  }
+  const nascondiGruppiVuoti = contenitore => {
+    for (const gruppo of contenitore.querySelectorAll('.gruppo-regole')) gruppo.hidden = [...gruppo.querySelectorAll('[data-campo]')].every(c => c.hidden);
+  };
   function disegnaRegole() {
     const contenitore = $('#campi-regole'), p = stato.dati.parametri;
     if (contenitore.contains(document.activeElement)) return;   // non si riscrive il modulo mentre lo si compila
-    contenitore.replaceChildren(...CHIAVI_REGOLE.map(c => creaCampo(c, p[c], false, p)));
+    contenitore.replaceChildren(...GRUPPI_REGOLE.map(g => crea('section', { className: 'gruppo-regole', 'aria-label': g.titolo },
+      crea('div', { className: 'testa-gruppo-regole' }, crea('h4', {}, Icone.crea(g.icona, 'icona icona-titolo'), g.titolo), crea('p', { className: 'nota' }, g.testo)),
+      crea('div', { className: 'campi due-colonne' }, ...g.chiavi.map(c => creaCampo(c, p[c], false, p))))));
     aggiornaVisibili(contenitore, CHIAVI_REGOLE, p);
+    nascondiGruppiVuoti(contenitore);
   }
-  $('#campi-regole').addEventListener('change', () => aggiornaVisibili($('#campi-regole'), CHIAVI_REGOLE, stato.dati.parametri));
+  $('#campi-regole').addEventListener('change', () => { aggiornaVisibili($('#campi-regole'), CHIAVI_REGOLE, stato.dati.parametri); nascondiGruppiVuoti($('#campi-regole')); });
   $('#form-regole').addEventListener('submit', async evento => {
     evento.preventDefault();
     const letti = leggiCampi($('#campi-regole'), CHIAVI_REGOLE);

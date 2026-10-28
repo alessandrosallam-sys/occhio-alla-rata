@@ -1387,3 +1387,17 @@ Ogni tappa sta prima sotto il tema di prova; quando l'autore la approva passa ne
 `foto.js` (Edge senza finestra, nella cartella temporanea): entra negli esempi, apre «Casa al mare» e fotografa il piano. Guardate le schermate: Chiaro (invariato) e Nuovo stile a 1440 px nella versione avanzata e nella semplice, a 1000 px e sul telefono (390 px); nessun errore in pagina, nessuno scorrimento di lato (`scrollWidth` 1425 su 1440). La prima versione aveva, nella semplice, la quarta statistica allargata su tutta la riga sotto tre celle e un buco grigio: sistemato con le quattro colonne e le regole di allargamento solo nell'avanzata.
 
 **Non provato**: i temi scuri non hanno una versione del nuovo stile (il tema di prova è chiaro); Firefox e Safari; le altre pagine con il tema di prova sono state guardate solo di sfuggita (vale la tappa 4 del piano).
+
+## 52. Le regole del contratto a gruppi (28 ottobre 2026)
+
+Chiesto dall'utente: "Regole del contratto è poco leggibile come pagina, tanti input tutti insieme manda un po' in confusione. fai una revisione anche di quella".
+
+- **Prima**: `#campi-regole` era una griglia `campi due-colonne` con tutti i campi di `CAMPI` non nascosti (una quarantina, trentadue visibili per un variabile), uno dietro l'altro su tre o quattro colonne, con `align-items: end` che li sfalsava quando una spiegazione era più lunga delle altre.
+- **Ora** (`GRUPPI_REGOLE` in `configura.js`): i campi stanno in sette gruppi, come i passi del percorso completo della guida: Il prestito, Spese e assicurazioni, Il tasso, Quando si rilegge l'indice, Gli interessi, Il capitale, Le rate future (comprese `stima`, il metodo, gli anni e il tetto `euribor_massimo`). Ogni gruppo è una `section.gruppo-regole` con a sinistra il titolo (icona e `h4`) e una riga che dice a che cosa servono i campi, a destra la solita griglia `campi due-colonne`; `#campi-regole` ha la classe `gruppi-regole`. Un campo di `CAMPI` che non sta in nessun gruppo finisce in un gruppo «Altro» (così un campo nuovo non sparisce: oggi non ce ne sono); un gruppo i cui campi sono tutti nascosti dalle regole `se` sparisce (`nascondiGruppiVuoti`, chiamato dopo `aggiornaVisibili` sia al disegno sia a ogni cambio): a tasso fisso «Il tasso» resta (con il TAN) e spariscono «Quando si rilegge l'indice» e «Le rate future».
+- **Stile** (`stile.css`, sezione 6, dopo `.pannello .carta h3`): griglia a due colonne (230 px per il titolo, il resto per i campi), riga sottile sopra ogni gruppo, campi allineati in alto (`align-items: start`); sotto i 900 px tutto in colonna. Vale con tutti i temi: è una questione di struttura, non di tema.
+- Lettura e salvataggio non cambiano: `leggiCampi` e `aggiornaVisibili` cercano i campi per `data-campo` dentro il contenitore, e i gruppi sono dentro.
+- **Novità**: voce n. 11 in `NOVITA`, riga in `VERSIONI.md`.
+
+### Prove
+
+`foto.js` e `prova-regole.js` (Edge senza finestra, esempi, «Casa al mare»): sette gruppi visibili con i campi attesi (7, 7, 2, 3, 5, 1, 2), nessun «Altro»; schermate a 1440 px e a 390 px senza scorrimento di lato; spread cambiato nel modulo e salvato (letto dall'archivio), rata del mese ricalcolata; passando a «fisso» nella tendina spariscono «Quando si rilegge l'indice» e «Le rate future». Nessun errore in pagina. La prima versione aveva il tetto della previsione nel gruppo «Altro» e i campi allineati in fondo: sistemati.

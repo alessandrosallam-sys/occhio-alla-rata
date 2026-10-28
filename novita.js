@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 11, data: '2026-10-28', icona: 'regole', titolo: 'Le regole del contratto a gruppi',
+      testo: 'Nella pagina «Regole del contratto» i campi sono divisi in gruppi con un titolo e una riga che dice a che cosa servono, come i passi della guida.' },
     { n: 10, data: '2026-10-28', icona: 'stella', titolo: 'Un nuovo stile, in prova',
       testo: 'Nelle impostazioni c\'è il tema «Nuovo stile (prova)»: riquadri più ordinati, niente sfumature. Provalo e dicci se ti piace.' },
     { n: 9, data: '2026-10-27', icona: 'lampadina', titolo: '«Che cos\'è?» resta acceso',
