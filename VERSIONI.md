@@ -8,7 +8,7 @@ Il [sito](https://alessandrosallam-sys.github.io/occhio-alla-rata/) si aggiorna 
 
 Già sul sito, non ancora in una versione numerata.
 
-- Niente, per ora.
+- **Il nuovo stile per tutti i temi**: il restyling che era in prova nel tema «Nuovo stile (prova)» vale ora con tutti i temi, che tengono i loro colori. I riquadri in cima stanno in un solo pannello con righe sottili, tutti alti uguali e senza buchi anche nella versione avanzata; le statistiche sono su tre colonne (quattro nella semplice); le etichette sono in minuscolo; la rata del mese non ha più l'alone; le carte e i pulsanti non hanno ombre; il fumetto del robottino, la pillola dei conti e i pulsanti delle colonne sono più sobri. Nel tema Chiaro la rata del mese e lo sfondo della pagina sono tinte piene, come nella prova. Il tema di prova non c'è più: chi l'aveva scelto torna su Automatico.
 
 ## 1.2 (29 ottobre 2026)
 

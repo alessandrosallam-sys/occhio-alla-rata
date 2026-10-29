@@ -14,6 +14,8 @@
   'use strict';
   const { $, crea, ricordo } = window.Mutuo;
   const NOVITA = [
+    { n: 14, data: '2026-10-29', icona: 'stella', titolo: 'Il nuovo stile, per tutti i temi',
+      testo: 'Lo stile che era in prova vale ora con tutti i temi: riquadri in un solo pannello, tutti alti uguali, niente ombre. Ogni tema tiene i suoi colori.' },
     { n: 13, data: '2026-10-28', icona: 'offerte', titolo: 'Le offerte a famiglie, e scegli tu quali confrontare',
       testo: 'Nella pagina Offerte i mutui stanno da una parte e i prestiti dall\'altra, perché non si confrontano. In ogni famiglia premi i nomi per decidere quali offerte mettere nel confronto.' },
     { n: 12, data: '2026-10-28', icona: 'colonne', titolo: 'Riquadri affiancati alti uguali',

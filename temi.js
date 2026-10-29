@@ -29,7 +29,6 @@
     { codice: 'bosco', nome: 'Bosco', descrizione: 'Verde scuro come un bosco di sera. Riposante.' },
     { codice: 'brace', nome: 'Brace', descrizione: 'Rosso scuro e arancio su fondo quasi nero. Deciso.' },
     { codice: 'terminale', nome: 'Terminale', descrizione: 'Verde su nero e lettere da computer di una volta, come lo schermo di un hacker.' },
-    { codice: 'prova', nome: 'Nuovo stile (prova)', descrizione: 'Il restyling in prova: riquadri in un solo pannello, niente sfumature né ombre, più ordine. Dicci se ti piace.' },
     { codice: 'personale', nome: 'Il tuo tema', descrizione: 'Scegli tu i colori, uno per uno, partendo da un tema che ti piace.' },
   ];
   const radice = document.documentElement;
@@ -64,8 +63,6 @@
     lavanda: { pagina: '#f4f2fb', superficie: '#ffffff', testo: '#1e1633', accento: '#7c3aed', secondo: '#c026d3', angoli: 'tondi' },
     bosco: { pagina: '#0b1510', superficie: '#12221a', testo: '#e2efe6', accento: '#15803d', secondo: '#0f766e', angoli: 'normali' },
     brace: { pagina: '#160b0e', superficie: '#211217', testo: '#f4e7ea', accento: '#be123c', secondo: '#ea580c', angoli: 'normali' },
-    // «Nuovo stile (prova)»: colori sobri; la forma la danno le regole della sezione 11 di stile.css
-    prova: { pagina: '#f3f4f7', superficie: '#ffffff', testo: '#161a26', accento: '#2d5be3', secondo: '#2d5be3', angoli: 'normali' },
     terminale: { pagina: '#030805', superficie: '#08130b', testo: '#bff5c9', accento: '#15803d', secondo: '#065f46', angoli: 'squadrati', carattere: 'fisso', titoli: 'fisso', numeri: 'fisso' },
   };
   const PERSONALE_INIZIALE = { pagina: '#f4f6fb', superficie: '#ffffff', testo: '#0f172a', accento: '#2952e3', secondo: '#6d3fd0', angoli: 'normali' };
@@ -118,7 +115,7 @@
       '--testata': velato(sup, 0.88), '--testata-solida': sup,
       '--nav-attiva-sfondo': navSfondo, '--nav-attiva-testo': leggibile(acc, navSfondo, s ? '#ffffff' : '#000000'),
       '--eroe': `linear-gradient(135deg, ${acc} 0%, ${sec} 100%)`, '--su-eroe': suEroe, '--su-eroe-2': velato(suEroe, 0.84),
-      '--eroe-traccia': velato(suEroe, 0.25), '--eroe-riempi': suEroe, '--eroe-luce': velato(suEroe, 0.16),
+      '--eroe-traccia': velato(suEroe, 0.25), '--eroe-riempi': suEroe,
       '--logo': `linear-gradient(135deg, ${acc}, ${sec})`, '--su-logo': suEroe, '--fuoco': accTesto,
       '--r1': a.r1, '--r2': a.r2, '--r3': a.r3, '--r-pulsante': a.pulsante,
     };
